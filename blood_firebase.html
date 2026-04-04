@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="혈압기록부">
+<meta name="theme-color" content="#12263F">
+<title>🩺 혈압 기록부</title>
+<link rel="manifest" id="pwa-manifest">
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+/* ── LOADING OVERLAY ── */
+#loading-overlay{position:fixed;inset:0;background:rgba(18,38,63,.82);z-index:9000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .3s}
+#loading-overlay.hide{opacity:0;pointer-events:none}
+.spinner{width:48px;height:48px;border:5px solid rgba(255,255,255,.2);
+  border-top-color:#64B5F6;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{color:#fff;font-size:14px;font-weight:600;letter-spacing:.5px}
+/* ── SYNC STATUS ── */
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.sync-ok{background:#4CAF50}.sync-err{background:#EF5350}.sync-ing{background:#FFA726;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
+:root{
+  --navy:#12263F;--navy2:#1D3D60;--navy3:#2D5F8A;
+  --red:#C62828;--red-lt:#FFEBEE;
+  --blue:#1255A0;--blue-lt:#E3F0FF;
+  --green:#1B6B2A;--green-lt:#E8F5E9;
+  --bg:#EEF3F8;--card:#FFFFFF;
+  --text:#111827;--sub:#4B5563;--hint:#9CA3AF;
+  --border:#DDE5EF;
+  --normal:#C8F0C8;--normal-t:#145214;
+  --elevated:#FFF3CD;--elevated-t:#7A4A00;
+  --stage1:#FFE0B2;--stage1-t:#7A3200;
+  --stage2:#FFCDD2;--stage2-t:#8B0000;
+  --crisis:#EF9A9A;--crisis-t:#5C0000;
+  --low:#BBDEFB;--low-t:#0A3060;
+  --radius:14px;--shadow:0 2px 12px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+
+/* ── HEADER ── */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:var(--navy);
+  box-shadow:0 3px 16px rgba(0,0,0,.3);padding:0 20px}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;height:56px}
+.hdr-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
+.hdr-title span{font-size:12px;font-weight:400;color:rgba(255,255,255,.5);margin-left:4px}
+.hdr-actions{display:flex;gap:8px}
+.hdr-btn{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.85);
+  padding:7px 14px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;
+  transition:background .15s}
+.hdr-btn:active{background:rgba(255,255,255,.25)}
+
+/* ── TABS ── */
+.tabs{display:flex;border-top:1px solid rgba(255,255,255,.1)}
+.tab{flex:1;padding:10px 6px 12px;text-align:center;font-size:13px;font-weight:500;
+  color:rgba(255,255,255,.45);border-bottom:3px solid transparent;cursor:pointer;
+  transition:all .2s;white-space:nowrap;position:relative}
+.tab.on{color:#fff;border-bottom-color:#64B5F6;font-weight:700}
+.tab-badge{position:absolute;top:6px;right:calc(50% - 22px);
+  background:#E53935;color:#fff;border-radius:10px;font-size:10px;
+  padding:1px 5px;font-weight:700;line-height:14px;display:none}
+.tab-badge.show{display:inline-block}
+
+/* ── CONTENT ── */
+.content{margin-top:106px;padding:16px;min-height:calc(100vh - 106px)}
+.page{display:none}.page.on{display:block}
+
+/* ── CARD ── */
+.card{background:var(--card);border-radius:var(--radius);padding:18px;
+  margin-bottom:14px;box-shadow:var(--shadow)}
+.card-input{padding:14px 10px;}
+.card-hd{font-size:13px;font-weight:700;color:var(--navy2);margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);padding-bottom:10px}
+
+/* ── INPUT PAGE ── */
+.dt-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px}
+.field input,.field textarea,.field select{
+  border:2px solid var(--border);border-radius:10px;padding:11px 14px;
+  font-size:15px;color:var(--text);background:#FAFCFF;outline:none;
+  transition:border-color .2s;font-family:inherit;width:100%}
+.field input:focus,.field textarea:focus{border-color:var(--navy3);background:#fff}
+
+/* SYS + DIA 나란히 위 / PULSE 전체 너비 아래 */
+.vital-row-top{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.vital-row-bottom{margin-bottom:16px}
+.vital-box{display:flex;flex-direction:column;align-items:center;gap:4px}
+.vital-box label{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.vital-box.sys label{color:var(--red)}
+.vital-box.dia label{color:var(--blue)}
+.vital-box.pulse label{color:var(--green)}
+.stepper{display:flex;align-items:center;gap:0;width:100%;background:#FAFCFF;
+  border:2px solid var(--border);border-radius:12px;overflow:hidden;
+  transition:border-color .2s}
+.stepper:focus-within{border-color:var(--navy3)}
+.step-btn{width:38px;min-width:38px;height:52px;border:none;background:transparent;
+  font-size:22px;cursor:pointer;color:var(--sub);display:flex;align-items:center;
+  justify-content:center;transition:background .15s;user-select:none;-webkit-user-select:none}
+/* PULSE 전체 너비 - 버튼/숫자 크게 */
+.stepper-wide .step-btn{width:60px;min-width:60px;height:64px;font-size:28px}
+.stepper-wide .step-input{font-size:36px;height:64px}
+.step-btn:active{background:rgba(0,0,0,.06)}
+.step-input{flex:1;border:none;background:transparent;text-align:center;font-size:28px;
+  font-weight:700;outline:none;height:52px;min-width:0;font-family:inherit;
+  -webkit-appearance:none;appearance:none}
+.step-input.sys{color:var(--red)}
+.step-input.dia{color:var(--blue)}
+.step-input.pulse{color:var(--green)}
+.step-input::-webkit-inner-spin-button,.step-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.vital-unit{font-size:11px;color:var(--hint)}
+
+/* ── JUDGMENT BOX ── */
+.judge-box{border-radius:12px;padding:14px 20px;margin-bottom:16px;text-align:center;transition:all .3s}
+.judge-lbl{font-size:11px;color:#888;margin-bottom:4px;font-weight:500}
+.judge-val{font-size:22px;font-weight:700}
+.judge-sub{font-size:12px;margin-top:3px;opacity:.7}
+
+/* ── SAVE BUTTON ── */
+.save-btn{width:100%;padding:16px;background:var(--navy);color:#fff;border:none;
+  border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;
+  font-family:inherit;letter-spacing:.3px;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.save-btn:active{background:var(--navy2);transform:scale(.99)}
+
+/* ── RECORDS PAGE ── */
+.rec-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.rec-toolbar select,.rec-toolbar input{
+  border:2px solid var(--border);border-radius:8px;padding:8px 12px;
+  font-size:13px;background:#fff;color:var(--text);outline:none;font-family:inherit}
+.rec-count{font-size:12px;color:var(--hint);margin-left:auto;white-space:nowrap}
+.rec-del-all{background:var(--red-lt);border:none;color:var(--red);
+  padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
+
+.rec-tbl{width:100%;border-collapse:collapse}
+.rec-tbl th{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;
+  padding:8px 10px;background:#EEF3F8;border-bottom:2px solid var(--border);
+  letter-spacing:.4px;white-space:nowrap}
+.rec-tbl td{padding:10px 10px;border-bottom:1px solid var(--border);
+  font-size:13px;vertical-align:middle}
+.rec-tbl tr:hover td{background:#F5F9FF}
+.rec-tbl tr:last-child td{border-bottom:none}
+.r-sys{color:var(--red);font-weight:700;font-size:15px;text-align:center}
+.r-dia{color:var(--blue);font-weight:700;font-size:15px;text-align:center}
+.r-pulse{color:var(--green);font-weight:700;font-size:15px;text-align:center}
+.r-date{font-weight:600;color:var(--navy);white-space:nowrap}
+.r-day{font-size:12px;color:var(--hint);text-align:center}
+.r-time{font-size:12px;color:var(--hint);text-align:center;white-space:nowrap}
+.r-badge{font-size:11px;font-weight:700;border-radius:6px;padding:4px 8px;
+  white-space:nowrap;display:inline-block;text-align:center}
+.r-memo{font-size:12px;color:var(--sub);max-width:120px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.del-btn{background:var(--red-lt);border:none;color:var(--red);
+  width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;transition:background .15s}
+.del-btn:active{background:#FFCDD2}
+.edit-btn{background:var(--blue-lt);border:none;color:var(--blue);
+  width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;transition:background .15s}
+.edit-btn:active{background:#BBDEFB}
+.action-btns{display:flex;gap:4px;align-items:center}
+
+/* ── EDIT MODAL ── */
+.edit-modal{background:#fff;border-radius:20px;padding:24px;max-width:460px;width:100%;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
+.edit-modal h3{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--navy)}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.edit-field{display:flex;flex-direction:column;gap:5px}
+.edit-field label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px}
+.edit-field input,.edit-field textarea{
+  border:2px solid var(--border);border-radius:10px;padding:10px 12px;
+  font-size:15px;color:var(--text);background:#FAFCFF;outline:none;
+  transition:border-color .2s;font-family:inherit;width:100%}
+.edit-field input:focus,.edit-field textarea:focus{border-color:var(--navy3);background:#fff}
+.edit-field input.sys-input{color:var(--red);font-weight:700}
+.edit-field input.dia-input{color:var(--blue);font-weight:700}
+.edit-field input.pulse-input{color:var(--green);font-weight:700}
+.edit-judge-box{border-radius:12px;padding:10px 16px;margin-bottom:16px;text-align:center;transition:all .3s}
+.edit-judge-box .judge-lbl{font-size:11px;color:#888;margin-bottom:3px;font-weight:500}
+.edit-judge-box .judge-val{font-size:18px;font-weight:700}
+
+/* ── STATS PAGE ── */
+.stats-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:16px 12px;
+  text-align:center;box-shadow:var(--shadow)}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--hint);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:4px}
+.kpi-val{font-size:26px;font-weight:900;line-height:1}
+.kpi-unit{font-size:10px;color:var(--hint);margin-top:3px}
+.kpi-sub{font-size:10px;margin-top:2px}
+.kpi.sys .kpi-val{color:var(--red)}
+.kpi.dia .kpi-val{color:var(--blue)}
+.kpi.pulse .kpi-val{color:var(--green)}
+.kpi.count .kpi-val{color:var(--navy)}
+.kpi.pp .kpi-val{color:#7B5EA7}
+.kpi.week .kpi-val{color:#00695C}
+
+.stages-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stage-item{border-radius:12px;padding:14px 10px;text-align:center;cursor:default}
+.stage-item .s-name{font-size:11px;font-weight:700;margin-bottom:6px}
+.stage-item .s-cnt{font-size:30px;font-weight:900;line-height:1}
+.stage-item .s-pct{font-size:11px;opacity:.65;margin-top:3px}
+
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mini-stat{background:#F5F8FF;border-radius:10px;padding:12px;text-align:center}
+.mini-stat .ms-lbl{font-size:10px;color:var(--hint);font-weight:600;margin-bottom:3px}
+.mini-stat .ms-val{font-size:18px;font-weight:700;color:var(--navy)}
+
+/* ── CHART PAGE ── */
+#chartCanvas{width:100%;border-radius:10px;display:block;cursor:crosshair}
+.chart-legend{display:flex;gap:20px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.legend-dot{width:12px;height:12px;border-radius:50%}
+.chart-range{display:flex;gap:8px;margin-bottom:12px;justify-content:center}
+.range-btn{padding:7px 18px;border-radius:20px;border:2px solid var(--border);
+  font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:var(--sub);
+  font-family:inherit;transition:all .15s}
+.range-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── TOOLTIP ── */
+#tooltip{position:fixed;background:rgba(18,38,63,.95);color:#fff;
+  border-radius:10px;padding:10px 14px;font-size:12px;pointer-events:none;
+  z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+#tooltip .tt-date{font-size:11px;opacity:.7;margin-bottom:4px}
+#tooltip .tt-row{display:flex;align-items:center;gap:6px;margin:2px 0}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:var(--hint)}
+.empty-icon{font-size:52px;margin-bottom:12px}
+.empty-txt{font-size:14px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#1F2937;color:#fff;padding:12px 22px;border-radius:24px;font-size:14px;
+  z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:20px;padding:24px;max-width:460px;width:100%;
+  box-shadow:0 8px 40px rgba(0,0,0,.2)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--navy)}
+.modal p{font-size:13px;color:var(--sub);margin-bottom:16px;line-height:1.6}
+.modal .btns{display:flex;gap:10px;justify-content:flex-end}
+.modal .btns button{padding:10px 20px;border-radius:10px;border:none;
+  font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.modal .btns .cancel{background:#F3F4F6;color:var(--sub)}
+.modal .btns .confirm{background:var(--navy);color:#fff}
+
+/* ── INSTALL GUIDE ── */
+.install-card{background:linear-gradient(135deg,var(--navy),var(--navy3));
+  border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:14px}
+.install-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.install-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.install-num{background:rgba(255,255,255,.2);border-radius:50%;width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+  font-weight:700;flex-shrink:0;margin-top:1px}
+.install-step p{font-size:13px;opacity:.9;line-height:1.5}
+.install-step strong{color:#64B5F6}
+
+/* ── RESPONSIVE ── */
+@media(min-width:800px){
+  .stats-kpi{grid-template-columns:repeat(6,1fr)}
+  .stages-grid{grid-template-columns:repeat(6,1fr)}
+  .stats-row{grid-template-columns:repeat(6,1fr)}
+}
+@media(max-width:500px){
+  .vital-row-top{gap:8px}
+  .stepper-wide .step-btn{width:56px;min-width:56px}
+  .stepper-wide .step-input{font-size:30px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-title">🩺 혈압 기록부 <span id="hdr-date"></span><span id="sync-status" style="font-size:11px;margin-left:6px" title="동기화 상태"></span></div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" onclick="showExportMenu()">💾 내보내기</button>
+      <button class="hdr-btn" onclick="showInstall()">📲 설치안내</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on" onclick="goTab(0)">✏️ 입력</div>
+    <div class="tab" onclick="goTab(1)">📋 기록 <span class="tab-badge" id="tb-cnt"></span></div>
+    <div class="tab" onclick="goTab(2)">📊 통계</div>
+    <div class="tab" onclick="goTab(3)">📈 차트</div>
+    <div class="tab" onclick="goTab(4)">ℹ️ 도움말</div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ── TAB 0: 입력 ── -->
+<div class="page on" id="p0">
+  <div class="card">
+    <div class="card-hd">📅 측정 일시</div>
+    <div class="dt-row">
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" id="in-date">
+      </div>
+      <div class="field">
+        <label>시간</label>
+        <input type="time" id="in-time">
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-input">
+    <div class="card-hd">💊 혈압 · 맥박 입력</div>
+    <!-- SYS + DIA 나란히 -->
+    <div class="vital-row-top">
+      <div class="vital-box sys">
+        <label>SYS 수축기</label>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('sys',-1)">−</button>
+          <input class="step-input sys" id="in-sys" type="number" min="60" max="250" placeholder="—" oninput="onVitalChange()">
+          <button class="step-btn" onclick="step('sys',1)">+</button>
+        </div>
+        <div class="vital-unit">mmHg</div>
+      </div>
+      <div class="vital-box dia">
+        <label>DIA 이완기</label>
+        <div class="stepper">
+          <button class="step-btn" onclick="step('dia',-1)">−</button>
+          <input class="step-input dia" id="in-dia" type="number" min="40" max="160" placeholder="—" oninput="onVitalChange()">
+          <button class="step-btn" onclick="step('dia',1)">+</button>
+        </div>
+        <div class="vital-unit">mmHg</div>
+      </div>
+    </div>
+    <!-- PULSE 전체 너비 아래 -->
+    <div class="vital-row-bottom">
+      <div class="vital-box pulse">
+        <label>PULSE 맥박</label>
+        <div class="stepper stepper-wide">
+          <button class="step-btn" onclick="step('pulse',-1)">−</button>
+          <input class="step-input pulse" id="in-pulse" type="number" min="30" max="200" placeholder="—" oninput="onVitalChange()">
+          <button class="step-btn" onclick="step('pulse',1)">+</button>
+        </div>
+        <div class="vital-unit">bpm</div>
+      </div>
+    </div>
+    <!-- Judgment -->
+    <div class="judge-box" id="judge-box" style="background:#F3F4F6">
+      <div class="judge-lbl">혈압 판정</div>
+      <div class="judge-val" id="judge-val" style="color:#9CA3AF">값을 입력하세요</div>
+      <div class="judge-sub" id="judge-sub"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">📝 메모 (선택)</div>
+    <div class="field">
+      <textarea id="in-memo" rows="2" style="resize:none" placeholder="복약 여부, 컨디션, 특이사항 등..."></textarea>
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveRecord()">
+    <span style="font-size:20px">💾</span> 저장하기
+  </button>
+</div>
+
+<!-- ── TAB 1: 기록 ── -->
+<div class="page" id="p1">
+  <div class="card" style="padding:14px">
+    <div class="rec-toolbar">
+      <select id="filter-month" onchange="renderRecords()">
+        <option value="">전체 기간</option>
+      </select>
+      <input type="text" id="filter-search" placeholder="🔍 메모 검색..." style="max-width:160px" oninput="renderRecords()">
+      <span class="rec-count" id="rec-count"></span>
+      <button class="rec-del-all" onclick="confirmDeleteAll()">전체 삭제</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="rec-tbl">
+        <thead>
+          <tr>
+            <th>날짜</th><th>요일</th><th>시간</th>
+            <th>SYS</th><th>DIA</th><th>PULSE</th>
+            <th>판정</th><th>메모</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="rec-body"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="rec-empty" style="display:none">
+      <div class="empty-icon">📋</div>
+      <div class="empty-txt">기록된 데이터가 없습니다<br>입력 탭에서 오늘 혈압을 기록해보세요</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB 2: 통계 ── -->
+<div class="page" id="p2">
+  <div class="stats-kpi" id="stats-kpi"></div>
+
+  <div class="card">
+    <div class="card-hd">🗂 혈압 단계별 분포</div>
+    <div class="stages-grid" id="stages-grid"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">📆 최근 7일 평균</div>
+    <div class="stats-row" id="stats-7"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">📆 최근 30일 평균</div>
+    <div class="stats-row" id="stats-30"></div>
+  </div>
+</div>
+
+<!-- ── TAB 3: 차트 ── -->
+<div class="page" id="p3">
+  <div class="card">
+    <div class="card-hd">📈 혈압 추세</div>
+    <div class="chart-range">
+      <button class="range-btn on" onclick="setRange(14,this)">2주</button>
+      <button class="range-btn" onclick="setRange(30,this)">1개월</button>
+      <button class="range-btn" onclick="setRange(60,this)">2개월</button>
+      <button class="range-btn" onclick="setRange(0,this)">전체</button>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>SYS 수축기</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>DIA 이완기</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#43A047;border:2px dashed #43A047;background:transparent"></div>PULSE 맥박</div>
+    </div>
+    <canvas id="chartCanvas"></canvas>
+    <div class="empty" id="chart-empty" style="display:none">
+      <div class="empty-icon">📈</div>
+      <div class="empty-txt">데이터가 없습니다<br>혈압을 측정하면 차트가 생성됩니다</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB 4: 도움말 ── -->
+<div class="page" id="p4">
+  <div class="install-card">
+    <h3>📲 홈 화면에 앱으로 추가하는 방법</h3>
+    <div class="install-step">
+      <div class="install-num">1</div>
+      <p><strong>크롬(Chrome)</strong> 또는 <strong>삼성 인터넷</strong>으로 이 파일을 엽니다<br>파일을 드라이브에 올리거나 카카오톡으로 전송 후 열기</p>
+    </div>
+    <div class="install-step">
+      <div class="install-num">2</div>
+      <p>브라우저 우측 상단 <strong>⋮ 메뉴</strong>를 탭합니다</p>
+    </div>
+    <div class="install-step">
+      <div class="install-num">3</div>
+      <p><strong>"홈 화면에 추가"</strong> 또는 <strong>"앱 설치"</strong>를 선택합니다</p>
+    </div>
+    <div class="install-step">
+      <div class="install-num">4</div>
+      <p>홈 화면에 🩺 아이콘이 생성되고 앱처럼 전체화면으로 실행됩니다</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">🩺 혈압 단계 기준 (AHA 기준)</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#EEF3F8">
+          <th style="padding:10px;text-align:left;font-size:11px;color:var(--sub)">분류</th>
+          <th style="padding:10px;text-align:center;font-size:11px;color:var(--sub)">수축기 SYS</th>
+          <th style="padding:10px;text-align:center;font-size:11px;color:var(--sub)">이완기 DIA</th>
+          <th style="padding:10px;text-align:left;font-size:11px;color:var(--sub)">권고</th>
+        </tr>
+      </thead>
+      <tbody id="guide-tbl"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">💾 데이터 관리</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="save-btn" style="background:#1B5E20" onclick="exportCSV()">📥 CSV 내보내기 (Excel 호환)</button>
+      <button class="save-btn" style="background:#0D47A1" onclick="exportJSON()">📦 JSON 백업 내보내기</button>
+      <button class="save-btn" style="background:#4A148C" onclick="document.getElementById('importFile').click()">📂 JSON 백업 불러오기</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">ℹ️ 앱 정보</div>
+    <p style="font-size:13px;color:var(--sub);line-height:1.8">
+      • 모든 데이터는 이 기기 브라우저(로컬)에만 저장됩니다<br>
+      • 브라우저 데이터 삭제 시 기록이 사라질 수 있으니 주기적으로 백업하세요<br>
+      • 이 앱은 의료 기기가 아닙니다. 이상 수치 시 반드시 전문의와 상담하세요<br>
+      • 혈압 기준: 미국심장협회(AHA) 2017 기준
+    </p>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- TOOLTIP -->
+<div id="tooltip"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL (confirm) -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <p id="modal-msg"></p>
+    <div class="btns">
+      <button class="cancel" onclick="closeModal()">취소</button>
+      <button class="confirm" id="modal-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal">
+  <div class="edit-modal">
+    <h3>✏️ 기록 수정</h3>
+    <input type="hidden" id="edit-id">
+    <div class="edit-grid">
+      <div class="edit-field">
+        <label>날짜</label>
+        <input type="date" id="edit-date">
+      </div>
+      <div class="edit-field">
+        <label>시간</label>
+        <input type="time" id="edit-time">
+      </div>
+    </div>
+    <div class="edit-grid">
+      <div class="edit-field">
+        <label>🔴 SYS 수축기 (mmHg)</label>
+        <input type="number" id="edit-sys" class="sys-input" min="60" max="250" oninput="onEditVitalChange()">
+      </div>
+      <div class="edit-field">
+        <label>🔵 DIA 이완기 (mmHg)</label>
+        <input type="number" id="edit-dia" class="dia-input" min="40" max="160" oninput="onEditVitalChange()">
+      </div>
+    </div>
+    <div class="edit-grid" style="grid-template-columns:1fr">
+      <div class="edit-field">
+        <label>🟢 PULSE 맥박 (bpm)</label>
+        <input type="number" id="edit-pulse" class="pulse-input" min="30" max="200">
+      </div>
+    </div>
+    <div class="edit-judge-box" id="edit-judge-box" style="background:#F3F4F6;margin-bottom:12px">
+      <div class="judge-lbl">혈압 판정</div>
+      <div class="judge-val" id="edit-judge-val" style="color:#9CA3AF">—</div>
+    </div>
+    <div class="edit-field" style="margin-bottom:16px">
+      <label>📝 메모</label>
+      <textarea id="edit-memo" rows="2" style="resize:none"></textarea>
+    </div>
+    <div class="btns" style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="cancel" style="padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;background:#F3F4F6;color:var(--sub)" onclick="closeEditModal()">취소</button>
+      <button class="confirm" style="padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--navy);color:#fff" onclick="saveEditRecord()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-bg" id="export-menu">
+  <div class="modal">
+    <h3>💾 데이터 내보내기</h3>
+    <p>내보낼 형식을 선택하세요</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="save-btn" style="background:#1B5E20" onclick="exportCSV();closeExport()">📥 CSV (Excel에서 열기)</button>
+      <button class="save-btn" style="background:#0D47A1" onclick="exportJSON();closeExport()">📦 JSON 백업</button>
+    </div>
+    <div class="btns" style="margin-top:16px">
+      <button class="cancel" onclick="closeExport()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-txt">☁️ Firebase 데이터 로딩 중...</div>
+</div>
+
+<script>
+// ── PWA MANIFEST ──
+const MANIFEST = {
+  name:"혈압 기록부",short_name:"혈압기록",description:"매일 혈압 측정 및 기록 관리",
+  start_url:".",display:"standalone",background_color:"#12263F",theme_color:"#12263F",
+  orientation:"any",
+  icons:[{
+    src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2312263F'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E%F0%9F%A9%BA%3C/text%3E%3C/svg%3E",
+    sizes:"any",type:"image/svg+xml"
+  }]
+};
+try{
+  const blob=new Blob([JSON.stringify(MANIFEST)],{type:"application/manifest+json"});
+  document.getElementById("pwa-manifest").href=URL.createObjectURL(blob);
+}catch(e){}
+
+// ── FIREBASE INIT ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+  authDomain: "my-bp-tracker-3d595.firebaseapp.com",
+  databaseURL: "https://my-bp-tracker-3d595-default-rtdb.firebaseio.com",
+  projectId: "my-bp-tracker-3d595",
+  storageBucket: "my-bp-tracker-3d595.firebasestorage.app",
+  messagingSenderId: "1016360206319",
+  appId: "1:1016360206319:web:5f5df2e2c45b30694a401a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const dbRef = db.ref("bp_records");
+
+// ── DATA ──
+let records = [];
+let chartRange = 14;
+
+function showLoading(on){
+  document.getElementById("loading-overlay").classList.toggle("hide",!on);
+}
+function setSyncStatus(state){
+  const el=document.getElementById("sync-status");
+  if(state==="ok")   el.innerHTML='<span class="sync-dot sync-ok"></span><span style="color:rgba(255,255,255,.6);font-size:10px">동기화됨</span>';
+  if(state==="ing")  el.innerHTML='<span class="sync-dot sync-ing"></span><span style="color:rgba(255,255,255,.6);font-size:10px">저장 중</span>';
+  if(state==="err")  el.innerHTML='<span class="sync-dot sync-err"></span><span style="color:rgba(255,255,255,.6);font-size:10px">오류</span>';
+}
+
+// Firebase CRUD helpers
+function fbSet(rec){ return dbRef.child(String(rec.id)).set(rec); }
+function fbDel(id){ return dbRef.child(String(id)).remove(); }
+function fbDelAll(){ return dbRef.remove(); }
+
+// ── REALTIME LISTENER ──
+function initDB(){
+  showLoading(true);
+  dbRef.on("value", snap => {
+    const val = snap.val() || {};
+    records = Object.values(val).sort((a,b) =>
+      b.date.localeCompare(a.date) || (b.time||"").localeCompare(a.time||"")
+    );
+    showLoading(false);
+    setSyncStatus("ok");
+    updateBadge();
+    if(curTab===1){renderRecords();updateMonthFilter()}
+    if(curTab===2){renderStats()}
+    if(curTab===3){renderChart()}
+  }, err => {
+    showLoading(false);
+    setSyncStatus("err");
+    showToast("❗ Firebase 연결 오류 — 네트워크를 확인하세요");
+  });
+}
+
+// ── JUDGMENT ──
+const STAGES = [
+  {key:"crisis", emoji:"🚨", name:"고혈압 위기", bg:"var(--crisis)", tc:"var(--crisis-t)",
+   cond:(s,d)=>s>=180||d>=120, hint:"즉시 응급 진료가 필요합니다"},
+  {key:"stage2", emoji:"🔴", name:"고혈압 2기",  bg:"var(--stage2)", tc:"var(--stage2-t)",
+   cond:(s,d)=>s>=140||d>=90, hint:"의사와 상담 후 치료 계획을 세우세요"},
+  {key:"stage1", emoji:"🟠", name:"고혈압 1기",  bg:"var(--stage1)", tc:"var(--stage1-t)",
+   cond:(s,d)=>s>=130||d>=80, hint:"생활습관 개선 및 의사 상담 권장"},
+  {key:"elevated",emoji:"🟡",name:"주의 혈압",   bg:"var(--elevated)",tc:"var(--elevated-t)",
+   cond:(s,d)=>s>=120&&d<80,  hint:"건강한 생활습관 유지에 신경쓰세요"},
+  {key:"low",    emoji:"🔵", name:"저혈압",      bg:"var(--low)",    tc:"var(--low-t)",
+   cond:(s,d)=>s<90||d<60,   hint:"어지럼증 등 증상 시 의사 상담 권장"},
+  {key:"normal", emoji:"🟢", name:"정상",        bg:"var(--normal)", tc:"var(--normal-t)",
+   cond:()=>true,            hint:"정상 범위입니다. 현재 상태를 유지하세요"},
+];
+function getJudge(s,d){ return STAGES.find(st=>st.cond(s,d))||STAGES[5] }
+
+// ── TABS ──
+let curTab = 0;
+function goTab(n){
+  curTab = n;
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("on",i===n));
+  document.querySelectorAll(".page").forEach((p,i)=>p.classList.toggle("on",i===n));
+  if(n===1){renderRecords();updateMonthFilter()}
+  if(n===2){renderStats()}
+  if(n===3){renderChart()}
+}
+
+// ── HEADER DATE ──
+function updateHeader(){
+  const d=new Date();
+  const days=["일","월","화","수","목","금","토"];
+  document.getElementById("hdr-date").textContent=
+    `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+}
+updateHeader();
+setInterval(updateHeader,60000);
+
+// ── COUNT BADGE ──
+function updateBadge(){
+  const el=document.getElementById("tb-cnt");
+  const n=records.length;
+  el.textContent=n;
+  el.classList.toggle("show",n>0);
+}
+updateBadge();
+initDB();
+
+// ── INPUT PAGE ──
+(function initInput(){
+  const now=new Date();
+  const pad=v=>String(v).padStart(2,"0");
+  document.getElementById("in-date").value=
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById("in-time").value=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+})();
+
+function step(field,delta){
+  const el=document.getElementById("in-"+field);
+  let v=parseInt(el.value)||0;
+  const minmax={sys:[60,250],dia:[40,160],pulse:[30,200]};
+  v=Math.min(Math.max(v+delta,minmax[field][0]),minmax[field][1]);
+  el.value=v;
+  onVitalChange();
+}
+
+function onVitalChange(){
+  const s=parseInt(document.getElementById("in-sys").value);
+  const d=parseInt(document.getElementById("in-dia").value);
+  const box=document.getElementById("judge-box");
+  const val=document.getElementById("judge-val");
+  const sub=document.getElementById("judge-sub");
+  if(!s||!d){
+    box.style.background="#F3F4F6";
+    val.style.color="#9CA3AF";
+    val.textContent="값을 입력하세요";
+    sub.textContent="";
+    return;
+  }
+  const j=getJudge(s,d);
+  box.style.background=j.bg;
+  val.style.color=j.tc;
+  val.textContent=j.emoji+" "+j.name;
+  sub.textContent=j.hint;
+}
+
+function saveRecord(){
+  const date=document.getElementById("in-date").value;
+  const time=document.getElementById("in-time").value;
+  const sys=parseInt(document.getElementById("in-sys").value);
+  const dia=parseInt(document.getElementById("in-dia").value);
+  const pulse=parseInt(document.getElementById("in-pulse").value);
+  const memo=document.getElementById("in-memo").value.trim();
+  if(!date||!sys||!dia||!pulse){showToast("❗ 날짜·SYS·DIA·PULSE를 모두 입력하세요");return}
+  if(sys<60||sys>250){showToast("❗ SYS 범위: 60~250");return}
+  if(dia<40||dia>160){showToast("❗ DIA 범위: 40~160");return}
+  if(pulse<30||pulse>200){showToast("❗ PULSE 범위: 30~200");return}
+  const rec={id:Date.now(),date,time,sys,dia,pulse,memo};
+  setSyncStatus("ing");
+  fbSet(rec).then(()=>{
+    document.getElementById("in-sys").value="";
+    document.getElementById("in-dia").value="";
+    document.getElementById("in-pulse").value="";
+    document.getElementById("in-memo").value="";
+    onVitalChange();
+    showToast("✅ 저장되었습니다");
+  }).catch(()=>{setSyncStatus("err");showToast("❗ 저장 실패 — 네트워크를 확인하세요")});
+}
+
+// ── RECORDS ──
+const DAYS=["일","월","화","수","목","금","토"];
+function fmtDate(d){
+  const dt=new Date(d+"T00:00:00");
+  return `${dt.getMonth()+1}/${dt.getDate()}`;
+}
+function fmtDay(d){
+  const dt=new Date(d+"T00:00:00");
+  return DAYS[dt.getDay()];
+}
+
+function updateMonthFilter(){
+  const sel=document.getElementById("filter-month");
+  const months=[...new Set(records.map(r=>r.date.slice(0,7)))].sort().reverse();
+  const cur=sel.value;
+  sel.innerHTML='<option value="">전체 기간</option>'+
+    months.map(m=>`<option value="${m}" ${m===cur?"selected":""}>${m}</option>`).join("");
+}
+
+function renderRecords(){
+  const month=document.getElementById("filter-month").value;
+  const search=document.getElementById("filter-search").value.toLowerCase();
+  let list=records;
+  if(month) list=list.filter(r=>r.date.startsWith(month));
+  if(search) list=list.filter(r=>r.memo&&r.memo.toLowerCase().includes(search));
+  document.getElementById("rec-count").textContent=`총 ${list.length}건`;
+  const body=document.getElementById("rec-body");
+  if(!list.length){
+    body.innerHTML="";
+    document.getElementById("rec-empty").style.display="block";
+    return;
+  }
+  document.getElementById("rec-empty").style.display="none";
+  const j=r=>{const jj=getJudge(r.sys,r.dia);return jj};
+  body.innerHTML=list.map(r=>{
+    const jj=j(r);
+    return `<tr>
+      <td class="r-date">${r.date}</td>
+      <td class="r-day">${fmtDay(r.date)}</td>
+      <td class="r-time">${r.time||"—"}</td>
+      <td class="r-sys">${r.sys}</td>
+      <td class="r-dia">${r.dia}</td>
+      <td class="r-pulse">${r.pulse}</td>
+      <td><span class="r-badge" style="background:${jj.bg};color:${jj.tc}">${jj.emoji} ${jj.name}</span></td>
+      <td class="r-memo">${r.memo||""}</td>
+      <td><div class="action-btns">
+        <button class="edit-btn" onclick="editRecord(${r.id})" title="수정">✏️</button>
+        <button class="del-btn" onclick="deleteRecord(${r.id})" title="삭제">✕</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+
+// ── EDIT RECORD ──
+function editRecord(id){
+  const rec=records.find(r=>r.id===id);
+  if(!rec)return;
+  document.getElementById("edit-id").value=id;
+  document.getElementById("edit-date").value=rec.date;
+  document.getElementById("edit-time").value=rec.time||"";
+  document.getElementById("edit-sys").value=rec.sys;
+  document.getElementById("edit-dia").value=rec.dia;
+  document.getElementById("edit-pulse").value=rec.pulse;
+  document.getElementById("edit-memo").value=rec.memo||"";
+  onEditVitalChange();
+  document.getElementById("edit-modal").classList.add("show");
+}
+function closeEditModal(){
+  document.getElementById("edit-modal").classList.remove("show");
+}
+function onEditVitalChange(){
+  const s=parseInt(document.getElementById("edit-sys").value);
+  const d=parseInt(document.getElementById("edit-dia").value);
+  const box=document.getElementById("edit-judge-box");
+  const val=document.getElementById("edit-judge-val");
+  if(!s||!d){
+    box.style.background="#F3F4F6";
+    val.style.color="#9CA3AF";
+    val.textContent="—";
+    return;
+  }
+  const j=getJudge(s,d);
+  box.style.background=j.bg;
+  val.style.color=j.tc;
+  val.textContent=j.emoji+" "+j.name;
+}
+function saveEditRecord(){
+  const id=parseInt(document.getElementById("edit-id").value);
+  const date=document.getElementById("edit-date").value;
+  const time=document.getElementById("edit-time").value;
+  const sys=parseInt(document.getElementById("edit-sys").value);
+  const dia=parseInt(document.getElementById("edit-dia").value);
+  const pulse=parseInt(document.getElementById("edit-pulse").value);
+  const memo=document.getElementById("edit-memo").value.trim();
+  if(!date||!sys||!dia||!pulse){showToast("❗ 날짜·SYS·DIA·PULSE를 모두 입력하세요");return}
+  if(sys<60||sys>250){showToast("❗ SYS 범위: 60~250");return}
+  if(dia<40||dia>160){showToast("❗ DIA 범위: 40~160");return}
+  if(pulse<30||pulse>200){showToast("❗ PULSE 범위: 30~200");return}
+  const orig=records.find(r=>r.id===id);
+  if(!orig){showToast("❗ 기록을 찾을 수 없습니다");return}
+  const updated={...orig,date,time,sys,dia,pulse,memo};
+  setSyncStatus("ing");
+  fbSet(updated).then(()=>{
+    closeEditModal();
+    showToast("✅ 수정되었습니다");
+  }).catch(()=>{setSyncStatus("err");showToast("❗ 수정 실패 — 네트워크를 확인하세요")});
+}
+
+function deleteRecord(id){
+  showModal("기록 삭제","이 기록을 삭제하시겠습니까?",()=>{
+    setSyncStatus("ing");
+    fbDel(id).then(()=>showToast("🗑 삭제되었습니다"))
+    .catch(()=>{setSyncStatus("err");showToast("❗ 삭제 실패")});
+  });
+}
+
+function confirmDeleteAll(){
+  if(!records.length){showToast("삭제할 기록이 없습니다");return}
+  showModal("전체 삭제",`모든 기록(${records.length}건)을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,()=>{
+    setSyncStatus("ing");
+    fbDelAll().then(()=>showToast("🗑 전체 삭제되었습니다"))
+    .catch(()=>{setSyncStatus("err");showToast("❗ 삭제 실패")});
+  });
+}
+
+// ── STATS ──
+function avg(arr){return arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*10)/10:null}
+function calcStats(list){
+  if(!list.length)return null;
+  const sys=list.map(r=>r.sys),dia=list.map(r=>r.dia),pulse=list.map(r=>r.pulse);
+  return{
+    count:list.length,
+    avgSys:avg(sys),avgDia:avg(dia),avgPulse:avg(pulse),
+    maxSys:Math.max(...sys),minSys:Math.min(...sys),
+    maxDia:Math.max(...dia),minDia:Math.min(...dia),
+    avgPP:avg(list.map(r=>r.sys-r.dia))
+  };
+}
+function recentN(n){
+  const sorted=[...records].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  return sorted.slice(-n);
+}
+
+function renderStats(){
+  const all=records;
+  const st=calcStats(all);
+  const kpiEl=document.getElementById("stats-kpi");
+  if(!st){
+    kpiEl.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📊</div><div class="empty-txt">아직 데이터가 없습니다</div></div>`;
+    document.getElementById("stages-grid").innerHTML="";
+    document.getElementById("stats-7").innerHTML="";
+    document.getElementById("stats-30").innerHTML="";
+    return;
+  }
+  kpiEl.innerHTML=`
+    <div class="kpi count"><div class="kpi-lbl">총 측정</div><div class="kpi-val">${st.count}</div><div class="kpi-unit">회</div></div>
+    <div class="kpi sys"><div class="kpi-lbl">평균 SYS</div><div class="kpi-val">${st.avgSys}</div><div class="kpi-unit">mmHg</div></div>
+    <div class="kpi dia"><div class="kpi-lbl">평균 DIA</div><div class="kpi-val">${st.avgDia}</div><div class="kpi-unit">mmHg</div></div>
+    <div class="kpi pulse"><div class="kpi-lbl">평균 PULSE</div><div class="kpi-val">${st.avgPulse}</div><div class="kpi-unit">bpm</div></div>
+    <div class="kpi pp"><div class="kpi-lbl">평균 맥압</div><div class="kpi-val">${st.avgPP}</div><div class="kpi-unit">mmHg</div></div>
+    <div class="kpi week"><div class="kpi-lbl">최고 SYS</div><div class="kpi-val" style="color:var(--red)">${st.maxSys}</div><div class="kpi-unit">최저 ${st.minSys}</div></div>
+  `;
+  // stages
+  const sg=document.getElementById("stages-grid");
+  sg.innerHTML=STAGES.map(s=>{
+    const cnt=all.filter(r=>s.cond(r.sys,r.dia)&&!STAGES.slice(0,STAGES.indexOf(s)).some(ss=>ss.cond(r.sys,r.dia))).length;
+    const pct=all.length?Math.round(cnt/all.length*100):0;
+    return `<div class="stage-item" style="background:${s.bg}">
+      <div class="s-name" style="color:${s.tc}">${s.emoji} ${s.name}</div>
+      <div class="s-cnt" style="color:${s.tc}">${cnt}</div>
+      <div class="s-pct" style="color:${s.tc}">${pct}%</div>
+    </div>`;
+  }).join("");
+  // recent N
+  function miniStats(n,elId){
+    const rec=recentN(n);
+    const ss=calcStats(rec);
+    const el=document.getElementById(elId);
+    if(!ss){el.innerHTML=`<div style="grid-column:1/-1;font-size:12px;color:var(--hint);text-align:center">데이터 없음</div>`;return}
+    el.innerHTML=`
+      <div class="mini-stat"><div class="ms-lbl">SYS 평균</div><div class="ms-val" style="color:var(--red)">${ss.avgSys}</div></div>
+      <div class="mini-stat"><div class="ms-lbl">DIA 평균</div><div class="ms-val" style="color:var(--blue)">${ss.avgDia}</div></div>
+      <div class="mini-stat"><div class="ms-lbl">PULSE 평균</div><div class="ms-val" style="color:var(--green)">${ss.avgPulse}</div></div>
+      <div class="mini-stat"><div class="ms-lbl">최고 SYS</div><div class="ms-val" style="color:var(--red)">${ss.maxSys}</div></div>
+      <div class="mini-stat"><div class="ms-lbl">최저 SYS</div><div class="ms-val" style="color:var(--blue)">${ss.minSys}</div></div>
+      <div class="mini-stat"><div class="ms-lbl">측정 횟수</div><div class="ms-val">${ss.count}회</div></div>
+    `;
+  }
+  miniStats(7,"stats-7");
+  miniStats(30,"stats-30");
+}
+
+// ── CHART ──
+function setRange(n,btn){
+  chartRange=n;
+  document.querySelectorAll(".range-btn").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  renderChart();
+}
+
+function renderChart(){
+  const canvas=document.getElementById("chartCanvas");
+  const emptyEl=document.getElementById("chart-empty");
+  const sorted=[...records].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||""));
+  const data=chartRange>0?sorted.slice(-chartRange):sorted;
+  if(!data.length){canvas.style.display="none";emptyEl.style.display="block";return}
+  canvas.style.display="block";emptyEl.style.display="none";
+
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.parentElement.clientWidth;
+  const H=320;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+"px";canvas.style.height=H+"px";
+  const ctx=canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
+
+  const PAD={t:20,b:46,l:52,r:16};
+  const CW=W-PAD.l-PAD.r;
+  const CH=H-PAD.t-PAD.b;
+  const YMIN=50,YMAX=210;
+
+  function toX(i){return PAD.l+i/(data.length-1||1)*CW}
+  function toY(v){return PAD.t+CH-(v-YMIN)/(YMAX-YMIN)*CH}
+
+  ctx.clearRect(0,0,W,H);
+
+  // BG zones
+  const zones=[
+    [180,YMAX,"#EF9A9A33"],[140,180,"#FFCDD233"],[130,140,"#FFE0B233"],
+    [120,130,"#FFF3CD33"],[90,120,"#C8F0C833"],[YMIN,90,"#BBDEFB33"]
+  ];
+  zones.forEach(([lo,hi,clr])=>{
+    ctx.fillStyle=clr;
+    ctx.fillRect(PAD.l,toY(hi),CW,toY(lo)-toY(hi));
+  });
+
+  // Grid lines
+  [60,80,90,120,130,140,180].forEach(v=>{
+    if(v<YMIN||v>YMAX)return;
+    const y=toY(v);
+    ctx.strokeStyle="rgba(0,0,0,.08)";ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(PAD.l+CW,y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle="#888";ctx.font=`10px system-ui`;ctx.textAlign="right";
+    ctx.fillText(v,PAD.l-5,y+3.5);
+  });
+
+  // X-axis labels
+  const step=Math.max(1,Math.floor(data.length/10));
+  ctx.fillStyle="#888";ctx.font=`10px system-ui`;ctx.textAlign="center";
+  data.forEach((r,i)=>{
+    if(i%step===0||i===data.length-1){
+      const d=new Date(r.date+"T00:00:00");
+      const lbl=`${d.getMonth()+1}/${d.getDate()}`;
+      ctx.fillText(lbl,toX(i),H-PAD.b+14);
+    }
+  });
+
+  // Draw line helper
+  function drawLine(key,color,dashed=false){
+    ctx.strokeStyle=color;ctx.lineWidth=2.5;
+    if(dashed)ctx.setLineDash([5,4]);else ctx.setLineDash([]);
+    ctx.beginPath();
+    data.forEach((r,i)=>{
+      const x=toX(i),y=toY(Math.min(Math.max(r[key],YMIN),YMAX));
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();ctx.setLineDash([]);
+    // dots
+    data.forEach((r,i)=>{
+      const x=toX(i),y=toY(Math.min(Math.max(r[key],YMIN),YMAX));
+      ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
+      ctx.fillStyle=color;ctx.fill();
+      ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();
+    });
+  }
+
+  drawLine("pulse","#43A047",true);
+  drawLine("dia","#1E88E5");
+  drawLine("sys","#E53935");
+
+  // Axes
+  ctx.strokeStyle="rgba(0,0,0,.15)";ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(PAD.l,PAD.t);ctx.lineTo(PAD.l,PAD.t+CH);
+  ctx.lineTo(PAD.l+CW,PAD.t+CH);ctx.stroke();
+
+  // Touch tooltip
+  canvas._data=data;canvas._pad=PAD;canvas._cw=CW;canvas._toX=toX;canvas._toY=toY;
+}
+
+// chart touch/mouse interaction
+(function(){
+  const canvas=document.getElementById("chartCanvas");
+  const tt=document.getElementById("tooltip");
+  function showTip(e){
+    const d=canvas._data;if(!d||!d.length)return;
+    const rect=canvas.getBoundingClientRect();
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    const x=clientX-rect.left;
+    const PAD=canvas._pad,CW=canvas._cw;
+    const idx=Math.round((x-PAD.l)/CW*(d.length-1));
+    if(idx<0||idx>=d.length)return;
+    const r=d[idx];
+    const jj=getJudge(r.sys,r.dia);
+    tt.style.display="block";
+    tt.innerHTML=`<div class="tt-date">${r.date} ${r.time||""}</div>
+      <div class="tt-row"><span style="color:#EF9A9A">●</span> SYS: <b>${r.sys}</b> mmHg</div>
+      <div class="tt-row"><span style="color:#64B5F6">●</span> DIA: <b>${r.dia}</b> mmHg</div>
+      <div class="tt-row"><span style="color:#81C784">●</span> PULSE: <b>${r.pulse}</b> bpm</div>
+      <div class="tt-row">${jj.emoji} ${jj.name}</div>`;
+    const tx=Math.min(clientX+10,window.innerWidth-160);
+    const ty=Math.max(e.clientY-80,10);
+    tt.style.left=tx+"px";tt.style.top=ty+"px";
+  }
+  function hideTip(){tt.style.display="none"}
+  canvas.addEventListener("mousemove",showTip);
+  canvas.addEventListener("mouseleave",hideTip);
+  canvas.addEventListener("touchmove",e=>{e.preventDefault();showTip(e)},{passive:false});
+  canvas.addEventListener("touchend",hideTip);
+})();
+
+// ── GUIDE TABLE ──
+(function(){
+  const rows=[
+    ["저혈압","< 90","< 60","var(--low)","var(--low-t)","의사 상담 권장"],
+    ["정상","90~119","< 80","var(--normal)","var(--normal-t)","✅ 현재 상태 유지"],
+    ["주의 혈압","120~129","< 80","var(--elevated)","var(--elevated-t)","생활습관 개선"],
+    ["고혈압 1기","130~139","80~89","var(--stage1)","var(--stage1-t)","의사 상담 권장"],
+    ["고혈압 2기","≥ 140","≥ 90","var(--stage2)","var(--stage2-t)","⚠️ 약물치료 고려"],
+    ["고혈압 위기","≥ 180","≥ 120","var(--crisis)","var(--crisis-t)","🚨 즉시 응급 진료"],
+  ];
+  document.getElementById("guide-tbl").innerHTML=rows.map(([n,s,d,bg,tc,r])=>`
+    <tr style="background:${bg}">
+      <td style="padding:10px;font-weight:600;color:${tc}">${n}</td>
+      <td style="padding:10px;text-align:center;color:${tc}">${s}</td>
+      <td style="padding:10px;text-align:center;color:${tc}">${d}</td>
+      <td style="padding:10px;color:${tc};font-size:12px">${r}</td>
+    </tr>`).join("");
+})();
+
+// ── EXPORT ──
+function exportCSV(){
+  if(!records.length){showToast("내보낼 데이터가 없습니다");return}
+  const hdr="날짜,요일,시간,SYS(mmHg),DIA(mmHg),PULSE(bpm),맥압,판정,메모\n";
+  const rows=records.map(r=>{
+    const jj=getJudge(r.sys,r.dia);
+    const day=DAYS[new Date(r.date+"T00:00:00").getDay()];
+    const memo=(r.memo||"").replace(/,/g," ");
+    return `${r.date},${day},${r.time||""},${r.sys},${r.dia},${r.pulse},${r.sys-r.dia},${jj.name},${memo}`;
+  }).join("\n");
+  dl("\uFEFF"+hdr+rows,"혈압기록_"+today()+".csv","text/csv");
+  showToast("📥 CSV 내보내기 완료");
+}
+function exportJSON(){
+  dl(JSON.stringify(records,null,2),"혈압백업_"+today()+".json","application/json");
+  showToast("📦 JSON 백업 완료");
+}
+function importJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!Array.isArray(data))throw new Error();
+      showModal("백업 불러오기",`${data.length}개의 기록을 불러옵니다.\n기존 데이터와 합쳐집니다. 계속하시겠습니까?`,()=>{
+        const ids=new Set(records.map(r=>r.id));
+        const toAdd=data.filter(r=>!ids.has(r.id));
+        setSyncStatus("ing");
+        Promise.all(toAdd.map(r=>fbSet(r))).then(()=>{
+          showToast(`✅ ${toAdd.length}건 불러오기 완료`);
+        }).catch(()=>{setSyncStatus("err");showToast("❗ 불러오기 실패")});
+      });
+    }catch{showToast("❗ 유효하지 않은 파일입니다")}
+  };
+  reader.readAsText(file);
+  e.target.value="";
+}
+function dl(content,name,mime){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=name;a.click();
+}
+function today(){return new Date().toISOString().slice(0,10).replace(/-/g,"")}
+
+// ── MODALS ──
+function showModal(title,msg,cb){
+  document.getElementById("modal-title").textContent=title;
+  document.getElementById("modal-msg").textContent=msg;
+  document.getElementById("modal-ok").onclick=()=>{cb();closeModal()};
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(){document.getElementById("modal").classList.remove("show")}
+function showExportMenu(){document.getElementById("export-menu").classList.add("show")}
+function closeExport(){document.getElementById("export-menu").classList.remove("show")}
+function showInstall(){goTab(4)}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2800);
+}
+
+// resize chart
+window.addEventListener("resize",()=>{if(curTab===3)renderChart()});
+</script>
+</body>
+</html>
