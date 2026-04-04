@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="데일리 피드">
+<title>데일리 피드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="home-bar.js"></script>
+<style>
+:root {
+  --bg:      #080c14;
+  --sf:      #0e1422;
+  --sf2:     #131b2d;
+  --sf3:     #181f30;
+  --bd:      #1e2d45;
+  --bd2:     #263548;
+  --text:    #c8d6e8;
+  --text2:   #7a91a8;
+  --text3:   #4a5f74;
+  --accent:  #00d4ff;
+  --accent2: #0099cc;
+  --green:   #00e676;
+  --red:     #ff5252;
+  --yellow:  #ffca28;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Noto Sans KR', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 36px; z-index: 50;
+  background: rgba(8,12,20,.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--bd);
+  padding: 0 16px;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
+.sync-badge { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--text3); background: var(--sf); border: 1px solid var(--bd); border-radius: 20px; padding: 3px 10px; }
+.sdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.sdot.live { background: var(--green); box-shadow: 0 0 5px var(--green); animation: bl 3s infinite; }
+.sdot.load { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); animation: bl .6s infinite; }
+.sdot.err  { background: var(--red); }
+@keyframes bl { 0%,100%{opacity:1}50%{opacity:.2} }
+
+/* ── INPUT AREA ── */
+.input-wrap {
+  padding: 16px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--bd);
+}
+.input-box {
+  background: var(--sf2);
+  border: 1px solid var(--bd2);
+  border-radius: 12px;
+  padding: 14px;
+  transition: border-color .2s;
+}
+.input-box:focus-within { border-color: var(--accent); }
+.input-date-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.date-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; }
+.date-input {
+  background: var(--sf3); border: 1px solid var(--bd2); color: var(--text);
+  border-radius: 6px; padding: 5px 10px; font-family: var(--mono); font-size: 12px;
+  outline: none; cursor: pointer;
+  color-scheme: dark;
+}
+.date-input:focus { border-color: var(--accent); }
+.mood-row {
+  display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.mood-btn {
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 20px;
+  padding: 4px 11px; font-size: 12px; cursor: pointer; color: var(--text2);
+  transition: all .15s; font-family: var(--sans);
+}
+.mood-btn:hover { border-color: var(--bd2); color: var(--text); }
+.mood-btn.on { border-color: var(--accent); background: rgba(0,212,255,.1); color: var(--accent); }
+textarea {
+  width: 100%; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--sans); font-size: 14px;
+  line-height: 1.7; resize: none; min-height: 80px;
+  placeholder-color: var(--text3);
+}
+textarea::placeholder { color: var(--text3); }
+.input-footer {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
+}
+.char-count { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.btn-submit {
+  background: var(--accent); color: #000; border: none; border-radius: 8px;
+  padding: 8px 20px; font-family: var(--sans); font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+}
+.btn-submit:hover { background: #33ddff; }
+.btn-submit:disabled { opacity: .4; pointer-events: none; }
+
+/* ── FILTER ── */
+.filter-bar {
+  padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  border-bottom: 1px solid var(--bd);
+}
+.filter-input {
+  background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--sans);
+  outline: none; transition: border-color .15s; width: 150px;
+  color-scheme: dark;
+}
+.filter-input:focus { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--text3); }
+.count-chip {
+  margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3);
+  background: var(--sf2); border: 1px solid var(--bd); border-radius: 20px;
+  padding: 3px 10px;
+}
+.count-chip span { color: var(--accent); font-weight: 600; }
+
+/* ── FEED ── */
+.feed { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.feed-item {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s, background .2s;
+  animation: fadeIn .3s ease both;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.feed-item::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  border-radius: 3px 0 0 3px;
+}
+.feed-item:hover { border-color: var(--bd2); background: var(--sf2); }
+
+.feed-item-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.feed-date {
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
+  padding: 2px 8px;
+}
+.feed-mood {
+  font-size: 14px;
+}
+.feed-time {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  margin-left: auto;
+}
+.feed-actions { display: flex; gap: 5px; }
+.btn-icon {
+  background: transparent; border: 1px solid var(--bd); color: var(--text3);
+  border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: all .15s; flex-shrink: 0;
+}
+.btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+.btn-icon.del:hover  { border-color: var(--red); color: var(--red); background: rgba(255,82,82,.08); }
+
+.feed-content {
+  font-size: 14px; line-height: 1.8; color: var(--text);
+  white-space: pre-wrap; word-break: break-word;
+}
+.feed-content.editing { display: none; }
+
+/* 인라인 편집 */
+.edit-area {
+  display: none;
+}
+.edit-area.active { display: block; }
+.edit-textarea {
+  width: 100%; background: var(--sf3); border: 1px solid var(--accent);
+  color: var(--text); border-radius: 8px; padding: 10px 12px;
+  font-family: var(--sans); font-size: 14px; line-height: 1.7;
+  resize: none; outline: none; min-height: 80px;
+}
+.edit-footer { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+.btn-edit-cancel {
+  background: transparent; border: 1px solid var(--bd2); color: var(--text2);
+  border-radius: 6px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+  font-family: var(--sans);
+}
+.btn-edit-cancel:hover { color: var(--text); border-color: var(--text2); }
+.btn-edit-save {
+  background: var(--accent); border: none; color: #000;
+  border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: var(--sans);
+}
+
+/* ── EMPTY ── */
+.empty {
+  text-align: center; padding: 80px 20px; color: var(--text3);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.empty-icon { font-size: 48px; opacity: .4; }
+.empty p { font-size: 14px; }
+.empty .hint { font-size: 12px; }
+
+/* ── LOADING SKELETON ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--sf2) 25%, var(--sf3) 50%, var(--sf2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 6px; height: 14px; margin: 4px 0;
+}
+@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
+  border-radius: 10px; padding: 10px 18px; font-size: 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5); z-index: 9999;
+  opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>데일리 피드</div>
+  <div class="sync-badge">
+    <div class="sdot load" id="sdot"></div>
+    <span id="stxt">연결 중...</span>
+  </div>
+</header>
+
+<!-- 입력 영역 -->
+<div class="input-wrap">
+  <div class="input-box">
+    <div class="input-date-row">
+      <span class="date-label">날짜</span>
+      <input class="date-input" type="date" id="inDate">
+    </div>
+    <div class="mood-row" id="moodRow">
+      <button class="mood-btn" data-mood="💭">💭 생각</button>
+      <button class="mood-btn" data-mood="📈">📈 시장</button>
+      <button class="mood-btn" data-mood="💡">💡 아이디어</button>
+      <button class="mood-btn" data-mood="😤">😤 답답</button>
+      <button class="mood-btn" data-mood="😊">😊 좋음</button>
+      <button class="mood-btn" data-mood="📝">📝 메모</button>
+    </div>
+    <textarea id="inText" placeholder="오늘의 생각을 기록하세요..." rows="4" oninput="updateChar()"></textarea>
+    <div class="input-footer">
+      <span class="char-count" id="charCount">0 / 1000</span>
+      <button class="btn-submit" id="btnSubmit" onclick="submitFeed()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        게시
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 필터 -->
+<div class="filter-bar">
+  <input class="filter-input" type="date" id="filterDate" oninput="renderFeed()" placeholder="날짜 필터">
+  <input class="filter-input" type="text" id="filterText" oninput="renderFeed()" placeholder="내용 검색...">
+  <div class="count-chip" id="countChip">총 <span>0</span>건</div>
+</div>
+
+<!-- 피드 -->
+<div class="feed" id="feedList"></div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Firebase ── */
+firebase.initializeApp({
+  apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+  authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+  projectId:         "my-bp-tracker-3d595",
+  storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+  messagingSenderId: "1016360206319",
+  appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+});
+const db  = firebase.firestore();
+const COL = 'dailyfeed';
+
+/* ── 상태 ── */
+let feeds   = [];
+let selMood = '';
+
+/* ── 날짜 초기화 ── */
+document.getElementById('inDate').value = todayStr();
+
+/* ── 무드 선택 ── */
+document.querySelectorAll('.mood-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const m = btn.dataset.mood;
+    if (selMood === m) {
+      selMood = '';
+      btn.classList.remove('on');
+    } else {
+      selMood = m;
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    }
+  });
+});
+
+/* ── 글자 수 ── */
+function updateChar() {
+  const len = document.getElementById('inText').value.length;
+  document.getElementById('charCount').textContent = len + ' / 1000';
+  document.getElementById('btnSubmit').disabled = len === 0;
+}
+updateChar();
+
+/* ── 날짜 헬퍼 ── */
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+function fmtDate(str) {
+  if (!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  const days = ['일','월','화','수','목','금','토'];
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
+}
+function fmtTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ── 동기화 상태 ── */
+function setSS(state) {
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  const map = { live:'● 실시간', load:'연결 중...', err:'오프라인' };
+  dot.className = 'sdot ' + state;
+  txt.textContent = map[state] || '—';
+}
+
+/* ── Firestore 실시간 리스너 ── */
+function initSync() {
+  setSS('load');
+  // 복합 인덱스 불필요 — createdAt 단일 정렬 후 클라이언트에서 date 그룹핑
+  db.collection(COL)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(snap => {
+      feeds = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSS('live');
+      renderFeed();
+    }, err => {
+      console.error(err);
+      setSS('err');
+      toast('⚠️ Firebase 연결 실패: ' + err.message);
+    });
+}
+
+/* ── 게시 ── */
+async function submitFeed() {
+  const text = document.getElementById('inText').value.trim();
+  const date = document.getElementById('inDate').value;
+  if (!text) return;
+  if (!date) { toast('날짜를 선택해주세요'); return; }
+
+  document.getElementById('btnSubmit').disabled = true;
+  try {
+    await db.collection(COL).add({
+      date,
+      mood:      selMood || '',
+      text,
+      createdAt: new Date().toISOString(),
+    });
+    document.getElementById('inText').value = '';
+    selMood = '';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('on'));
+    updateChar();
+    toast('✅ 게시 완료!');
+  } catch(e) {
+    toast('❌ 저장 실패: ' + e.message);
+  } finally {
+    document.getElementById('btnSubmit').disabled = false;
+  }
+}
+
+/* ── 삭제 ── */
+async function deleteFeed(id) {
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  try {
+    await db.collection(COL).doc(id).delete();
+    toast('🗑️ 삭제되었습니다');
+  } catch(e) {
+    toast('❌ 삭제 실패');
+  }
+}
+
+/* ── 편집 모드 ── */
+function startEdit(id) {
+  const item = document.getElementById('item-' + id);
+  if (!item) return;
+  item.querySelector('.feed-content').classList.add('editing');
+  const ea = item.querySelector('.edit-area');
+  ea.classList.add('active');
+  ea.querySelector('textarea').focus();
+}
+function cancelEdit(id) {
+  const item = document.getElementById('item-' + id);
+  if (!item) return;
+  item.querySelector('.feed-content').classList.remove('editing');
+  item.querySelector('.edit-area').classList.remove('active');
+}
+async function saveEdit(id) {
+  const item = document.getElementById('item-' + id);
+  if (!item) return;
+  const newText = item.querySelector('.edit-area textarea').value.trim();
+  if (!newText) { toast('내용을 입력해주세요'); return; }
+  try {
+    await db.collection(COL).doc(id).update({
+      text: newText,
+      updatedAt: new Date().toISOString(),
+    });
+    toast('✅ 수정되었습니다');
+  } catch(e) {
+    toast('❌ 수정 실패');
+  }
+}
+
+/* ── 렌더링 ── */
+function getFiltered() {
+  const fd = document.getElementById('filterDate').value;
+  const ft = document.getElementById('filterText').value.trim().toLowerCase();
+  return feeds.filter(f =>
+    (!fd || f.date === fd) &&
+    (!ft || f.text.toLowerCase().includes(ft))
+  );
+}
+
+function renderFeed() {
+  const list = getFiltered();
+  const el   = document.getElementById('feedList');
+  const chip = document.getElementById('countChip');
+  chip.innerHTML = `총 <span>${feeds.length}</span>건`;
+
+  if (feeds.length === 0) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🗒️</div>
+        <p>아직 기록이 없습니다</p>
+        <p class="hint">위 입력창으로 첫 번째 생각을 남겨보세요</p>
+      </div>`;
+    return;
+  }
+  if (list.length === 0) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <p>검색 결과가 없습니다</p>
+      </div>`;
+    return;
+  }
+
+  // 날짜별 그룹핑
+  const groups = {};
+  list.forEach(f => {
+    if (!groups[f.date]) groups[f.date] = [];
+    groups[f.date].push(f);
+  });
+
+  el.innerHTML = Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map(date => {
+      const dayFeeds = groups[date];
+      const items = dayFeeds.map(f => `
+        <div class="feed-item" id="item-${f.id}">
+          <div class="feed-item-header">
+            ${f.mood ? `<span class="feed-mood">${f.mood}</span>` : ''}
+            <span class="feed-time">${fmtTime(f.createdAt)}${f.updatedAt ? ' · 수정됨' : ''}</span>
+            <div class="feed-actions">
+              <button class="btn-icon edit" title="수정" onclick="startEdit('${f.id}')">✏️</button>
+              <button class="btn-icon del" title="삭제" onclick="deleteFeed('${f.id}')">🗑️</button>
+            </div>
+          </div>
+          <div class="feed-content">${escHtml(f.text)}</div>
+          <div class="edit-area">
+            <textarea class="edit-textarea" rows="4">${escHtml(f.text)}</textarea>
+            <div class="edit-footer">
+              <button class="btn-edit-cancel" onclick="cancelEdit('${f.id}')">취소</button>
+              <button class="btn-edit-save" onclick="saveEdit('${f.id}')">저장</button>
+            </div>
+          </div>
+        </div>`).join('');
+
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0 2px;">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;">${fmtDate(date)}</span>
+          <div style="flex:1;height:1px;background:rgba(0,212,255,.1);"></div>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">${dayFeeds.length}건</span>
+        </div>
+        ${items}`;
+    }).join('');
+}
+
+/* ── 유틸 ── */
+function escHtml(s) {
+  return String(s || '').replace(/[<>&"]/g, c =>
+    ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' })[c]);
+}
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ── Enter로 게시 (Shift+Enter는 줄바꿈) ── */
+document.getElementById('inText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submitFeed();
+  }
+});
+
+/* ── 부팅 ── */
+initSync();
+</script>
+</body>
+</html>
