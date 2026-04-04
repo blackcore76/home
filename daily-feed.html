@@ -270,7 +270,7 @@ textarea::placeholder { color: var(--text3); }
     </div>
     <textarea id="inText" placeholder="오늘의 생각을 기록하세요..." rows="4" oninput="updateChar()"></textarea>
     <div class="input-footer">
-      <span class="char-count" id="charCount">0 / 1000</span>
+      <span class="char-count" id="charCount">0 / 3000</span>
       <button class="btn-submit" id="btnSubmit" onclick="submitFeed()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         게시
@@ -330,7 +330,7 @@ document.querySelectorAll('.mood-btn').forEach(btn => {
 /* ── 글자 수 ── */
 function updateChar() {
   const len = document.getElementById('inText').value.length;
-  document.getElementById('charCount').textContent = len + ' / 1000';
+  document.getElementById('charCount').textContent = len + ' / 3000';
   document.getElementById('btnSubmit').disabled = len === 0;
 }
 updateChar();
