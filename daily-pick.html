@@ -743,13 +743,13 @@ function renderTable() {
       <td class="td-avg">${fmtPrice(p.avg)}</td>
       <td class="td-qty">${p.qty ? p.qty+'주' : '—'}</td>
       <td>${pnlBadge(pct, amt, dol)}</td>
-      <td class="td-ma">${p.ma5||'—'}</td>
-      <td class="td-ma">${p.ma20||'—'}</td>
-      <td class="td-ma">${p.ma60||'—'}</td>
-      <td class="td-ma">${p.ma120||'—'}</td>
+<td class="td-ma">${fmtPrice(p.ma5)}</td>
+<td class="td-ma">${fmtPrice(p.ma20)}</td>
+<td class="td-ma">${fmtPrice(p.ma60)}</td>
+<td class="td-ma">${fmtPrice(p.ma120)}</td>
       <td class="td-band">${p.band||'—'}</td>
-      <td class="td-stop">${p.stop||'—'}</td>
-      <td class="td-target">${truncCell(p.target, 'target')}</td>
+<td class="td-stop">${fmtPrice(p.stop)}</td>
+<td class="td-target">${truncCell(fmtPrice(p.target), 'target')}</td>
       <td><span class="score-badge ${sc}">${p.score}</span></td>
       <td class="td-note">${truncCell(p.note, 'note')}</td>
       <td><div class="td-actions">
