@@ -548,6 +548,13 @@ async function deleteFromDetail() {
 }
 
 // ── Helpers ───────────────────────────────────────
+function fmtPrice(str) {
+  if (!str) return '—';
+  if (isDollar(str)) return str;  // 달러는 그대로
+  const n = parseNum(str);
+  if (n === null) return str;
+  return Math.round(n).toLocaleString('ko-KR');  // 195000 → 195,000
+}  
 function parseNum(str) {
   if (!str || !str.trim()) return null;
   let s = str.replace(/[$,\s₩원]/g, '');
@@ -565,8 +572,7 @@ function fmtMoney(val, dollar) {
   const abs = Math.abs(val), sign = val >= 0 ? '+' : '-';
   if (dollar) return sign + '$' + Math.round(abs).toLocaleString('en');
   if (abs >= 1e8) return sign + (abs/1e8).toFixed(1) + '억';
-  if (abs >= 1e4) return sign + Math.round(abs/1e4) + '만';
-  return sign + Math.round(abs).toLocaleString();
+  return sign + Math.round(abs).toLocaleString('ko-KR');
 }
 function pnlPct(price, avg) {
   const p = parseNum(price), a = parseNum(avg);
@@ -733,8 +739,8 @@ function renderTable() {
     h += `<tr>
       <td class="td-date sticky-1">${p.date}</td>
       <td class="td-name left sticky-2">${p.name}</td>
-      <td class="td-num">${p.price||'—'}</td>
-      <td class="td-avg">${p.avg||'—'}</td>
+      <td class="td-num">${fmtPrice(p.price)}</td>
+      <td class="td-avg">${fmtPrice(p.avg)}</td>
       <td class="td-qty">${p.qty ? p.qty+'주' : '—'}</td>
       <td>${pnlBadge(pct, amt, dol)}</td>
       <td class="td-ma">${p.ma5||'—'}</td>
