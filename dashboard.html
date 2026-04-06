@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30분봉 글로벌 마켓 대시보드</title>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* PC 4분할 시 스크롤 방지 */
+            background-color: #131722;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            width: 100%;
+            height: 100vh;
+            gap: 2px;
+            background-color: #000;
+        }
+        .chart-box {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="grid-container">
+    <div class="chart-box" id="chart_spy"></div>
+    <div class="chart-box" id="chart_qqq"></div>
+    <div class="chart-box" id="chart_usdkrw"></div>
+    <div class="chart-box" id="chart_gold"></div>
+</div>
+
+<script type="text/javascript">
+    const commonConfig = {
+        "autosize": true,
+        "interval": "30", // 30분봉 설정
+        "timezone": "Asia/Seoul",
+        "theme": "dark",
+        "style": "1",
+        "locale": "kr",
+        "enable_publishing": false,
+        "allow_symbol_change": true,
+        "hide_side_toolbar": false,
+        "details": false,
+        "hotlist": false,
+        "calendar": false
+    };
+
+    // 1. SPY (S&P 500 ETF)
+    new TradingView.widget({ ...commonConfig, "symbol": "AMEX:SPY", "container_id": "chart_spy" });
+    
+    // 2. QQQ (Nasdaq 100 ETF)
+    new TradingView.widget({ ...commonConfig, "symbol": "NASDAQ:QQQ", "container_id": "chart_qqq" });
+    
+    // 3. USD/KRW (원달러 환율)
+    new TradingView.widget({ ...commonConfig, "symbol": "FX_IDC:USDKRW", "container_id": "chart_usdkrw" });
+    
+    // 4. XAU/USD (Gold)
+    new TradingView.widget({ ...commonConfig, "symbol": "OANDA:XAUUSD", "container_id": "chart_gold" });
+</script>
+
+</body>
+</html>
