@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -14,6 +15,17 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- Firebase 초기화 — auth.js보다 반드시 먼저 실행 -->
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+  });
+</script>
 <script src="auth.js"></script>
 <style>
   :root {
@@ -76,20 +88,17 @@
   .td-date { font-family: var(--mono); font-size: 11px; color: var(--text2); }
   .td-name { font-weight: 700; font-size: 13px; }
 
-  /* 틀 고정 — 날짜, 종목 */
   .sticky-1, .sticky-2 {
     position: sticky;
     z-index: 10;
-    background: var(--bg); /* 기본 행 배경 */
+    background: var(--bg);
   }
   .sticky-1 { left: 0; }
   .sticky-2 { left: 88px; box-shadow: 2px 0 8px rgba(0,0,0,.4); }
 
-  /* hover 시 배경 유지 */
   tbody tr:hover .sticky-1,
   tbody tr:hover .sticky-2 { background: var(--surface3); }
 
-  /* thead sticky 배경 */
   thead .sticky-1,
   thead .sticky-2 { background: var(--surface2); z-index: 20; }
   .td-num { font-family: var(--mono); font-size: 12px; }
@@ -101,7 +110,6 @@
   .td-target { font-family: var(--mono); font-size: 12px; color: var(--green); font-weight: 600; }
   .td-note { font-size: 11px; color: var(--text2); text-align: left; white-space: nowrap; }
 
-  /* ── Truncate + Global Popover ── */
   .trunc-wrap { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
   .trunc-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
   .trunc-btn {
@@ -112,7 +120,6 @@
   }
   .trunc-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.1); }
 
-  /* 전역 팝오버 (body에 직접 붙음) */
   #globalPopover {
     display: none; position: fixed; z-index: 9999;
     background: var(--surface);
@@ -163,7 +170,6 @@
   .empty-state p { font-size: 14px; }
   .empty-state .hint { font-size: 12px; }
 
-  /* Modal */
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .2s; }
   .overlay.open { opacity: 1; pointer-events: all; }
   .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,.6); transform: translateY(20px); transition: transform .2s; }
@@ -189,7 +195,6 @@
   .score-row input[type=range] { flex: 1; accent-color: var(--accent); }
   .score-display { font-family: var(--mono); font-size: 14px; font-weight: 700; min-width: 40px; text-align: right; }
 
-  /* Live P&L preview strip */
   .pnl-strip { display: none; grid-column: 1/-1; background: var(--surface3); border: 1px solid var(--border2); border-radius: 6px; padding: 9px 12px; font-family: var(--mono); font-size: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
   .pnl-strip.visible { display: flex; }
   .pnl-strip-label { color: var(--text3); font-size: 10px; letter-spacing: .5px; }
@@ -200,7 +205,6 @@
   .btn-save { background: var(--accent); border: none; color: #000; border-radius: 6px; padding: 8px 22px; font-size: 13px; font-weight: 700; font-family: var(--sans); cursor: pointer; transition: background .15s; }
   .btn-save:hover { background: #33ddff; }
 
-  /* Detail panel */
   .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 300; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .2s; }
   .detail-overlay.open { opacity: 1; pointer-events: all; }
   .detail-panel { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px 16px 0 0; width: 100%; padding: 20px; transform: translateY(100%); transition: transform .25s cubic-bezier(.16,1,.3,1); max-height: 90vh; overflow-y: auto; }
@@ -229,7 +233,6 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
   ::-webkit-scrollbar-corner { background: var(--surface2); }
 
-  /* Firebase 동기화 상태 */
   .sync-badge {
     display: flex; align-items: center; gap: 5px;
     font-family: var(--mono); font-size: 10px; color: var(--text3);
@@ -390,20 +393,9 @@
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  Firebase 초기화
-// ══════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-  authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
-  projectId:         "my-bp-tracker-3d595",
-  storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
-  messagingSenderId: "1016360206319",
-  appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
-};
-firebase.initializeApp(firebaseConfig);
+// ── firebase.initializeApp은 <head>에서 완료 ──
 const db  = firebase.firestore();
-const COL = 'picknote';   // 혈압(bloodPressure)과 구분되는 별도 컬렉션
+const COL = 'picknote';
 
 // ── 상태 ──────────────────────────────────────
 const LOCAL_KEY = 'picknote_v3';
@@ -430,8 +422,7 @@ function setSyncStatus(state) {
 }
 
 // ══════════════════════════════════════════════
-//  Firestore 실시간 리스너 (핵심!)
-//  → 어느 기기에서 저장해도 모든 기기에 즉시 반영
+//  Firestore 실시간 리스너
 // ══════════════════════════════════════════════
 function initSync() {
   setSyncStatus('connecting');
@@ -441,25 +432,18 @@ function initSync() {
     .onSnapshot(
       snapshot => {
         picks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // localStorage 캐시 갱신 (오프라인 폴백용)
         try { localStorage.setItem(LOCAL_KEY, JSON.stringify(picks)); } catch(_) {}
-
         setSyncStatus('live');
-
-        // 최초 1회: 컬렉션이 비어있으면 샘플 데이터 업로드
         if (picks.length === 0 && !_sampleSeeded) {
           _sampleSeeded = true;
           seedSampleData();
-          return; // seedSampleData 후 onSnapshot이 다시 호출됨
+          return;
         }
-
         renderTable();
       },
       err => {
         console.error('[Firestore]', err);
         setSyncStatus('offline');
-        // 로컬 캐시 폴백
         try { picks = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch(_) { picks = []; }
         picks = picks.map(p => ({ ...p, id: String(p.id) }));
         renderTable();
@@ -467,7 +451,6 @@ function initSync() {
     );
 }
 
-// 샘플 데이터 Firestore에 업로드
 async function seedSampleData() {
   const samples = [
     { date:'2026-03-31', name:'테슬라',   price:'$359.76',  avg:'$320.00',  qty:'10',
@@ -488,10 +471,8 @@ async function seedSampleData() {
 }
 
 // ══════════════════════════════════════════════
-//  CRUD — Firestore 기반
+//  CRUD
 // ══════════════════════════════════════════════
-
-// 저장 (추가 / 수정)
 async function savePick() {
   const date = document.getElementById('fDate').value;
   const name = document.getElementById('fName').value.trim();
@@ -519,7 +500,6 @@ async function savePick() {
     const docId = editId || String(Date.now());
     await db.collection(COL).doc(docId).set(entry);
     closeModal();
-    // onSnapshot이 자동으로 picks 갱신 + renderTable 호출
   } catch (err) {
     console.error('savePick:', err);
     alert('저장 실패: ' + err.message);
@@ -527,7 +507,6 @@ async function savePick() {
   }
 }
 
-// 삭제 (테이블 행 버튼)
 async function deletePick(id) {
   if (!confirm('이 픽을 삭제하시겠습니까?')) return;
   try {
@@ -537,7 +516,6 @@ async function deletePick(id) {
   }
 }
 
-// 삭제 (모바일 디테일 패널)
 async function deleteFromDetail() {
   if (!confirm('삭제하시겠습니까?')) return;
   const id = detailId;
@@ -552,11 +530,11 @@ async function deleteFromDetail() {
 // ── Helpers ───────────────────────────────────────
 function fmtPrice(str) {
   if (!str) return '—';
-  if (isDollar(str)) return str;  // 달러는 그대로
+  if (isDollar(str)) return str;
   const n = parseNum(str);
   if (n === null) return str;
-  return Math.round(n).toLocaleString('ko-KR');  // 195000 → 195,000
-}  
+  return Math.round(n).toLocaleString('ko-KR');
+}
 function parseNum(str) {
   if (!str || !str.trim()) return null;
   let s = str.replace(/[$,\s₩원]/g, '');
@@ -611,78 +589,50 @@ function truncCell(text, type) {
   const fweight= type === 'target' ? '600'  : '400';
   const ffam   = type === 'target' ? 'var(--mono)' : 'inherit';
   const label  = type === 'target' ? '목표가' : '비고';
-
   const style = `color:${color};font-family:${ffam};font-size:${fsize};font-weight:${fweight}`;
-
-  if (text.length <= limit) {
-    return `<span style="${style}">${text}</span>`;
-  }
-
+  if (text.length <= limit) return `<span style="${style}">${text}</span>`;
   const preview = text.substring(0, limit) + '…';
   const safeText = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const safeLabel = label;
-
   return `<span class="trunc-wrap">
     <span class="trunc-text" style="${style}">${preview}</span>
     <span class="trunc-btn"
       data-full="${safeText}"
-      data-label="${safeLabel}"
+      data-label="${label}"
       data-color="${color}"
       onclick="openGlobalPopover(event, this)">펼치기 ▾</span>
   </span>`;
 }
 
-// 전역 팝오버 제어
 let _popBtn = null;
-
 function openGlobalPopover(e, btn) {
   e.stopPropagation();
   const pop = document.getElementById('globalPopover');
-
-  // 같은 버튼 다시 누르면 닫기
   if (_popBtn === btn && pop.classList.contains('open')) {
-    pop.classList.remove('open');
-    _popBtn = null;
-    return;
+    pop.classList.remove('open'); _popBtn = null; return;
   }
   _popBtn = btn;
-
-  // 내용 채우기
   document.getElementById('popoverLabel').textContent = btn.dataset.label;
   const contentEl = document.getElementById('popoverContent');
   contentEl.textContent = btn.dataset.full;
   contentEl.style.color = btn.dataset.color;
-
-  // 일단 보여서 크기 측정
   pop.classList.add('open');
-
   const btnRect = btn.getBoundingClientRect();
-  const popW = pop.offsetWidth;
-  const popH = pop.offsetHeight;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  // 가로: 버튼 왼쪽 기준, 오른쪽 넘치면 오른쪽 정렬
+  const popW = pop.offsetWidth, popH = pop.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight;
   let left = btnRect.left;
   if (left + popW > vw - 12) left = btnRect.right - popW;
   if (left < 8) left = 8;
-
-  // 세로: 버튼 아래 우선, 공간 없으면 위로
   let top = btnRect.bottom + 6;
   if (top + popH > vh - 12) top = btnRect.top - popH - 6;
-
   pop.style.left = left + 'px';
   pop.style.top  = top  + 'px';
 }
-
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.trunc-btn')) {
-    const pop = document.getElementById('globalPopover');
-    pop.classList.remove('open');
+    document.getElementById('globalPopover').classList.remove('open');
     _popBtn = null;
   }
 });
-
 
 function getFiltered() {
   const dv = document.getElementById('filterDate').value;
@@ -710,7 +660,6 @@ function renderTable() {
 
   if (window.innerWidth < 700) { renderCards(data, wrap); return; }
 
-  // ── Desktop table ──────────────────────────────
   let h = `<table><thead>
     <tr>
       <th rowspan="2" class="sticky-1">날짜</th>
@@ -745,13 +694,13 @@ function renderTable() {
       <td class="td-avg">${fmtPrice(p.avg)}</td>
       <td class="td-qty">${p.qty ? p.qty+'주' : '—'}</td>
       <td>${pnlBadge(pct, amt, dol)}</td>
-<td class="td-ma">${fmtPrice(p.ma5)}</td>
-<td class="td-ma">${fmtPrice(p.ma20)}</td>
-<td class="td-ma">${fmtPrice(p.ma60)}</td>
-<td class="td-ma">${fmtPrice(p.ma120)}</td>
+      <td class="td-ma">${fmtPrice(p.ma5)}</td>
+      <td class="td-ma">${fmtPrice(p.ma20)}</td>
+      <td class="td-ma">${fmtPrice(p.ma60)}</td>
+      <td class="td-ma">${fmtPrice(p.ma120)}</td>
       <td class="td-band">${p.band||'—'}</td>
-<td class="td-stop">${fmtPrice(p.stop)}</td>
-<td class="td-target">${truncCell(fmtPrice(p.target), 'target')}</td>
+      <td class="td-stop">${fmtPrice(p.stop)}</td>
+      <td class="td-target">${truncCell(fmtPrice(p.target), 'target')}</td>
       <td><span class="score-badge ${sc}">${p.score}</span></td>
       <td class="td-note">${truncCell(p.note, 'note')}</td>
       <td><div class="td-actions">
@@ -779,7 +728,6 @@ function renderCards(data, wrap) {
     const pctColor = pct === null ? '' : pct >= 0 ? 'var(--green)' : 'var(--red)';
     const arrow = pct === null ? '' : pct > 0 ? '▲' : '▼';
     const amtStr = amt !== null ? fmtMoney(amt, dol) : null;
-
     h += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;" onclick="openDetail('${p.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div><div style="font-size:15px;font-weight:700;">${p.name}</div>
@@ -812,16 +760,12 @@ function renderCards(data, wrap) {
 
 // ── Modal ─────────────────────────────────────────
 function openModal(id) {
-  // id가 undefined면 새 항목, string이면 수정
   editId = (id !== undefined && id !== null) ? String(id) : null;
   document.getElementById('modalTitle').textContent = editId ? '픽 수정' : '새 픽 추가';
-
-  // 먼저 전체 초기화
   const clear = ['fName','fPrice','fAvg','fQty','fMa5','fMa20','fMa60','fMa120','fBand','fStop','fTarget','fNote'];
   clear.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('fScore').value = 75;
-
   if (editId) {
     const p = picks.find(x => x.id === editId);
     if (!p) { console.error('Pick not found:', editId); return; }
@@ -840,7 +784,6 @@ function openModal(id) {
     document.getElementById('fScore').value  = p.score  ?? 75;
     document.getElementById('fNote').value   = p.note   || '';
   }
-
   updateScoreDisplay();
   updatePnlStrip();
   document.getElementById('overlay').classList.add('open');
@@ -850,7 +793,7 @@ function closeModal() {
   document.getElementById('overlay').classList.remove('open');
   editId = null;
 }
-function handleOverlayClick(e) { /* 바깥 클릭으로 닫기 비활성화 — X 버튼 또는 취소 버튼 사용 */ }
+function handleOverlayClick(e) {}
 
 function updateScoreDisplay() {
   const v = parseInt(document.getElementById('fScore').value);
@@ -873,9 +816,7 @@ function updatePnlStrip() {
   const sign = pct >= 0 ? '+' : '', arrow = pct > 0 ? '▲' : '▼';
   const color = pct >= 0 ? 'var(--green)' : 'var(--red)';
   let html = `<span style="color:${color};font-weight:700;font-size:13px;">${arrow} ${sign}${pct.toFixed(2)}%</span>`;
-  if (amt !== null) {
-    html += `<span style="color:${color};opacity:.85;margin-left:12px;">${fmtMoney(amt, dol)}</span>`;
-  }
+  if (amt !== null) html += `<span style="color:${color};opacity:.85;margin-left:12px;">${fmtMoney(amt, dol)}</span>`;
   valEl.innerHTML = html;
 }
 
