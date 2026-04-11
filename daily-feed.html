@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -12,6 +13,19 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- Firebase 초기화 — auth.js보다 반드시 먼저 실행 -->
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+  });
+</script>
+<script src="auth.js"></script>
 <script src="home-bar.js"></script>
 <style>
 :root {
@@ -101,7 +115,6 @@ textarea {
   width: 100%; background: transparent; border: none; outline: none;
   color: var(--text); font-family: var(--sans); font-size: 14px;
   line-height: 1.7; resize: none; min-height: 80px;
-  placeholder-color: var(--text3);
 }
 textarea::placeholder { color: var(--text3); }
 .input-footer {
@@ -167,9 +180,7 @@ textarea::placeholder { color: var(--text3); }
   background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
   padding: 2px 8px;
 }
-.feed-mood {
-  font-size: 14px;
-}
+.feed-mood { font-size: 14px; }
 .feed-time {
   font-family: var(--mono); font-size: 10px; color: var(--text3);
   margin-left: auto;
@@ -190,10 +201,7 @@ textarea::placeholder { color: var(--text3); }
 }
 .feed-content.editing { display: none; }
 
-/* 인라인 편집 */
-.edit-area {
-  display: none;
-}
+.edit-area { display: none; }
 .edit-area.active { display: block; }
 .edit-textarea {
   width: 100%; background: var(--sf3); border: 1px solid var(--accent);
@@ -222,15 +230,6 @@ textarea::placeholder { color: var(--text3); }
 .empty-icon { font-size: 48px; opacity: .4; }
 .empty p { font-size: 14px; }
 .empty .hint { font-size: 12px; }
-
-/* ── LOADING SKELETON ── */
-.skeleton {
-  background: linear-gradient(90deg, var(--sf2) 25%, var(--sf3) 50%, var(--sf2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
-  border-radius: 6px; height: 14px; margin: 4px 0;
-}
-@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
 
 /* ── TOAST ── */
 .toast {
@@ -293,15 +292,7 @@ textarea::placeholder { color: var(--text3); }
 <div class="toast" id="toast"></div>
 
 <script>
-/* ── Firebase ── */
-firebase.initializeApp({
-  apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-  authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
-  projectId:         "my-bp-tracker-3d595",
-  storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
-  messagingSenderId: "1016360206319",
-  appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
-});
+/* ── firebase.initializeApp은 <head>에서 완료 ── */
 const db  = firebase.firestore();
 const COL = 'dailyfeed';
 
@@ -362,7 +353,6 @@ function setSS(state) {
 /* ── Firestore 실시간 리스너 ── */
 function initSync() {
   setSS('load');
-  // 복합 인덱스 불필요 — createdAt 단일 정렬 후 클라이언트에서 date 그룹핑
   db.collection(COL)
     .orderBy('createdAt', 'desc')
     .onSnapshot(snap => {
@@ -479,7 +469,6 @@ function renderFeed() {
     return;
   }
 
-  // 날짜별 그룹핑
   const groups = {};
   list.forEach(f => {
     if (!groups[f.date]) groups[f.date] = [];
@@ -534,7 +523,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-/* ── Enter로 게시 (Shift+Enter는 줄바꿈) ── */
+/* ── Enter로 게시 ── */
 document.getElementById('inText').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
