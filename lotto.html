@@ -1,570 +1,364 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>대박 행운의 로또 추첨기</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&family=Noto+Sans+KR:wght@400;700;800;900&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --gold: #f5c842;
-      --gold-glow: #f5c84266;
-      --bg: #0b0c14;
-      --surface: rgba(255,255,255,0.04);
-      --border: rgba(255,255,255,0.09);
-      --text-muted: #7a7d99;
-      --c1: #fbc400; /* 1-10 */
-      --c2: #4db8ff; /* 11-20 */
-      --c3: #ff6b6b; /* 21-30 */
-      --c4: #aaaaaa; /* 31-40 */
-      --c5: #7ed957; /* 41-45 */
-    }
-
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      background-color: var(--bg);
-      color: #e8e8f0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 48px 20px 80px;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    /* ── Starfield ── */
-    #stars-canvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.5;
-    }
-
-    /* ── Hero ── */
-    .hero {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      margin-bottom: 44px;
-    }
-    .hero-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #f5c842, #e0a800);
-      color: #0b0c14;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      padding: 4px 14px;
-      border-radius: 100px;
-      margin-bottom: 14px;
-    }
-    .hero h1 {
-      font-family: 'Noto Serif KR', serif;
-      font-weight: 900;
-      font-size: clamp(26px, 5.5vw, 46px);
-      line-height: 1.25;
-      letter-spacing: -0.5px;
-      background: linear-gradient(180deg, #fff 30%, var(--gold) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      filter: drop-shadow(0 0 18px rgba(245,200,66,0.35));
-    }
-    .hero p {
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-    }
-
-    /* ── Stage (ball container) ── */
-    .stage-wrap {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 560px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 28px;
-      backdrop-filter: blur(16px);
-      padding: 36px 24px 32px;
-      margin-bottom: 32px;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.03),
-        0 24px 64px rgba(0,0,0,0.6),
-        inset 0 1px 0 rgba(255,255,255,0.07);
-    }
-
-    .stage-label {
-      font-size: 11px;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    #numbers {
-      display: flex;
-      gap: clamp(8px, 2vw, 14px);
-      justify-content: center;
-      min-height: 72px;
-      align-items: center;
-    }
-
-    .ball {
-      width: clamp(48px, 10vw, 66px);
-      height: clamp(48px, 10vw, 66px);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-weight: 900;
-      font-size: clamp(18px, 3.8vw, 25px);
-      color: white;
-      text-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.45);
-      position: relative;
-      opacity: 0;
-      transform: translateY(20px) scale(0.7);
-      transition: opacity 0.45s cubic-bezier(.34,1.56,.64,1),
-                  transform 0.45s cubic-bezier(.34,1.56,.64,1),
-                  box-shadow 0.3s ease;
-    }
-    .ball::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45), transparent 60%);
-      pointer-events: none;
-    }
-    .ball.show {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    /* ── Ball Slots ── */
-    .ball-slots {
-      display: flex;
-      gap: clamp(6px, 1.8vw, 12px);
-      justify-content: center;
-      align-items: flex-start;
-    }
-    .ball-slot {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* placeholder shown before first draw */
-    .placeholder-ball {
-      width: clamp(48px, 10vw, 66px);
-      height: clamp(48px, 10vw, 66px);
-      border-radius: 50%;
-      background: rgba(255,255,255,0.05);
-      border: 2px dashed rgba(255,255,255,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      color: rgba(255,255,255,0.15);
-      transition: border-color 0.2s, background 0.2s;
-    }
-    /* highlight placeholder when a number is pinned */
-    .ball-slot.pinned .placeholder-ball {
-      border-color: rgba(245,200,66,0.5);
-      background: rgba(245,200,66,0.08);
-    }
-
-    /* ── Slot Select ── */
-    .slot-wrap {
-      position: relative;
-      width: clamp(48px, 10vw, 66px);
-    }
-    .slot-select {
-      width: 100%;
-      appearance: none;
-      -webkit-appearance: none;
-      background: rgba(255,255,255,0.06);
-      border: 1.5px solid rgba(255,255,255,0.13);
-      border-radius: 10px;
-      color: var(--text-muted);
-      font-family: 'Noto Sans KR', sans-serif;
-      font-weight: 700;
-      font-size: clamp(10px, 2vw, 13px);
-      text-align: center;
-      padding: 5px 2px;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
-    }
-    .slot-select:hover {
-      border-color: rgba(245,200,66,0.4);
-      background: rgba(245,200,66,0.06);
-    }
-    .slot-select:focus {
-      border-color: var(--gold);
-      color: var(--gold);
-      box-shadow: 0 0 0 2px rgba(245,200,66,0.15);
-    }
-    /* Pinned state — has a real value selected */
-    .slot-select.is-pinned {
-      border-color: rgba(245,200,66,0.6);
-      background: rgba(245,200,66,0.10);
-      color: var(--gold);
-      box-shadow: 0 0 8px rgba(245,200,66,0.2);
-    }
-    /* Conflict / duplicate error */
-    .slot-select.is-error {
-      border-color: #ff6b6b !important;
-      background: rgba(255,107,107,0.12) !important;
-      color: #ff6b6b !important;
-      box-shadow: 0 0 8px rgba(255,107,107,0.25) !important;
-    }
-
-    /* caret icon inside select wrap */
-    .slot-wrap::after {
-      content: '▾';
-      position: absolute;
-      right: 5px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 9px;
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-
-    /* select option dark background */
-    .slot-select option {
-      background: #1a1c2a;
-      color: #e8e8f0;
-    }
-
-    /* hint + reset row */
-    .slot-hint-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 20px;
-      padding: 0 2px;
-    }
-    .slot-hint {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .slot-hint .hl { color: var(--gold); }
-    .reset-btn {
-      font-size: 11px;
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 4px 10px;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .reset-btn:hover { color: #ff6b6b; border-color: rgba(255,107,107,0.4); }
-
-    /* error toast */
-    .error-toast {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(255,107,107,0.15);
-      border: 1px solid rgba(255,107,107,0.4);
-      color: #ff6b6b;
-      font-size: 13px;
-      font-weight: 700;
-      padding: 10px 22px;
-      border-radius: 100px;
-      backdrop-filter: blur(12px);
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity 0.2s, transform 0.2s;
-      white-space: nowrap;
-    }
-    .error-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* ── Draw Button ── */
-    .btn-wrap {
-      position: relative;
-      z-index: 1;
-      margin-bottom: 44px;
-    }
-
-    #drawBtn {
-      position: relative;
-      padding: 18px 52px;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-weight: 800;
-      font-size: 19px;
-      letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #f5c842 0%, #e09d00 100%);
-      color: #0b0c14;
-      border: none;
-      border-radius: 100px;
-      cursor: pointer;
-      overflow: hidden;
-      transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s;
-      box-shadow: 0 0 28px rgba(245,200,66,0.45), 0 8px 24px rgba(0,0,0,0.4);
-    }
-    #drawBtn::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.35), transparent 60%);
-      border-radius: inherit;
-      pointer-events: none;
-    }
-    #drawBtn:hover:not(:disabled) {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 0 44px rgba(245,200,66,0.65), 0 12px 32px rgba(0,0,0,0.45);
-    }
-    #drawBtn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
-    #drawBtn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-    .btn-ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.35);
-      transform: scale(0);
-      animation: ripple 0.6s linear;
-      pointer-events: none;
-    }
-    @keyframes ripple {
-      to { transform: scale(4); opacity: 0; }
-    }
-
-    /* ── History Section ── */
-    .history-section {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 560px;
-    }
-    .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding: 0 4px;
-    }
-    .history-title {
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-    .history-count {
-      font-size: 12px;
-      color: var(--gold);
-      font-weight: 700;
-      background: rgba(245,200,66,0.1);
-      border: 1px solid rgba(245,200,66,0.2);
-      padding: 3px 10px;
-      border-radius: 100px;
-    }
-
-    .history-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 18px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      margin-bottom: 10px;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-      animation: slideIn 0.4s cubic-bezier(.34,1.56,.64,1);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .history-row:hover {
-      border-color: rgba(255,255,255,0.14);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    }
-    .history-index {
-      font-size: 11px;
-      color: var(--text-muted);
-      min-width: 20px;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-    .history-balls {
-      display: flex;
-      gap: 7px;
-      flex: 1;
-      justify-content: center;
-    }
-    .mini-ball {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-weight: 900;
-      font-size: 13px;
-      color: white;
-      text-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.4);
-      position: relative;
-      flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    .mini-ball::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 28%, rgba(255,255,255,0.4), transparent 55%);
-      pointer-events: none;
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateX(-16px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    /* ── Confetti burst ── */
-    .confetti-piece {
-      position: fixed;
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      pointer-events: none;
-      z-index: 9999;
-    }
-    @keyframes confettiFall {
-      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
-      80%  { opacity: 1; }
-      100% { transform: translateY(60vh) rotate(720deg); opacity: 0; }
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 32px;
-      color: var(--text-muted);
-      font-size: 13px;
-      border: 1px dashed var(--border);
-      border-radius: 18px;
-    }
-    .empty-state span { font-size: 28px; display: block; margin-bottom: 8px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#07090f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="로또픽커">
+<title>로또 픽커</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="home-bar.js"></script>
+<style>
+:root {
+  --bg:    #07090f;
+  --sf:    #111727;
+  --card:  #161e30;
+  --card2: #1c2540;
+  --bd:    #1d2a45;
+  --bd2:   #263554;
+  --gold:  #f5b731;
+  --gold2: #c8920a;
+  --green: #05d89e;
+  --red:   #ff4d72;
+  --blue:  #5ba3ff;
+  --tx:    #e2e8f8;
+  --tx2:   #94a3c0;
+  --tx3:   #546080;
+  --num:   'DM Mono', monospace;
+  --kr:    'Noto Sans KR', sans-serif;
+  /* 볼 색상 */
+  --c1: #fbc400;
+  --c2: #4db8ff;
+  --c3: #ff6b6b;
+  --c4: #aaaaaa;
+  --c5: #7ed957;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--tx); font-family: var(--kr); min-height: 100vh; overflow-x: hidden; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 2px; }
+
+/* ── HEADER ── */
+.hd {
+  position: sticky; top: 36px; z-index: 100;
+  background: rgba(7,9,15,.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bd);
+  padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--gold), #ff8c42);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 12px rgba(245,183,49,.35);
+}
+.logo-txt { font-family: var(--num); font-size: 18px; font-weight: 500; letter-spacing: -.3px; }
+.logo-txt span { color: var(--gold); }
+.hd-right { font-family: var(--num); font-size: 11px; color: var(--tx3); letter-spacing: .05em; }
+
+/* ── HERO STRIP ── */
+.hero-strip {
+  background: linear-gradient(135deg, #0e1830, #0c1422);
+  border-bottom: 1px solid var(--bd);
+  padding: 20px 18px 18px;
+  position: relative; overflow: hidden;
+}
+.hero-strip::before {
+  content: '';
+  position: absolute; top: -60px; right: -40px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(245,183,49,.09), transparent 70%);
+  pointer-events: none;
+}
+.hero-label { font-size: 11px; color: var(--tx3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; font-family: var(--num); }
+.hero-title {
+  font-family: var(--num); font-size: 26px; font-weight: 500; letter-spacing: -1px;
+  color: var(--gold); line-height: 1.1;
+}
+.hero-sub { font-size: 13px; color: var(--tx3); margin-top: 6px; }
+
+/* ── MAIN WRAP ── */
+.wrap { padding: 18px 18px 100px; max-width: 600px; margin: 0 auto; }
+
+/* ── CARD ── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 14px;
+  position: relative; overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute; top: -80px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(245,183,49,.05), transparent 70%);
+  pointer-events: none;
+}
+.panel-label {
+  font-family: var(--num); font-size: 10px; letter-spacing: 1.8px;
+  text-transform: uppercase; color: var(--tx3); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-label::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
+
+/* ── BALL SLOTS ── */
+.ball-slots {
+  display: flex;
+  gap: clamp(8px, 2.5vw, 16px);
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+.ball-slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* placeholder */
+.placeholder-ball {
+  width: clamp(44px, 10vw, 62px);
+  height: clamp(44px, 10vw, 62px);
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  border: 2px dashed rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: rgba(255,255,255,.15);
+  transition: border-color .2s, background .2s;
+}
+.ball-slot.pinned .placeholder-ball {
+  border-color: rgba(245,183,49,.5);
+  background: rgba(245,183,49,.07);
+}
+
+/* real ball */
+.ball {
+  width: clamp(44px, 10vw, 62px);
+  height: clamp(44px, 10vw, 62px);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--kr); font-weight: 900;
+  font-size: clamp(16px, 3.5vw, 23px);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.45);
+  position: relative;
+  opacity: 0; transform: translateY(16px) scale(.72);
+  transition: opacity .45s cubic-bezier(.34,1.56,.64,1), transform .45s cubic-bezier(.34,1.56,.64,1);
+}
+.ball::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.42), transparent 58%);
+  pointer-events: none;
+}
+.ball.show { opacity: 1; transform: translateY(0) scale(1); }
+
+/* slot select */
+.slot-wrap { position: relative; width: clamp(44px, 10vw, 62px); }
+.slot-select {
+  width: 100%; appearance: none; -webkit-appearance: none;
+  background: var(--sf); border: 1.5px solid var(--bd2);
+  border-radius: 10px; color: var(--tx3);
+  font-family: var(--kr); font-weight: 700;
+  font-size: clamp(10px, 2vw, 12px); text-align: center;
+  padding: 5px 2px; cursor: pointer; outline: none;
+  transition: border-color .2s, color .2s, background .2s, box-shadow .2s;
+}
+.slot-select:hover { border-color: rgba(245,183,49,.35); background: rgba(245,183,49,.05); }
+.slot-select:focus { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 2px rgba(245,183,49,.15); }
+.slot-select.is-pinned { border-color: rgba(245,183,49,.6); background: rgba(245,183,49,.1); color: var(--gold); box-shadow: 0 0 8px rgba(245,183,49,.2); }
+.slot-select.is-error { border-color: var(--red)!important; background: rgba(255,77,114,.1)!important; color: var(--red)!important; box-shadow: 0 0 8px rgba(255,77,114,.25)!important; }
+.slot-wrap::after { content: '▾'; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 9px; color: var(--tx3); pointer-events: none; }
+.slot-select option { background: #1a2035; color: var(--tx); }
+
+/* slot hint row */
+.slot-hint-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 18px; padding: 12px 14px;
+  background: var(--sf); border: 1px solid var(--bd);
+  border-radius: 10px;
+}
+.slot-hint { font-size: 12px; color: var(--tx3); }
+.slot-hint .hl { color: var(--gold); font-weight: 700; }
+.reset-btn {
+  font-size: 12px; color: var(--tx3);
+  background: transparent; border: 1px solid var(--bd2);
+  border-radius: 8px; padding: 5px 12px; cursor: pointer;
+  font-family: var(--kr);
+  transition: color .15s, border-color .15s;
+}
+.reset-btn:hover { color: var(--red); border-color: rgba(255,77,114,.4); }
+
+/* ── DRAW BUTTON ── */
+.btn-wrap { margin-bottom: 14px; }
+#drawBtn {
+  width: 100%; position: relative;
+  padding: 16px; font-family: var(--kr);
+  font-weight: 800; font-size: 17px; letter-spacing: .5px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+  color: #07090f; border: none; border-radius: 14px;
+  cursor: pointer; overflow: hidden;
+  transition: transform .15s, box-shadow .2s, opacity .2s;
+  box-shadow: 0 0 24px rgba(245,183,49,.35), 0 6px 20px rgba(0,0,0,.4);
+}
+#drawBtn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 40% 30%, rgba(255,255,255,.3), transparent 60%);
+  border-radius: inherit; pointer-events: none;
+}
+#drawBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 36px rgba(245,183,49,.55), 0 10px 28px rgba(0,0,0,.4); }
+#drawBtn:active:not(:disabled) { transform: translateY(0) scale(.98); }
+#drawBtn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.btn-ripple {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,.3);
+  transform: scale(0); animation: ripple .6s linear; pointer-events: none;
+}
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+/* ── HISTORY ── */
+.hist-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.hist-count {
+  font-family: var(--num); font-size: 12px; color: var(--gold); font-weight: 500;
+  background: rgba(245,183,49,.1); border: 1px solid rgba(245,183,49,.2);
+  padding: 3px 10px; border-radius: 100px;
+}
+.history-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: var(--sf); border: 1px solid var(--bd);
+  border-radius: 12px; margin-bottom: 8px;
+  animation: slideIn .35s cubic-bezier(.34,1.56,.64,1);
+  transition: border-color .2s, background .2s;
+}
+.history-row:hover { border-color: var(--bd2); background: var(--card2); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.history-index {
+  font-family: var(--num); font-size: 11px; color: var(--tx3);
+  min-width: 28px; text-align: center;
+}
+.history-balls { display: flex; gap: 6px; flex-wrap: wrap; }
+.mini-ball {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--kr); font-weight: 900; font-size: 11px; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.4); position: relative;
+  flex-shrink: 0;
+}
+.mini-ball::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, rgba(255,255,255,.38), transparent 55%);
+}
+
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  font-size: 13px; color: var(--tx3); line-height: 2;
+}
+
+/* ── TOAST ── */
+#error-toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(255,77,114,.14);
+  border: 1px solid rgba(255,77,114,.35);
+  color: var(--red); font-size: 13px; font-weight: 700;
+  padding: 10px 22px; border-radius: 100px;
+  backdrop-filter: blur(12px); z-index: 9999;
+  opacity: 0; transition: opacity .2s, transform .2s;
+  white-space: nowrap; pointer-events: none;
+}
+#error-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── CONFETTI ── */
+.confetti-piece {
+  position: fixed; width: 8px; height: 8px; border-radius: 2px; z-index: 9998; pointer-events: none;
+}
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(180px) rotate(540deg); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+  .ball-slots { gap: 6px; }
+  .wrap { padding: 14px 14px 100px; }
+}
+</style>
 </head>
 <body>
 
-<canvas id="stars-canvas"></canvas>
+<header class="hd">
+  <div class="logo">
+    <div class="logo-icon">🎰</div>
+    <div class="logo-txt">Lotto<span>Picker</span></div>
+  </div>
+  <div class="hd-right">LOTTO 6/45</div>
+</header>
 
-<!-- Hero -->
-<div class="hero">
-  <div class="hero-badge">🎰 Lucky Draw</div>
-  <h1>대박 행운의<br>로또 추첨기</h1>
-  <p>1~45 중 행운의 번호 6개를 뽑으세요</p>
+<div class="hero-strip">
+  <div class="hero-label">Lucky Draw</div>
+  <div class="hero-title">행운의 번호 추첨기</div>
+  <div class="hero-sub">1~45 중 6개를 뽑아 운명을 확인하세요</div>
 </div>
 
-<!-- Stage -->
-<div class="stage-wrap">
-  <div class="stage-label">✦ 추첨 번호 ✦</div>
+<div class="wrap">
 
-  <!-- 6 ball slots -->
-  <div class="ball-slots" id="ball-slots">
-    <!-- slots injected by JS -->
-  </div>
-
-  <div class="slot-hint-row">
-    <div class="slot-hint">드롭다운으로 번호를 <span class="hl">고정</span>하면 반자동 추첨</div>
-    <button class="reset-btn" onclick="resetAllSlots()">↺ 전체 초기화</button>
-  </div>
-</div>
-
-<div id="error-toast" class="error-toast"></div>
-
-<!-- Button -->
-<div class="btn-wrap">
-  <button id="drawBtn" onclick="drawLotto(event)">🍀 운명의 번호 뽑기</button>
-</div>
-
-<!-- History -->
-<div class="history-section">
-  <div class="history-header">
-    <div class="history-title">📋 추첨 기록</div>
-    <div class="history-count" id="count-badge">0 / 10</div>
-  </div>
-  <div id="history-list">
-    <div class="empty-state">
-      <span>🎱</span>
-      아직 추첨 기록이 없어요.<br>버튼을 눌러 행운의 번호를 뽑아보세요!
+  <!-- 추첨 패널 -->
+  <div class="panel">
+    <div class="panel-label">추첨 번호</div>
+    <div class="ball-slots" id="ball-slots"></div>
+    <div class="slot-hint-row">
+      <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
+      <button class="reset-btn" onclick="resetAllSlots()">↺ 초기화</button>
     </div>
   </div>
+
+  <!-- 버튼 -->
+  <div class="btn-wrap">
+    <button id="drawBtn" onclick="drawLotto(event)">🍀 운명의 번호 뽑기</button>
+  </div>
+
+  <!-- 히스토리 패널 -->
+  <div class="panel">
+    <div class="panel-label">추첨 기록</div>
+    <div class="hist-header">
+      <span style="font-size:13px;color:var(--tx2);">최근 10회</span>
+      <div class="hist-count" id="count-badge">0 / 10</div>
+    </div>
+    <div id="history-list">
+      <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다<br>버튼을 눌러 행운의 번호를 뽑아보세요!</div>
+    </div>
+  </div>
+
 </div>
 
+<div id="error-toast"></div>
+
 <script>
-// ── Starfield ──────────────────────────────────────────────
-(function() {
-  const canvas = document.getElementById('stars-canvas');
-  const ctx = canvas.getContext('2d');
-  let stars = [];
-  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  function initStars() {
-    stars = Array.from({ length: 140 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.2 + 0.2,
-      speed: Math.random() * 0.004 + 0.002,
-      phase: Math.random() * Math.PI * 2,
-    }));
-  }
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    stars.forEach(s => {
-      s.phase += s.speed;
-      ctx.globalAlpha = 0.3 + 0.7 * ((Math.sin(s.phase) + 1) / 2);
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(draw);
-  }
-  resize(); initStars(); draw();
-  window.addEventListener('resize', () => { resize(); initStars(); });
-})();
-
-// ── Helpers ────────────────────────────────────────────────
-const historyData = [];
-
-function getBallColor(num) {
-  if (num <= 10) return '#fbc400';
-  if (num <= 20) return '#4db8ff';
-  if (num <= 30) return '#ff6b6b';
-  if (num <= 40) return '#aaaaaa';
+/* ── 볼 색상 ── */
+function getBallColor(n) {
+  if (n <= 10) return '#fbc400';
+  if (n <= 20) return '#4db8ff';
+  if (n <= 30) return '#ff6b6b';
+  if (n <= 40) return '#aaaaaa';
   return '#7ed957';
 }
-function getBallShadow(num) {
-  if (num <= 10) return '0 0 14px rgba(251,196,0,0.7)';
-  if (num <= 20) return '0 0 14px rgba(77,184,255,0.7)';
-  if (num <= 30) return '0 0 14px rgba(255,107,107,0.7)';
-  if (num <= 40) return '0 0 14px rgba(170,170,170,0.5)';
-  return '0 0 14px rgba(126,217,87,0.7)';
+function getBallShadow(n) {
+  if (n <= 10) return '0 0 12px rgba(251,196,0,.65)';
+  if (n <= 20) return '0 0 12px rgba(77,184,255,.65)';
+  if (n <= 30) return '0 0 12px rgba(255,107,107,.65)';
+  if (n <= 40) return '0 0 12px rgba(170,170,170,.45)';
+  return '0 0 12px rgba(126,217,87,.65)';
 }
 
+/* ── Toast ── */
 function showToast(msg) {
   const t = document.getElementById('error-toast');
   t.textContent = msg;
@@ -573,18 +367,19 @@ function showToast(msg) {
   t._timer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+/* ── Confetti ── */
 function spawnConfetti(x, y) {
-  const colors = ['#f5c842','#ff6b6b','#4db8ff','#7ed957','#fff'];
-  for (let i = 0; i < 28; i++) {
+  const colors = ['#f5b731','#ff6b6b','#4db8ff','#7ed957','#fff'];
+  for (let i = 0; i < 26; i++) {
     const el = document.createElement('div');
     el.className = 'confetti-piece';
-    el.style.cssText = `left:${x+(Math.random()-.5)*160}px;top:${y}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation:confettiFall ${0.8+Math.random()*0.8}s ease-out ${Math.random()*0.3}s forwards;`;
+    el.style.cssText = `left:${x+(Math.random()-.5)*160}px;top:${y}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation:confettiFall ${.8+Math.random()*.8}s ease-out ${Math.random()*.3}s forwards;`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1600);
   }
 }
 
-// ── Build Slots ────────────────────────────────────────────
+/* ── Build Slots ── */
 function buildSlots() {
   const wrap = document.getElementById('ball-slots');
   wrap.innerHTML = '';
@@ -593,35 +388,26 @@ function buildSlots() {
     slot.className = 'ball-slot';
     slot.dataset.idx = i;
 
-    // Placeholder ball
     const ph = document.createElement('div');
     ph.className = 'placeholder-ball';
     ph.textContent = '?';
     ph.id = `ph-${i}`;
     slot.appendChild(ph);
 
-    // Select wrap
     const sw = document.createElement('div');
     sw.className = 'slot-wrap';
-
     const sel = document.createElement('select');
     sel.className = 'slot-select';
     sel.id = `sel-${i}`;
 
-    // "자동" option
     const autoOpt = document.createElement('option');
-    autoOpt.value = '';
-    autoOpt.textContent = '자동';
+    autoOpt.value = ''; autoOpt.textContent = '자동';
     sel.appendChild(autoOpt);
-
-    // 1~45 options
     for (let n = 1; n <= 45; n++) {
       const opt = document.createElement('option');
-      opt.value = n;
-      opt.textContent = n;
+      opt.value = n; opt.textContent = n;
       sel.appendChild(opt);
     }
-
     sel.addEventListener('change', () => onSlotChange(i));
     sw.appendChild(sel);
     slot.appendChild(sw);
@@ -632,15 +418,9 @@ function buildSlots() {
 function onSlotChange(idx) {
   const sel = document.getElementById(`sel-${idx}`);
   const slot = sel.closest('.ball-slot');
-  const val = sel.value;
-
-  // Update pinned state
-  sel.classList.toggle('is-pinned', val !== '');
-  slot.classList.toggle('pinned', val !== '');
-
-  // Clear error states then re-validate
-  clearErrors();
-  validatePinnedNums();
+  sel.classList.toggle('is-pinned', sel.value !== '');
+  slot.classList.toggle('pinned', sel.value !== '');
+  clearErrors(); validatePinnedNums();
 }
 
 function clearErrors() {
@@ -649,18 +429,11 @@ function clearErrors() {
 
 function validatePinnedNums() {
   const vals = getPinnedValues();
-  // Find duplicates
   const seen = {};
-  vals.forEach(({ idx, num }) => {
-    if (!seen[num]) seen[num] = [];
-    seen[num].push(idx);
-  });
+  vals.forEach(({ idx, num }) => { if (!seen[num]) seen[num] = []; seen[num].push(idx); });
   let hasDup = false;
-  Object.values(seen).forEach(idxList => {
-    if (idxList.length > 1) {
-      hasDup = true;
-      idxList.forEach(i => document.getElementById(`sel-${i}`).classList.add('is-error'));
-    }
+  Object.values(seen).forEach(list => {
+    if (list.length > 1) { hasDup = true; list.forEach(i => document.getElementById(`sel-${i}`).classList.add('is-error')); }
   });
   return !hasDup;
 }
@@ -677,22 +450,19 @@ function getPinnedValues() {
 function resetAllSlots() {
   for (let i = 0; i < 6; i++) {
     const sel = document.getElementById(`sel-${i}`);
-    sel.value = '';
-    sel.classList.remove('is-pinned', 'is-error');
+    sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
     document.getElementById(`ph-${i}`).closest('.ball-slot').classList.remove('pinned');
-    // Reset ball display to placeholder
     const ph = document.getElementById(`ph-${i}`);
-    ph.className = 'placeholder-ball';
-    ph.textContent = '?';
-    ph.style.cssText = '';
+    ph.className = 'placeholder-ball'; ph.textContent = '?'; ph.style.cssText = '';
   }
 }
 
-// ── Draw Logic ─────────────────────────────────────────────
+/* ── Draw ── */
+const historyData = [];
+
 function drawLotto(e) {
   const btn = document.getElementById('drawBtn');
 
-  // Ripple
   if (e) {
     const rect = btn.getBoundingClientRect();
     const rip = document.createElement('span');
@@ -702,64 +472,39 @@ function drawLotto(e) {
     setTimeout(() => rip.remove(), 650);
   }
 
-  // Validate no duplicate pinned numbers
   clearErrors();
-  if (!validatePinnedNums()) {
-    showToast('⚠️ 중복된 고정 번호가 있어요!');
-    return;
-  }
+  if (!validatePinnedNums()) { showToast('⚠️ 중복된 고정 번호가 있어요!'); return; }
 
-  const pinned = getPinnedValues(); // [{idx, num}, ...]
+  const pinned = getPinnedValues();
   const pinnedNums = pinned.map(p => p.num);
-  const autoCount = 6 - pinned.length;
-
-  // Generate random numbers for auto slots
   const autoNums = [];
-  while (autoNums.length < autoCount) {
+  while (autoNums.length < 6 - pinned.length) {
     const r = Math.floor(Math.random() * 45) + 1;
     if (!pinnedNums.includes(r) && !autoNums.includes(r)) autoNums.push(r);
   }
 
-  // Build final 6-number array per slot order
   const finalNums = new Array(6);
   pinned.forEach(p => { finalNums[p.idx] = p.num; });
   let autoIdx = 0;
-  for (let i = 0; i < 6; i++) {
-    if (finalNums[i] === undefined) { finalNums[i] = autoNums[autoIdx++]; }
-  }
+  for (let i = 0; i < 6; i++) { if (finalNums[i] === undefined) finalNums[i] = autoNums[autoIdx++]; }
 
   btn.disabled = true;
   btn.textContent = '🎲 추첨 중…';
 
-  // Animate each slot
   let completedCount = 0;
-
   finalNums.forEach((num, slotIdx) => {
     const isFixed = pinnedNums.includes(num) && pinned.some(p => p.idx === slotIdx);
-    const delay = slotIdx * 750;
-
     setTimeout(() => {
       const ph = document.getElementById(`ph-${slotIdx}`);
-
-      // Swap placeholder → ball
       const ball = document.createElement('div');
       ball.className = 'ball';
       ball.textContent = num;
       ball.style.backgroundColor = getBallColor(num);
       ball.style.boxShadow = getBallShadow(num);
-
-      // Pinned balls get a golden ring
-      if (isFixed) {
-        ball.style.outline = '3px solid rgba(245,200,66,0.75)';
-        ball.style.outlineOffset = '3px';
-      }
-
+      if (isFixed) { ball.style.outline = '3px solid rgba(245,183,49,.75)'; ball.style.outlineOffset = '3px'; }
       ph.replaceWith(ball);
-      ball.id = `ph-${slotIdx}`; // keep same id for reset
-
-      requestAnimationFrame(() => {
-        setTimeout(() => ball.classList.add('show'), 10);
-      });
+      ball.id = `ph-${slotIdx}`;
+      requestAnimationFrame(() => setTimeout(() => ball.classList.add('show'), 10));
 
       completedCount++;
       if (completedCount === 6) {
@@ -771,11 +516,11 @@ function drawLotto(e) {
           spawnConfetti(r.left + r.width / 2, r.top);
         }, 500);
       }
-    }, delay);
+    }, slotIdx * 750);
   });
 }
 
-// ── History ────────────────────────────────────────────────
+/* ── History ── */
 function updateHistory(nums) {
   historyData.unshift([...nums]);
   if (historyData.length > 10) historyData.pop();
@@ -783,7 +528,6 @@ function updateHistory(nums) {
 
   const list = document.getElementById('history-list');
   list.innerHTML = '';
-
   historyData.forEach((set, i) => {
     const row = document.createElement('div');
     row.className = 'history-row';
@@ -796,8 +540,7 @@ function updateHistory(nums) {
 
     const ballWrap = document.createElement('div');
     ballWrap.className = 'history-balls';
-    // Sort for display
-    [...set].sort((a,b) => a-b).forEach(n => {
+    [...set].sort((a, b) => a - b).forEach(n => {
       const mini = document.createElement('div');
       mini.className = 'mini-ball';
       mini.style.backgroundColor = getBallColor(n);
@@ -805,13 +548,12 @@ function updateHistory(nums) {
       mini.textContent = n;
       ballWrap.appendChild(mini);
     });
-
     row.appendChild(ballWrap);
     list.appendChild(row);
   });
 }
 
-// ── Init ───────────────────────────────────────────────────
+/* ── Init ── */
 buildSlots();
 </script>
 </body>
