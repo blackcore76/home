@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -12,6 +13,19 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- Firebase 초기화 — auth.js보다 반드시 먼저 실행 -->
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+  });
+</script>
+<script src="auth.js"></script>
 <style>
 :root{--bg:#07090f;--sf:#111727;--card:#161e30;--card2:#1c2540;--bd:#1d2a45;--bd2:#263554;--gold:#f5b731;--green:#05d89e;--red:#ff4d72;--blue:#5ba3ff;--purple:#a78bfa;--tx:#e2e8f8;--tx2:#94a3c0;--tx3:#546080;--num:'DM Mono',monospace;--kr:'Noto Sans KR',sans-serif}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -26,7 +40,6 @@ html,body{background:var(--bg);color:var(--tx);font-family:var(--kr);min-height:
 .hbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--tx2);transition:all .2s}
 .hbtn:hover{border-color:var(--gold);color:var(--gold)}
 .hbtn:disabled{opacity:.4;pointer-events:none}
-/* Firebase 동기화 뱃지 */
 .sync-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--num);color:var(--tx3);background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;white-space:nowrap}
 .sync-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s}
 .sync-dot.live{background:#05d89e;box-shadow:0 0 6px #05d89e;animation:sp 3s infinite}
@@ -143,7 +156,6 @@ html,body{background:var(--bg);color:var(--tx);font-family:var(--kr);min-height:
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .spin{display:inline-block;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* CONFIRM DIALOG */
 .cfm-ov{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .2s}
 .cfm-ov.open{opacity:1;pointer-events:all}
 .cfm-box{background:var(--sf);border:1px solid var(--bd2);border-radius:18px;padding:26px 22px;width:100%;max-width:300px;transform:scale(.92);transition:transform .2s;text-align:center}
@@ -303,29 +315,19 @@ html,body{background:var(--bg);color:var(--tx);font-family:var(--kr);min-height:
 </div>
 
 <script>
-/* ══════════════════════════════════════════════
-   Firebase 초기화
-══════════════════════════════════════════════ */
-firebase.initializeApp({
-  apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-  authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
-  projectId:         "my-bp-tracker-3d595",
-  storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
-  messagingSenderId: "1016360206319",
-  appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
-});
+/* ── firebase.initializeApp은 <head>에서 완료 ── */
 var db  = firebase.firestore();
-var COL = 'stocklens';   // picknote, bloodPressure 와 별도 컬렉션
+var COL = 'stocklens';
 
 /* ── 상태 ── */
 var H     = [];
-var fx    = parseFloat(localStorage.getItem('sl-fx')||'0');  // 환율은 로컬 유지
+var fx    = parseFloat(localStorage.getItem('sl-fx')||'0');
 var fxT   = localStorage.getItem('sl-fxt')||'';
 var tab   = 'all';
 var sortM = 'pnl';
 var editId= null;
 var cfmCB = null;
-var _syncing = false;  // 자체 저장 중 onSnapshot 무시 방지
+var _syncing = false;
 
 /* ── 동기화 뱃지 ── */
 function setSyncStatus(state){
@@ -340,9 +342,8 @@ function setSyncStatus(state){
 function initSync(){
   setSyncStatus('connecting');
   db.collection(COL).onSnapshot(function(snap){
-    if(_syncing) return;  // 자체 저장 직후 무시
+    if(_syncing) return;
     H = snap.docs.map(function(doc){ return Object.assign({id:doc.id},doc.data()); });
-    // 로컬 캐시 갱신
     try{ localStorage.setItem('sl-h', JSON.stringify(H)); }catch(e){}
     setSyncStatus('live');
     renderAll();
@@ -350,36 +351,29 @@ function initSync(){
   }, function(err){
     console.error('[Firestore]', err);
     setSyncStatus('offline');
-    // 로컬 캐시 폴백
     try{ H = JSON.parse(localStorage.getItem('sl-h')||'[]'); }catch(e){ H=[]; }
     renderAll();
   });
 }
 
-/* ── persist: H 배열 전체를 Firestore에 배치 저장 ── */
+/* ── persist ── */
 async function persist(){
   _syncing = true;
   setSyncStatus('saving');
   try{
     var batch = db.batch();
-    // 기존 문서 목록과 비교해 삭제/추가/수정 처리
-    var currentIds = H.map(function(h){ return h.id; });
-
     H.forEach(function(h){
       var ref = db.collection(COL).doc(h.id);
       var data = Object.assign({}, h);
-      delete data.id;  // id는 문서 키로 사용
+      delete data.id;
       batch.set(ref, data);
     });
-
     await batch.commit();
-    // 로컬 캐시도 갱신
     try{ localStorage.setItem('sl-h', JSON.stringify(H)); }catch(e){}
     setSyncStatus('live');
   }catch(err){
     console.error('persist:', err);
     setSyncStatus('offline');
-    // 오프라인 시 로컬에만 저장
     try{ localStorage.setItem('sl-h', JSON.stringify(H)); }catch(e){}
     toast('⚠️ 오프라인 — 로컬에 임시 저장됨');
   }finally{
@@ -387,7 +381,7 @@ async function persist(){
   }
 }
 
-/* ── 삭제: Firestore 문서 직접 삭제 ── */
+/* ── 삭제 ── */
 async function persistDelete(id){
   _syncing = true;
   setSyncStatus('saving');
@@ -408,7 +402,7 @@ document.addEventListener('DOMContentLoaded',function(){
   onMarketChange();
   if(fx) showFX(fx,fxT);
   pwaInit();
-  initSync();  // 🔥 Firebase 실시간 동기화 시작
+  initSync();
 });
 
 function todayStr(){return new Date().toISOString().split('T')[0];}
@@ -421,7 +415,6 @@ function pwaInit(){
   var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));document.head.appendChild(l);
 }
 
-/* CONFIRM (native confirm 대체) */
 function cfmShow(ico,msg,okLabel,okCls,cb){
   cfmCB=cb;
   document.getElementById('cfm-ico').textContent=ico;
@@ -433,18 +426,15 @@ function cfmShow(ico,msg,okLabel,okCls,cb){
 function cfmOK(){document.getElementById('cfm-ov').classList.remove('open'); if(cfmCB) cfmCB(); cfmCB=null;}
 function cfmCancel(){document.getElementById('cfm-ov').classList.remove('open'); cfmCB=null;}
 
-/* FORMATTERS */
 function fKRW(n){if(n==null||isNaN(n))return'—';var a=Math.abs(n),s=n<0?'-':'';if(a>=1e8)return s+(a/1e8).toFixed(2)+'억원';return s+Math.round(a).toLocaleString('ko-KR')+'원';}
 function fNum(n,d){d=d===undefined?2:d;if(n==null||isNaN(n))return'—';return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
 function fP(h,p){if(p==null||isNaN(p))return'—';return h.market==='US'?'$'+fNum(p):fKRW(p);}
 function esc(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
 
-/* CALC */
 function buyKRW(h){return h.market==='US'?h.buyPrice*h.qty*(h.buyFX||fx||1):h.buyPrice*h.qty;}
 function curKRW(h){if(!h.curPrice)return null;return h.market==='US'?h.curPrice*h.qty*(fx||h.buyFX||1):h.curPrice*h.qty;}
 function calcPnl(h){var bk=buyKRW(h),ck=curKRW(h);if(!ck)return null;var d=ck-bk,pct=bk>0?d/bk*100:0;return{d:d,pct:pct,bk:bk,ck:ck};}
 
-/* SUMMARY */
 function updateSummary(){
   var priced=H.filter(function(h){return h.curPrice;});
   var bset=new Set(); H.forEach(function(h){(h.brokers||[h.broker]).forEach(function(b){bset.add(b);});});
@@ -464,7 +454,6 @@ function updateSummary(){
   var sub=document.getElementById('total-sub');sub.textContent=(up?'▲ 수익 ':'▼ 손실 ')+Math.abs(pct).toFixed(2)+'% · 매수금액 '+fKRW(tB);sub.className='hero-sub '+(up?'pos':'neg');
 }
 
-/* RENDER LIST */
 function renderList(){
   var list=H.filter(function(h){return tab==='all'||h.market===tab;});
   list=list.slice().sort(function(a,b){
@@ -485,16 +474,13 @@ function renderList(){
 }
 function renderAll(){updateSummary();renderList();}
 
-/* TABS / SORT */
 function setTab(t,el){tab=t;document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});el.classList.add('on');renderList();}
 function cycleSort(){var m=['pnl','value','name','broker'],l={pnl:'수익률순',value:'평가액순',name:'이름순',broker:'증권사순'};sortM=m[(m.indexOf(sortM)+1)%m.length];document.getElementById('sort-lbl').textContent=l[sortM];renderList();}
 
-/* OVERLAY */
 function openOv(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
 function closeOv(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';if(id==='ov-add')editId=null;}
 function bgClose(e,id){if(e.target===e.currentTarget)closeOv(id);}
 
-/* FORM */
 function onMarketChange(){
   var m=document.getElementById('f-market').value;
   document.getElementById('wrap-exch').style.display=m==='KR'?'block':'none';
@@ -508,7 +494,6 @@ function onBrokerChange(){
   document.getElementById('wrap-broker-custom').style.display=v==='__custom__'?'block':'none';
 }
 
-/* ADD */
 function openAdd(){
   editId=null;
   document.getElementById('add-title').textContent='종목 추가';
@@ -543,13 +528,11 @@ function openEdit(id){
   },260);
 }
 
-/* SAVE */
 function doSave(){
   var market=document.getElementById('f-market').value;
   var exchange=market==='KR'?document.getElementById('f-exch').value:null;
   var bSel=document.getElementById('f-broker').value;
   var broker=bSel==='__custom__'?document.getElementById('f-broker-custom').value.trim():bSel;
-  /* 티커에서 .KS/.KQ 등 suffix 자동 제거 */
   var ticker=document.getElementById('f-ticker').value.trim().toUpperCase().replace(/\.(KS|KQ|T|L|AX|HK)$/,'');
   var name=document.getElementById('f-name').value.trim();
   var date=document.getElementById('f-date').value;
@@ -581,7 +564,6 @@ function doSave(){
   persist();renderAll();closeOv('ov-add');
 }
 
-/* DETAIL */
 function openDet(id){buildDet(id);openOv('ov-det');}
 function buildDet(id){
   var h=H.find(function(x){return x.id===id;});if(!h)return;
@@ -628,12 +610,11 @@ function doDelete(id){
   var h=H.find(function(x){return x.id===id;});if(!h)return;
   cfmShow('🗑️','['+esc(h.ticker)+'] '+esc(h.name)+'\n을(를) 삭제하시겠습니까?','삭제','btn-red',function(){
     H=H.filter(function(x){return x.id!==id;});
-    persistDelete(id);  // Firestore 문서 직접 삭제
+    persistDelete(id);
     renderAll();closeOv('ov-det');toast('🗑️ 삭제되었습니다');
   });
 }
 
-/* MANUAL PRICE */
 function applyManual(id){
   var v=parseFloat(document.getElementById('mprice-'+id).value);
   if(!v||v<=0){toast('⚠️ 올바른 가격을 입력해주세요');return;}
@@ -642,7 +623,6 @@ function applyManual(id){
   persist();renderAll();buildDet(id);toast('✅ 현재가 업데이트 완료');
 }
 
-/* ADJUST */
 function step(inputId,delta){
   var el=document.getElementById(inputId);if(!el)return;
   el.value=Math.max(0,parseFloat(((parseFloat(el.value)||0)+delta).toFixed(4)));
@@ -668,14 +648,6 @@ function applyAdj(id){
   persist();renderAll();buildDet(id);toast('✅ '+h.ticker+' 조정 완료 · '+newQty.toLocaleString()+'주 · 평균가 '+fP(H[idx],H[idx].buyPrice));
 }
 
-/* ═══════════════════════════════
-   가격 조회 엔진
-   KR: 네이버 금융 (1차) → 야후 파이낸스 (2차)
-   US: 야후 파이낸스 v7/v8
-   환율: Frankfurter → 야후 파이낸스
-═══════════════════════════════ */
-
-/* CORS 프록시 목록 (순서대로 시도) */
 var PROXIES=[
   function(u){return'https://corsproxy.io/?url='+encodeURIComponent(u);},
   function(u){return'https://api.allorigins.win/raw?url='+encodeURIComponent(u);},
@@ -683,7 +655,6 @@ var PROXIES=[
   function(u){return'https://cors.eu.org/'+u;}
 ];
 
-/* 공통 fetch 래퍼: 프록시 순회 */
 async function proxyFetch(url, parseOk, timeout){
   timeout = timeout || 7000;
   for(var i=0;i<PROXIES.length;i++){
@@ -698,19 +669,15 @@ async function proxyFetch(url, parseOk, timeout){
   return null;
 }
 
-/* ── 네이버 금융 (국내주식) ── */
 async function naverPrice(code){
-  /* 네이버 모바일 API: 응답에 closePrice(장중엔 현재가) */
   var url='https://m.stock.naver.com/api/stock/'+code+'/basic';
   return await proxyFetch(url, function(d){
-    /* closePrice 는 "74,100" 형태, 쉼표 제거 후 파싱 */
     var raw = d.closePrice || d.currentPrice || d.dealTranPrice || '';
     var n = parseFloat(String(raw).replace(/,/g,''));
     return isNaN(n)?0:n;
   }, 8000);
 }
 
-/* ── 네이버 폴링 API (실시간 보조) ── */
 async function naverRealtimePrice(code){
   var url='https://polling.finance.naver.com/api/realtime/domestic/stock/'+code;
   return await proxyFetch(url, function(d){
@@ -722,17 +689,13 @@ async function naverRealtimePrice(code){
   }, 7000);
 }
 
-/* ── 야후 파이낸스 (해외주식 + KR 대체) ── */
 async function yahooPrice(sym){
-  /* v7 quote API (더 안정적) */
   var url7='https://query1.finance.yahoo.com/v7/finance/quote?symbols='+encodeURIComponent(sym)+'&fields=regularMarketPrice';
   var p7=await proxyFetch(url7, function(d){
     var r=d&&d.quoteResponse&&d.quoteResponse.result&&d.quoteResponse.result[0];
     return r?r.regularMarketPrice:0;
   }, 8000);
   if(p7) return p7;
-
-  /* v8 chart API (fallback) */
   var url8='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?interval=1d&range=1d';
   return await proxyFetch(url8, function(d){
     var r=d&&d.chart&&d.chart.result&&d.chart.result[0];
@@ -740,18 +703,13 @@ async function yahooPrice(sym){
   }, 8000);
 }
 
-/* ── 종목별 가격 조회 메인 ── */
 async function getPrice(h){
   var ticker=h.ticker.replace(/\.(KS|KQ|T|L|AX|HK)$/i,'');
-
   if(h.market==='KR'){
-    /* 1차: 네이버 금융 basic */
     var p1=await naverPrice(ticker);
     if(p1>0) return p1;
-    /* 2차: 네이버 폴링 */
     var p2=await naverRealtimePrice(ticker);
     if(p2>0) return p2;
-    /* 3차: 야후 파이낸스 (KS/KQ suffix) */
     var exch=h.exchange||'KS';
     var p3=await yahooPrice(ticker+'.'+exch);
     if(p3>0){h.exchange=exch;return p3;}
@@ -760,12 +718,9 @@ async function getPrice(h){
     if(p4>0){h.exchange=other;return p4;}
     return null;
   }
-
-  /* 해외주식 */
   return await yahooPrice(ticker);
 }
 
-/* ── 단일 종목 조회 ── */
 async function doFetchPrice(id){
   var h=H.find(function(x){return x.id===id;});if(!h)return;
   var btn=document.getElementById('fbtn-'+id),icon=document.getElementById('ficon-'+id),lbl=document.getElementById('flbl-'+id);
@@ -787,7 +742,6 @@ async function doFetchPrice(id){
   }
 }
 
-/* ── 전체 일괄 조회 ── */
 async function refreshAll(){
   if(!H.length){toast('보유 종목이 없습니다');return;}
   var icon=document.getElementById('refresh-icon'),btn=document.getElementById('btn-refresh');
@@ -812,17 +766,14 @@ async function refreshAll(){
   }
 }
 
-/* EXCHANGE RATE */
 async function doFetchFX(){
   var btn=document.getElementById('fx-btn'),icon=document.getElementById('fx-icon');
   btn.classList.add('busy');icon.innerHTML='<span class="spin">⟳</span>';
-  /* 1차: Frankfurter (ECB 환율, CORS 허용) */
   try{
     var r=await fetch('https://api.frankfurter.app/latest?from=USD&to=KRW',{signal:AbortSignal.timeout(5000)});
     var d=await r.json();
     if(d.rates&&d.rates.KRW){saveFX(d.rates.KRW,'Frankfurter');return;}
   }catch(e){}
-  /* 2차: 야후 파이낸스 KRW=X */
   try{var p=await yahooPrice('KRW=X');if(p&&p>100){saveFX(p,'야후 파이낸스');return;}}catch(e){}
   toast('⚠️ 환율 조회 실패');btn.classList.remove('busy');icon.textContent='↺';
 }
@@ -839,7 +790,6 @@ function showFX(rate,time){
   if(time)document.getElementById('fx-time').textContent=new Date(time).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
 }
 
-/* CSV */
 function exportCSV(){
   var rows=[['티커','종목명','시장','거래소','증권사','최초매수일','최근매수일','수량','평균매수가','매수환율','현재가','매수금액(KRW)','현재평가(KRW)','손익(KRW)','수익률(%)','메모']];
   H.forEach(function(h){var p=calcPnl(h);rows.push([h.ticker,h.name,h.market,h.market==='KR'?(h.exchange==='KQ'?'KOSDAQ':'KOSPI'):'US',(h.brokers||[h.broker]).join('/'),h.date,h.lastBuyDate||h.date,h.qty,h.buyPrice,h.buyFX||'',h.curPrice||'',Math.round(buyKRW(h)),p?Math.round(p.ck):'',p?Math.round(p.d):'',p?p.pct.toFixed(2):'',h.memo||'']);});
@@ -848,7 +798,6 @@ function exportCSV(){
   toast('📋 CSV 내보내기 완료');
 }
 
-/* TOAST */
 var toastT;
 function toast(msg,dur){dur=dur||3000;var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('show');},dur);}
 </script>
