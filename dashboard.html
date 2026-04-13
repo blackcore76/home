@@ -40,7 +40,6 @@
         /* ── 모바일/태블릿 (≤1024px) ── */
         @media (max-width: 1024px) {
 
-            /* 스크롤 컨테이너: 하단 네비 52px 비움 */
             .grid-container {
                 position: fixed;
                 inset: 0 0 52px 0;
@@ -59,7 +58,6 @@
                 scroll-snap-stop: always;
             }
 
-            /* 차트 좌우 엣지 20px — iframe 위를 덮어 터치 캡처 */
             .swipe-left, .swipe-right {
                 display: block;
                 position: absolute;
@@ -70,7 +68,6 @@
             .swipe-left  { left: 0; }
             .swipe-right { right: 0; }
 
-            /* 하단 네비 바 */
             .mobile-nav {
                 display: flex;
                 position: fixed;
@@ -87,35 +84,36 @@
             .nav-btn {
                 flex: 1;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 3px;
                 padding: 4px 2px;
                 cursor: pointer;
                 border: none;
                 background: transparent;
-                color: #4a5568;
-                font-size: 10px;
-                font-family: -apple-system, sans-serif;
-                letter-spacing: .03em;
-                transition: color .15s;
                 -webkit-tap-highlight-color: transparent;
+                min-width: 0;
             }
 
             .nav-btn .dot {
-                width: 6px; height: 6px;
+                width: 8px; height: 8px;
                 border-radius: 50%;
-                background: currentColor;
-                transition: transform .2s, background .15s;
-            }
-
-            .nav-btn.active {
-                color: #2196f3;
+                background: #2a2e39;
+                border: 1.5px solid #4a5568;
+                transition: all .25s ease;
+                flex-shrink: 0;
             }
 
             .nav-btn.active .dot {
-                transform: scale(1.7);
+                width: 12px; height: 12px;
+                background: #2196f3;
+                border-color: #2196f3;
+                box-shadow: 0 0 8px rgba(33,150,243,.7), 0 0 16px rgba(33,150,243,.3);
+                animation: pulse 2s ease-in-out infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { box-shadow: 0 0 8px rgba(33,150,243,.7), 0 0 16px rgba(33,150,243,.3); }
+                50%       { box-shadow: 0 0 12px rgba(33,150,243,1), 0 0 24px rgba(33,150,243,.5); }
             }
         }
     </style>
@@ -124,89 +122,117 @@
 <body>
 
 <div class="grid-container" id="scrollWrap">
-    <div class="chart-box" id="chart_spy">
-        <div class="swipe-left"></div>
-        <div class="swipe-right"></div>
-    </div>
-    <div class="chart-box" id="chart_qqq">
-        <div class="swipe-left"></div>
-        <div class="swipe-right"></div>
-    </div>
-    <div class="chart-box" id="chart_usdkrw">
-        <div class="swipe-left"></div>
-        <div class="swipe-right"></div>
-    </div>
-    <div class="chart-box" id="chart_gold">
-        <div class="swipe-left"></div>
-        <div class="swipe-right"></div>
-    </div>
+    <!-- chart-box는 JS가 CHARTS 배열 기준으로 동적 생성 -->
 </div>
 
-<nav class="mobile-nav">
-    <button class="nav-btn active" onclick="goTo(0)"><div class="dot"></div>SPY</button>
-    <button class="nav-btn"        onclick="goTo(1)"><div class="dot"></div>QQQ</button>
-    <button class="nav-btn"        onclick="goTo(2)"><div class="dot"></div>USD/KRW</button>
-    <button class="nav-btn"        onclick="goTo(3)"><div class="dot"></div>GOLD</button>
+<nav class="mobile-nav" id="mobileNav">
+    <!-- 네비 버튼도 JS가 자동 생성 -->
 </nav>
 
 <script type="text/javascript">
-    /* ── TradingView 위젯 ── */
-    const commonConfig = {
-        autosize: true,
-        interval: "30",
-        timezone: "Asia/Seoul",
-        theme: "dark",
-        style: "1",
-        locale: "kr",
-        enable_publishing: false,
-        allow_symbol_change: true,
-        hide_side_toolbar: false,
-        details: false,
-        hotlist: false,
-        calendar: false
-    };
 
-    new TradingView.widget({ ...commonConfig, symbol: "AMEX:SPY",      container_id: "chart_spy"    });
-    new TradingView.widget({ ...commonConfig, symbol: "NASDAQ:QQQ",    container_id: "chart_qqq"    });
-    new TradingView.widget({ ...commonConfig, symbol: "FX_IDC:USDKRW", container_id: "chart_usdkrw" });
-    new TradingView.widget({ ...commonConfig, symbol: "OANDA:XAUUSD",  container_id: "chart_gold"   });
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ★ 여기만 수정하면 차트+네비가 자동으로 바뀜
+   symbol: "거래소:티커" 형식
+   label : 생략 시 티커 부분을 자동 추출
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const CHARTS = [
+    { symbol: "AMEX:SPY"         },
+    { symbol: "NASDAQ:QQQ"       },
+    { symbol: "FX_IDC:USDKRW"    },
+    { symbol: "OANDA:XAUUSD"     },
+];
 
-    /* ── 모바일 네비게이션 ── */
-    const wrap  = document.getElementById('scrollWrap');
-    const btns  = [...document.querySelectorAll('.nav-btn')];
-    const boxes = [...document.querySelectorAll('.chart-box')];
+/* ── 공통 TradingView 설정 ── */
+const COMMON = {
+    autosize: true,
+    interval: "30",
+    timezone: "Asia/Seoul",
+    theme: "dark",
+    style: "1",
+    locale: "kr",
+    enable_publishing: false,
+    allow_symbol_change: true,
+    hide_side_toolbar: false,
+    details: false,
+    hotlist: false,
+    calendar: false,
+};
 
-    function goTo(idx) {
-        idx = Math.max(0, Math.min(boxes.length - 1, idx));
-        wrap.scrollTo({ top: wrap.clientHeight * idx, behavior: 'smooth' });
-    }
+/* ── DOM 생성 ── */
+const wrap = document.getElementById('scrollWrap');
+const nav  = document.getElementById('mobileNav');
 
-    function syncNav() {
-        const idx = Math.round(wrap.scrollTop / wrap.clientHeight);
-        btns.forEach((b, i) => b.classList.toggle('active', i === idx));
-    }
-    wrap.addEventListener('scroll', syncNav, { passive: true });
+const widgets = []; // 위젯 인스턴스 보관
 
-    /* 엣지 오버레이 터치 → 위/아래 스와이프로 차트 전환 */
-    let ty0 = null, tx0 = null;
+CHARTS.forEach((chart, i) => {
+    const id = `chart_tv_${i}`;
 
-    document.querySelectorAll('.swipe-left, .swipe-right').forEach(el => {
-        el.addEventListener('touchstart', e => {
-            ty0 = e.touches[0].clientY;
-            tx0 = e.touches[0].clientX;
-        }, { passive: true });
+    // chart-box
+    const box = document.createElement('div');
+    box.className = 'chart-box';
+    box.id = id;
 
-        el.addEventListener('touchend', e => {
-            if (ty0 === null) return;
-            const dy = ty0 - e.changedTouches[0].clientY;
-            const dx = Math.abs(tx0 - e.changedTouches[0].clientX);
-            if (Math.abs(dy) > 40 && Math.abs(dy) > dx) {
-                const cur = Math.round(wrap.scrollTop / wrap.clientHeight);
-                goTo(cur + (dy > 0 ? 1 : -1));
-            }
-            ty0 = tx0 = null;
-        }, { passive: true });
+    const sl = document.createElement('div'); sl.className = 'swipe-left';
+    const sr = document.createElement('div'); sr.className = 'swipe-right';
+    box.appendChild(sl);
+    box.appendChild(sr);
+    wrap.appendChild(box);
+
+    // 네비 버튼 (dot만)
+    const btn = document.createElement('button');
+    btn.className = 'nav-btn' + (i === 0 ? ' active' : '');
+    btn.onclick = () => goTo(i);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+
+    btn.appendChild(dot);
+    nav.appendChild(btn);
+
+    // TradingView 위젯 생성
+    const w = new TradingView.widget({
+        ...COMMON,
+        symbol: chart.symbol,
+        container_id: id,
     });
+    widgets.push(w);
+});
+
+/* ── 네비게이션 ── */
+const btns = [...nav.querySelectorAll('.nav-btn')];
+
+function goTo(idx) {
+    idx = Math.max(0, Math.min(CHARTS.length - 1, idx));
+    wrap.scrollTo({ top: wrap.clientHeight * idx, behavior: 'smooth' });
+}
+
+function syncNav() {
+    const idx = Math.round(wrap.scrollTop / wrap.clientHeight);
+    btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+}
+wrap.addEventListener('scroll', syncNav, { passive: true });
+
+/* ── 엣지 오버레이 스와이프 ── */
+let ty0 = null, tx0 = null;
+document.querySelectorAll('.swipe-left, .swipe-right').forEach(el => {
+    el.addEventListener('touchstart', e => {
+        ty0 = e.touches[0].clientY;
+        tx0 = e.touches[0].clientX;
+    }, { passive: true });
+
+    el.addEventListener('touchend', e => {
+        if (ty0 === null) return;
+        const dy = ty0 - e.changedTouches[0].clientY;
+        const dx = Math.abs(tx0 - e.changedTouches[0].clientX);
+        if (Math.abs(dy) > 40 && Math.abs(dy) > dx) {
+            const cur = Math.round(wrap.scrollTop / wrap.clientHeight);
+            goTo(cur + (dy > 0 ? 1 : -1));
+        }
+        ty0 = tx0 = null;
+    }, { passive: true });
+});
+
 </script>
 </body>
 </html>
