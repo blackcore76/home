@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#06090d;--card:#0f1520;--cardh:#131b27;--border:rgba(99,155,255,.08);--bord2:rgba(99,155,255,.18);--text:#d1ddf0;--muted:#4a607a;--muted2:#6b84a0;--up:#00e676;--down:#ff3b5c;--accent:#3d8bff}
+  :root{--bg:#06090d;--card:#0f1520;--cardh:#131b27;--border:rgba(99,155,255,.08);--bord2:rgba(99,155,255,.18);--text:#d1ddf0;--muted:#4a607a;--muted2:#6b84a0;--up:#00e676;--down:#ff3b5c;--accent:#3d8bff;--kr-down:#448aff}
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;min-height:100vh;padding:18px 16px 28px;background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(30,60,130,.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 100%,rgba(10,40,90,.10) 0%,transparent 60%)}
   header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bord2)}
@@ -28,21 +29,26 @@
   .sec{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:20px 0 10px}
   .sec span{flex-shrink:0}
   .sec::after{content:'';flex:1;height:1px;background:var(--bord2)}
-  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr); grid-auto-rows: 1fr; height: calc(100vh - 160px); gap:14px}
+  .card {  display: flex;  flex-direction: column;  justify-content: space-between; }
   .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 13px 11px;position:relative;overflow:hidden;transition:border-color .3s,background .3s}
   .card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(61,139,255,.04) 0%,transparent 60%);pointer-events:none}
   .card:hover{border-color:var(--bord2);background:var(--cardh)}
-  .cn{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cp{font-size:17px;font-weight:700;line-height:1.25;margin:5px 0 3px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cc{font-size:10px;font-weight:600;white-space:nowrap}
+  .cn{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--muted2);text-transform:uppercase;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cp{font-size:24px;font-weight:700;line-height:1.25;margin:5px 0 3px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cc{font-size:13px;font-weight:600;white-space:nowrap}
   .up{color:var(--up)}.down{color:var(--down)}.nt{color:var(--muted2)}
+  .kr-up{color:var(--down)}.kr-down{color:var(--kr-down)}
   .sp{margin-top:8px;height:34px}
   .sp svg{width:100%;height:100%;display:block}
   .skel{height:34px;background:linear-gradient(90deg,var(--border) 25%,rgba(61,139,255,.06) 50%,var(--border) 75%);background-size:200% 100%;animation:sh 1.5s linear infinite;border-radius:3px}
   @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
   @keyframes fu{0%{background:rgba(0,230,118,.13)}100%{background:var(--card)}}
   @keyframes fd{0%{background:rgba(255,59,92,.11)}100%{background:var(--card)}}
+  @keyframes fku{0%{background:rgba(255,59,92,.13)}100%{background:var(--card)}}
+  @keyframes fkd{0%{background:rgba(68,138,255,.13)}100%{background:var(--card)}}
   .flu{animation:fu .7s ease-out}.fld{animation:fd .7s ease-out}
+  .flku{animation:fku .7s ease-out}.flkd{animation:fkd .7s ease-out}
   #dbg{display:none;background:#0a0f18;border:1px solid var(--bord2);border-radius:8px;padding:12px;margin-top:14px;font-size:9px;color:var(--muted2);line-height:1.8;max-height:150px;overflow-y:auto}
   #dbg.show{display:block}
   .dbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:9px;padding:2px 8px;border-radius:3px;cursor:pointer;margin-top:12px;display:block;margin:12px auto 0}
@@ -58,15 +64,12 @@
   <div class="hdr-r">
     <div class="srow"><div class="ldot" id="ldot"></div><span id="stxt">초기화 중...</span><button class="rbtn" onclick="bootstrap()">↻ 갱신</button></div>
     <div>업데이트&nbsp;<span id="lastUp">--:--:--</span></div>
-    <div>다음&nbsp;<span id="cd">60</span>s</div>
+    <div>다음&nbsp;<span id="cd">--</span>s&nbsp;<span id="mktStat" style="color:var(--muted)"></span></div>
     <div id="pxStat"></div>
   </div>
 </header>
 
-<div class="sec"><span>🇺🇸&nbsp; US Markets</span></div>
-<div class="grid" id="us-grid"></div>
-<div class="sec"><span>🇰🇷&nbsp; KR Markets</span></div>
-<div class="grid" id="kr-grid"></div>
+<div class="grid" id="main-grid"></div>
 
 <button class="dbtn" onclick="toggleDbg()">🔧 디버그 로그</button>
 <div id="dbg"></div>
@@ -78,16 +81,17 @@
 
 <script>
 const INSTR=[
-  {id:'nasdaq', name:'NASDAQ',    sym:'^IXIC', sec:'us',fmt:'int', pre:''},
-  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', sec:'us',fmt:'int', pre:''},
-  {id:'dow',    name:'DOW',      sym:'^DJI',  sec:'us',fmt:'int', pre:''},
-  {id:'russell',name:'Russell 2K',sym:'^RUT',  sec:'us',fmt:'d2',  pre:''},
-  {id:'vix',    name:'VIX',      sym:'^VIX',  sec:'us',fmt:'d2',  pre:''},
-  {id:'kospi',  name:'KOSPI',    sym:'^KS11', sec:'kr',fmt:'d2',  pre:''},
-  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11', sec:'kr',fmt:'d2',  pre:''},
-  {id:'gold',   name:'금 현물',  sym:'GC=F',  sec:'kr',fmt:'d2',  pre:'$'},
-  {id:'usdkrw', name:'원달러환율',sym:'KRW=X', sec:'kr',fmt:'d2',  pre:'₩'},
-  {id:'wti',    name:'WTI 원유', sym:'CL=F',  sec:'kr',fmt:'d2',  pre:'$'},
+  {id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', market:'us', sec:'us', fmt:'int', pre:''},
+  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', market:'us', sec:'us', fmt:'int', pre:''},
+  {id:'dow',    name:'DOW',      sym:'^DJI',  market:'us', sec:'us', fmt:'int', pre:''},
+  
+  {id:'vix',    name:'VIX',      sym:'^VIX',  market:'vix', sec:'us', fmt:'d2',  pre:''},
+  {id:'kospi',  name:'KOSPI',    sym:'^KS11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  
+  {id:'gold',   name:'금 현물',  sym:'GC=F',  market:'us',  sec:'us', fmt:'d2',  pre:'$'},
+  {id:'usdkrw', name:'환율',     sym:'KRW=X', market:'us',  sec:'us', fmt:'d2',  pre:'₩'},
+  {id:'wti',    name:'WTI 원유', sym:'CL=F',  market:'us', sec:'us', fmt:'d2',  pre:'$'},
 ];
 
 // 8개 CORS 프록시 — 다양한 공급자
@@ -121,14 +125,23 @@ function toggleDbg(){
 
 // ── DOM 초기화
 function initCards(){
-  ['us','kr'].forEach(sec=>{
-    const g=document.getElementById(`${sec}-grid`);
-    INSTR.filter(i=>i.sec===sec).forEach(inst=>{
-      const d=document.createElement('div');
-      d.className='card'; d.id=`card-${inst.id}`;
-      d.innerHTML=`<div class="cn">${inst.name}</div><div class="cp nt" id="p-${inst.id}">—</div><div class="cc nt" id="c-${inst.id}">—</div><div class="sp" id="s-${inst.id}"><div class="skel"></div></div>`;
-      g.appendChild(d);
-    });
+  const g = document.getElementById('main-grid');
+
+  INSTR.slice(0, 9).forEach(inst => { // ← 9개만 사용
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.id = `card-${inst.id}`;
+
+    d.innerHTML = `
+      <div class="cn">${inst.name}</div>
+      <div class="cp nt" id="p-${inst.id}">—</div>
+      <div class="cc nt" id="c-${inst.id}">—</div>
+      <div class="sp" id="s-${inst.id}">
+        <div class="skel"></div>
+      </div>
+    `;
+
+    g.appendChild(d);
   });
 }
 
@@ -207,11 +220,15 @@ function fmt(v,f,pre){
 
 // ── 스파크라인 SVG
 let sc=0;
-function spark(closes,isUp){
+function spark(closes,isUp,market){
   const pts=closes.filter(p=>p!=null&&!isNaN(p));
   if(pts.length<3)return'';
   const W=200,H=34,mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||.001;
-  const color=isUp?'var(--up)':'var(--down)';
+  // KR: 상승=빨간(--down), 하락=파란(--kr-down) / VIX: 상승=빨간(공포↑), 하락=초록(안정) / US: 기본
+  let color;
+  if(market==='kr')       color=isUp?'var(--down)':'var(--kr-down)';
+  else if(market==='vix') color=isUp?'var(--down)':'var(--up)';
+  else                    color=isUp?'var(--up)':'var(--down)';
   const coords=pts.map((p,i)=>`${((i/(pts.length-1))*W).toFixed(1)},${(H-2-((p-mn)/rng)*(H-6)).toFixed(1)}`);
   const gid=`g${sc++}`;
   const ap=`M${coords[0]} L${coords.join(' L')} L${W},${H} L0,${H} Z`;
@@ -236,13 +253,24 @@ async function updateCard(inst){
   const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
   const cls=r.indicators?.quote?.[0]?.close??[];
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
-  pEl.className=`cp ${up?'up':'down'}`;
+
+  // KR: 상승=kr-up(빨강), 하락=kr-down(파랑)
+  // VIX: 상승=down(빨강/공포↑), 하락=up(초록/안정)
+  // US: 상승=up(초록), 하락=down(빨강)
+  const colorClass = inst.market==='kr'  ? (up?'kr-up':'kr-down')
+                   : inst.market==='vix' ? (up?'down':'up')
+                   : (up?'up':'down');
+
+  pEl.className = `cp ${colorClass}`;
   const sg=up?'+':'';
   cEl.textContent=`${sg}${chg.toFixed(2)} (${sg}${pct.toFixed(2)}%)`;
-  cEl.className=`cc ${up?'up':'down'}`;
-  sEl.innerHTML=spark(cls,up)||'<div class="skel" style="opacity:.3"></div>';
-  card.classList.remove('flu','fld');void card.offsetWidth;
-  card.classList.add(up?'flu':'fld');
+  cEl.className = `cc ${colorClass}`;
+  sEl.innerHTML=spark(cls,up,inst.market)||'<div class="skel" style="opacity:.3"></div>';
+  // KR 플래시: 상승=빨강(flku), 하락=파랑(flkd) / VIX: 상승=빨강(fld), 하락=초록(flu) / US: 기본
+  card.classList.remove('flu','fld','flku','flkd');void card.offsetWidth;
+  if(inst.market==='kr')       card.classList.add(up?'flku':'flkd');
+  else if(inst.market==='vix') card.classList.add(up?'fld':'flu');
+  else                         card.classList.add(up?'flu':'fld');
 }
 
 // ── 상태 표시
@@ -272,12 +300,41 @@ async function bootstrap(){
   resetCd();
 }
 
+// ── 장 개장 여부 감지 → 갱신 주기 결정 (KST 기준)
+function getRefreshSecs(){
+  const now=new Date();
+  const kst=new Date(now.getTime()+9*60*60*1000);
+  const day=kst.getUTCDay();           // 0=일, 6=토
+  const hm=kst.getUTCHours()*60+kst.getUTCMinutes();
+  const isWeekday=day>=1&&day<=5;
+
+  // 한국장: 평일 09:00~15:30 KST
+  const krOpen=isWeekday&&hm>=9*60&&hm<15*60+30;
+
+  // 미국장: 평일 23:30~ + 다음날 ~06:00 KST (ET 09:30~16:00)
+  // day 1~5이고 hm>=23:30  →  당일 야간 개장
+  // day 2~6이고 hm<6:00    →  전날 야간 이어서 (토요일 새벽 포함)
+  const usOpen=(isWeekday&&hm>=23*60+30)||((day>=2&&day<=6)&&hm<6*60);
+
+  if(krOpen&&usOpen) return{secs:30,label:'KR·US 개장'};
+  if(krOpen)         return{secs:30,label:'KR 개장'};
+  if(usOpen)         return{secs:30,label:'US 개장'};
+                     return{secs:300,label:'전 시장 휴장'};
+}
+
 // ── 카운트다운
 let cdV=60,cdT=null;
 function resetCd(){
-  clearInterval(cdT);cdV=60;
+  clearInterval(cdT);
+  const {secs,label}=getRefreshSecs();
+  cdV=secs;
+  document.getElementById('mktStat').textContent=`[${label}]`;
   document.getElementById('cd').textContent=cdV;
-  cdT=setInterval(()=>{cdV--;document.getElementById('cd').textContent=cdV;if(cdV<=0)bootstrap();},1000);
+  cdT=setInterval(()=>{
+    cdV--;
+    document.getElementById('cd').textContent=cdV;
+    if(cdV<=0) bootstrap();
+  },1000);
 }
 
 initCards();
