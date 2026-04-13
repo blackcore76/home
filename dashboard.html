@@ -16,8 +16,7 @@
             background-color: #131722;
         }
 
-        /* 핵심 수정: 100vh 대신 position:fixed + inset:0 사용
-           → 브라우저 주소창/툴바 높이에 관계없이 정확히 보이는 영역만 채움 */
+        /* ── PC: fixed 2×2 그리드 ── */
         .grid-container {
             position: fixed;
             inset: 0;
@@ -32,35 +31,126 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            position: relative;
         }
 
-        /* 모바일: 1열 4행 스크롤 레이아웃 */
-        @media (max-width: 768px) {
+        .swipe-left, .swipe-right { display: none; }
+        .mobile-nav { display: none; }
+
+        /* ── 모바일/태블릿 (≤1024px) ── */
+        @media (max-width: 1024px) {
+
+            /* 스크롤 컨테이너: 하단 네비 52px 비움 */
             .grid-container {
-                position: static;
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                height: auto;
-                gap: 1px;
+                position: fixed;
+                inset: 0 0 52px 0;
+                display: block;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                scroll-snap-type: y mandatory;
+                -webkit-overflow-scrolling: touch;
+                background-color: #131722;
             }
+
             .chart-box {
                 width: 100%;
-                height: 100svh;
-                flex-shrink: 0;
+                height: 100%;
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+            }
+
+            /* 차트 좌우 엣지 20px — iframe 위를 덮어 터치 캡처 */
+            .swipe-left, .swipe-right {
+                display: block;
+                position: absolute;
+                top: 0; bottom: 0;
+                width: 20px;
+                z-index: 10;
+            }
+            .swipe-left  { left: 0; }
+            .swipe-right { right: 0; }
+
+            /* 하단 네비 바 */
+            .mobile-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0; left: 0; right: 0;
+                height: 52px;
+                background: #131722;
+                border-top: 1px solid #2a2e39;
+                z-index: 100;
+                align-items: center;
+                justify-content: space-around;
+                padding: 0 8px;
+            }
+
+            .nav-btn {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                padding: 4px 2px;
+                cursor: pointer;
+                border: none;
+                background: transparent;
+                color: #4a5568;
+                font-size: 10px;
+                font-family: -apple-system, sans-serif;
+                letter-spacing: .03em;
+                transition: color .15s;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .nav-btn .dot {
+                width: 6px; height: 6px;
+                border-radius: 50%;
+                background: currentColor;
+                transition: transform .2s, background .15s;
+            }
+
+            .nav-btn.active {
+                color: #2196f3;
+            }
+
+            .nav-btn.active .dot {
+                transform: scale(1.7);
             }
         }
     </style>
     <script src="home-bar.js"></script>
 </head>
 <body>
-<div class="grid-container">
-    <div class="chart-box" id="chart_spy"></div>
-    <div class="chart-box" id="chart_qqq"></div>
-    <div class="chart-box" id="chart_usdkrw"></div>
-    <div class="chart-box" id="chart_gold"></div>
+
+<div class="grid-container" id="scrollWrap">
+    <div class="chart-box" id="chart_spy">
+        <div class="swipe-left"></div>
+        <div class="swipe-right"></div>
+    </div>
+    <div class="chart-box" id="chart_qqq">
+        <div class="swipe-left"></div>
+        <div class="swipe-right"></div>
+    </div>
+    <div class="chart-box" id="chart_usdkrw">
+        <div class="swipe-left"></div>
+        <div class="swipe-right"></div>
+    </div>
+    <div class="chart-box" id="chart_gold">
+        <div class="swipe-left"></div>
+        <div class="swipe-right"></div>
+    </div>
 </div>
+
+<nav class="mobile-nav">
+    <button class="nav-btn active" onclick="goTo(0)"><div class="dot"></div>SPY</button>
+    <button class="nav-btn"        onclick="goTo(1)"><div class="dot"></div>QQQ</button>
+    <button class="nav-btn"        onclick="goTo(2)"><div class="dot"></div>USD/KRW</button>
+    <button class="nav-btn"        onclick="goTo(3)"><div class="dot"></div>GOLD</button>
+</nav>
+
 <script type="text/javascript">
+    /* ── TradingView 위젯 ── */
     const commonConfig = {
         autosize: true,
         interval: "30",
@@ -76,10 +166,47 @@
         calendar: false
     };
 
-    new TradingView.widget({ ...commonConfig, symbol: "AMEX:SPY",        container_id: "chart_spy"     });
-    new TradingView.widget({ ...commonConfig, symbol: "NASDAQ:QQQ",      container_id: "chart_qqq"     });
-    new TradingView.widget({ ...commonConfig, symbol: "FX_IDC:USDKRW",   container_id: "chart_usdkrw"  });
-    new TradingView.widget({ ...commonConfig, symbol: "OANDA:XAUUSD",    container_id: "chart_gold"    });
+    new TradingView.widget({ ...commonConfig, symbol: "AMEX:SPY",      container_id: "chart_spy"    });
+    new TradingView.widget({ ...commonConfig, symbol: "NASDAQ:QQQ",    container_id: "chart_qqq"    });
+    new TradingView.widget({ ...commonConfig, symbol: "FX_IDC:USDKRW", container_id: "chart_usdkrw" });
+    new TradingView.widget({ ...commonConfig, symbol: "OANDA:XAUUSD",  container_id: "chart_gold"   });
+
+    /* ── 모바일 네비게이션 ── */
+    const wrap  = document.getElementById('scrollWrap');
+    const btns  = [...document.querySelectorAll('.nav-btn')];
+    const boxes = [...document.querySelectorAll('.chart-box')];
+
+    function goTo(idx) {
+        idx = Math.max(0, Math.min(boxes.length - 1, idx));
+        wrap.scrollTo({ top: wrap.clientHeight * idx, behavior: 'smooth' });
+    }
+
+    function syncNav() {
+        const idx = Math.round(wrap.scrollTop / wrap.clientHeight);
+        btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+    }
+    wrap.addEventListener('scroll', syncNav, { passive: true });
+
+    /* 엣지 오버레이 터치 → 위/아래 스와이프로 차트 전환 */
+    let ty0 = null, tx0 = null;
+
+    document.querySelectorAll('.swipe-left, .swipe-right').forEach(el => {
+        el.addEventListener('touchstart', e => {
+            ty0 = e.touches[0].clientY;
+            tx0 = e.touches[0].clientX;
+        }, { passive: true });
+
+        el.addEventListener('touchend', e => {
+            if (ty0 === null) return;
+            const dy = ty0 - e.changedTouches[0].clientY;
+            const dx = Math.abs(tx0 - e.changedTouches[0].clientX);
+            if (Math.abs(dy) > 40 && Math.abs(dy) > dx) {
+                const cur = Math.round(wrap.scrollTop / wrap.clientHeight);
+                goTo(cur + (dy > 0 ? 1 : -1));
+            }
+            ty0 = tx0 = null;
+        }, { passive: true });
+    });
 </script>
 </body>
 </html>
