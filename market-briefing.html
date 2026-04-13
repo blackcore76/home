@@ -16,9 +16,6 @@
            limit, getDocs, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-  /* ──────────────────────────────────────────
-     ★ Firebase 설정 — 본인 프로젝트 값으로 교체
-  ────────────────────────────────────────── */
   const firebaseConfig = {
     apiKey:            "YOUR_API_KEY",
     authDomain:        "YOUR_PROJECT.firebaseapp.com",
@@ -58,15 +55,13 @@
       );
       const snap = await getDocs(q);
       renderHistory(snap.docs.map(d => ({
-        id: d.id,
-        content: d.data().content,
+        id: d.id, content: d.data().content,
         ts: d.data().createdAt?.toDate() ?? new Date()
       })));
     } catch(e) { renderHistory([]); }
   }
 
   function pad(n) { return String(n).padStart(2,'0'); }
-
   function renderHistory(items) {
     const list  = document.getElementById('historyList');
     const empty = document.getElementById('historyEmpty');
@@ -124,7 +119,6 @@
     font-size:14px; font-weight:400; overflow:hidden;
   }
 
-  /* ── 헤더 ── */
   .app-header {
     position:fixed; top:0; left:0; right:0; height:var(--header-h);
     background:var(--ink2); border-bottom:1px solid var(--border2);
@@ -141,7 +135,7 @@
   .brand-sep   { color:var(--muted); font-size:12px; margin:0 2px; }
   .brand-sub   { font-size:11px; color:var(--muted); }
   .header-right { display:flex; align-items:center; gap:16px; }
-  .status-row   { display:flex; align-items:center; gap:6px; }
+  .status-row  { display:flex; align-items:center; gap:6px; }
   .status-dot {
     width:6px; height:6px; border-radius:50%;
     background:var(--steel2); animation:pulse 2.5s ease-in-out infinite; flex-shrink:0;
@@ -150,7 +144,7 @@
   .status-dot.loading { background:var(--gold2); }
   .status-dot.error   { background:var(--down);  animation:none; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .status-text   { font-size:11px; color:var(--muted); letter-spacing:.06em; }
+  .status-text  { font-size:11px; color:var(--muted); letter-spacing:.06em; }
   .clock-display {
     font-size:11px; color:var(--stone2); font-weight:500;
     letter-spacing:.12em; font-variant-numeric:tabular-nums;
@@ -163,7 +157,6 @@
   }
   .btn-icon:hover { color:var(--stone2); border-color:var(--stone3); }
 
-  /* ── 서브바 ── */
   .sub-bar {
     position:fixed; top:var(--header-h); left:0; right:0; height:var(--subbar-h);
     background:var(--ink); border-bottom:1px solid var(--border);
@@ -173,13 +166,10 @@
   .sub-val   { font-size:10px; color:var(--stone2); letter-spacing:.06em; }
   .sub-sep   { color:var(--border2); }
 
-  /* ── 바디 ── */
   .app-body {
     position:fixed; top:calc(var(--header-h) + var(--subbar-h));
     bottom:0; left:0; right:0; display:flex; overflow:hidden;
   }
-
-  /* ── 메인 패널 ── */
   .panel-main {
     flex:1; display:flex; flex-direction:column;
     overflow:hidden; border-right:1px solid var(--border); min-width:0;
@@ -246,11 +236,27 @@
     letter-spacing:.01em; animation:slideUp .6s ease forwards;
   }
   @keyframes slideUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* 에러 박스 — 상세 표시 */
   .error-box {
     display:none; font-size:12px; color:var(--down);
-    padding:12px 16px; border:1px solid rgba(192,80,80,.2);
-    background:rgba(192,80,80,.04); border-radius:2px; letter-spacing:.03em; line-height:1.6;
+    padding:14px 16px; border:1px solid rgba(192,80,80,.2);
+    background:rgba(192,80,80,.04); border-radius:2px;
+    letter-spacing:.02em; line-height:1.8;
   }
+  .error-box .err-title {
+    font-size:13px; font-weight:600; margin-bottom:8px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .error-box .err-raw {
+    font-size:10px; color:var(--stone3); margin-top:10px;
+    padding:8px 10px; background:var(--ink); border-radius:2px;
+    font-family:monospace; word-break:break-all; line-height:1.6;
+  }
+  .error-box .err-hint {
+    margin-top:10px; font-size:11px; color:var(--stone3); line-height:1.7;
+  }
+  .error-box .err-hint a { color:var(--steel); text-decoration:none; }
 
   .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
   .btn-primary {
@@ -278,7 +284,6 @@
   }
   .btn-secondary:hover { border-color:var(--stone3); color:var(--stone2); }
 
-  /* ── 히스토리 패널 ── */
   .panel-history {
     width:300px; flex-shrink:0; display:flex;
     flex-direction:column; background:var(--ink2); overflow:hidden;
@@ -317,7 +322,7 @@
     -webkit-line-clamp:2; -webkit-box-orient:vertical;
   }
 
-  /* ── API 키 설정 모달 ── */
+  /* 모달 */
   .modal-overlay {
     display:none; position:fixed; inset:0; z-index:300;
     background:rgba(13,15,18,.92);
@@ -339,22 +344,14 @@
   }
   .modal-close:hover { color:var(--stone); }
   .modal-body { padding:24px 20px; display:flex; flex-direction:column; gap:16px; }
-
-  /* 무료 배지 */
   .free-badge {
     display:inline-flex; align-items:center; gap:6px;
     background:rgba(74,158,111,.1); border:1px solid rgba(74,158,111,.25);
     color:var(--up); font-size:11px; font-weight:500;
-    padding:6px 12px; border-radius:2px; letter-spacing:.04em;
-    align-self:flex-start;
+    padding:6px 12px; border-radius:2px; letter-spacing:.04em; align-self:flex-start;
   }
-
-  .modal-steps {
-    display:flex; flex-direction:column; gap:10px;
-  }
-  .step {
-    display:flex; gap:12px; align-items:flex-start;
-  }
+  .modal-steps { display:flex; flex-direction:column; gap:10px; }
+  .step { display:flex; gap:12px; align-items:flex-start; }
   .step-num {
     width:20px; height:20px; border-radius:50%;
     background:var(--ink3); border:1px solid var(--border2);
@@ -362,13 +359,10 @@
     display:flex; align-items:center; justify-content:center;
     flex-shrink:0; margin-top:1px;
   }
-  .step-text {
-    font-size:12px; color:var(--muted); line-height:1.6; letter-spacing:.02em;
-  }
+  .step-text { font-size:12px; color:var(--muted); line-height:1.6; letter-spacing:.02em; }
   .step-text a { color:var(--steel); text-decoration:none; }
   .step-text a:hover { color:var(--stone2); }
   .step-text strong { color:var(--stone); font-weight:500; }
-
   .input-group { display:flex; flex-direction:column; gap:6px; }
   .input-label { font-size:10px; color:var(--stone2); letter-spacing:.1em; text-transform:uppercase; }
   .input-field {
@@ -379,7 +373,6 @@
   }
   .input-field:focus { border-color:var(--steel2); }
   .input-field::placeholder { color:var(--muted); }
-
   .modal-warn {
     font-size:11px; color:var(--stone3); letter-spacing:.02em;
     padding:10px 14px; border:1px solid var(--border2);
@@ -401,7 +394,6 @@
   }
   .btn-modal-cancel:hover { color:var(--stone2); }
 
-  /* ── 히스토리 뷰어 ── */
   .hist-viewer {
     display:none; position:fixed; inset:0; z-index:200;
     background:rgba(13,15,18,.85);
@@ -433,7 +425,6 @@
     color:var(--text); white-space:pre-wrap; word-break:keep-all; letter-spacing:.01em;
   }
 
-  /* ── 반응형 ── */
   @media (max-width:768px) {
     html,body { overflow:auto; }
     .app-body {
@@ -451,13 +442,12 @@
 </head>
 <body>
 
-<!-- 헤더 -->
 <header class="app-header">
   <div class="header-brand">
     <span class="badge-num">07</span>
     <span class="brand-title">AI 시황 브리핑</span>
     <span class="brand-sep">/</span>
-    <span class="brand-sub">Gemini · Realtime</span>
+    <span class="brand-sub" id="engineLabel">Gemini · Realtime</span>
   </div>
   <div class="header-right">
     <div class="status-row">
@@ -470,7 +460,6 @@
   </div>
 </header>
 
-<!-- 서브바 -->
 <div class="sub-bar">
   <span class="sub-label">KST</span>
   <span class="sub-val" id="subDate">--.--.--</span>
@@ -479,12 +468,10 @@
   <span class="sub-val">US · KR · FX · Commodities</span>
   <span class="sub-sep">|</span>
   <span class="sub-label">엔진</span>
-  <span class="sub-val">Gemini 2.0 Flash + Google Search</span>
+  <span class="sub-val" id="subEngine">Gemini 2.0 Flash + Google Search</span>
 </div>
 
-<!-- 바디 -->
 <div class="app-body">
-
   <div class="panel-main">
     <div class="panel-main-inner">
 
@@ -492,9 +479,7 @@
         <div class="idle-icon">📡</div>
         <div>
           <div class="idle-title">AI 실시간 시황 브리핑</div>
-          <div class="idle-desc">
-            Gemini가 Google 검색으로 현재 시장 데이터를 수집하고<br>한국어 브리핑을 생성합니다
-          </div>
+          <div class="idle-desc">Gemini가 Google 검색으로 현재 시장 데이터를 수집하고<br>한국어 브리핑을 생성합니다</div>
         </div>
       </div>
 
@@ -513,12 +498,8 @@
       </div>
 
       <div class="btn-row">
-        <button class="btn-primary" id="btnMain" onclick="runBriefing()">
-          실시간 시황 브리핑 받기
-        </button>
-        <button class="btn-secondary" id="btnRefresh" onclick="doRefresh()">
-          ↻ 새로고침
-        </button>
+        <button class="btn-primary" id="btnMain" onclick="runBriefing()">실시간 시황 브리핑 받기</button>
+        <button class="btn-secondary" id="btnRefresh" onclick="doRefresh()">↻ 새로고침</button>
       </div>
 
     </div>
@@ -536,10 +517,9 @@
       <span style="font-size:10px;margin-top:4px">브리핑 생성 시 자동 저장됩니다</span>
     </div>
   </div>
-
 </div>
 
-<!-- API 키 설정 모달 -->
+<!-- API 키 모달 -->
 <div class="modal-overlay" id="keyModal">
   <div class="modal">
     <div class="modal-header">
@@ -547,44 +527,29 @@
       <button class="modal-close" onclick="closeKeyModal()">×</button>
     </div>
     <div class="modal-body">
-
       <div class="free-badge">✓ 완전 무료 · 신용카드 불필요</div>
-
       <div class="modal-steps">
         <div class="step">
           <div class="step-num">1</div>
           <div class="step-text">
-            <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 접속<br>
-            Google 계정으로 로그인
+            <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 접속 후 Google 계정 로그인
           </div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div class="step-text">
-            <strong>Create API key</strong> 클릭 → 키 복사
-          </div>
+          <div class="step-text"><strong>Create API key</strong> 클릭 → 키 복사 (AIza… 형태)</div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div class="step-text">
-            아래에 붙여넣기 후 저장
-          </div>
+          <div class="step-text">아래 입력란에 붙여넣기 후 저장</div>
         </div>
       </div>
-
       <div class="input-group">
         <label class="input-label">Google AI API Key</label>
-        <input
-          class="input-field" id="apiKeyInput"
-          type="password" placeholder="AIza..."
-          autocomplete="off" spellcheck="false"
-        />
+        <input class="input-field" id="apiKeyInput" type="password"
+          placeholder="AIza..." autocomplete="off" spellcheck="false"/>
       </div>
-
-      <div class="modal-warn">
-        🔒 키는 이 브라우저의 localStorage에만 저장되며 외부로 전송되지 않습니다.
-      </div>
-
+      <div class="modal-warn">🔒 키는 이 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다.</div>
       <div class="modal-footer">
         <button class="btn-modal-save" onclick="saveApiKey()">저장하기</button>
         <button class="btn-modal-cancel" onclick="closeKeyModal()">취소</button>
@@ -618,7 +583,6 @@ function updateClock() {
     `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}`;
 }
 updateClock(); setInterval(updateClock, 1000);
-
 function kstLabel() {
   const kst = new Date(Date.now() + 9*3600000);
   return `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}  `
@@ -628,7 +592,6 @@ function kstLabel() {
 /* ── API 키 ── */
 const KEY_STORAGE = 'bc_gemini_key';
 function getApiKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
-
 function openKeyModal() {
   document.getElementById('apiKeyInput').value = getApiKey();
   document.getElementById('keyModal').classList.add('open');
@@ -638,14 +601,13 @@ function closeKeyModal() { document.getElementById('keyModal').classList.remove(
 function saveApiKey() {
   const val = document.getElementById('apiKeyInput').value.trim();
   if (!val) { alert('API 키를 입력해주세요.'); return; }
-  if (!val.startsWith('AIza')) { alert('Google AI API 키는 AIza 로 시작합니다.\n다시 확인해주세요.'); return; }
+  if (!val.startsWith('AIza')) {
+    alert('Google AI API 키는 AIza 로 시작합니다.\n다시 확인해주세요.'); return;
+  }
   localStorage.setItem(KEY_STORAGE, val);
   closeKeyModal();
 }
-
-window.addEventListener('DOMContentLoaded', () => {
-  if (!getApiKey()) openKeyModal();
-});
+window.addEventListener('DOMContentLoaded', () => { if (!getApiKey()) openKeyModal(); });
 
 /* ── DOM ── */
 const $idle    = document.getElementById('idleState');
@@ -665,7 +627,6 @@ function setStatus(s) {
   $dot.className = 'status-dot' + (s !== 'idle' ? ' '+s : '');
   $slabel.textContent = STATUS_MAP[s] || '';
 }
-
 function addLog(text, cls, delay) {
   return new Promise(r => setTimeout(() => {
     const d = document.createElement('div');
@@ -673,16 +634,13 @@ function addLog(text, cls, delay) {
     d.textContent = text; $log.appendChild(d); r();
   }, delay));
 }
-
-async function showLoading() {
-  $idle.style.display    = 'none';
-  $result.style.display  = 'none';
+async function showLoading(modelLabel) {
+  $idle.style.display = 'none'; $result.style.display = 'none';
   $loading.style.display = 'flex';
   $btnMain.disabled = true; $btnRef.style.display = 'none';
   $log.innerHTML = ''; setStatus('loading');
-
   const steps = [
-    ['> Gemini AI 연결 중...', '', 0],
+    [`> ${modelLabel} 연결 중...`, '', 0],
     ['> Google Search 그라운딩 활성화', '', 350],
     ['> KOSPI / KOSDAQ 데이터 조회', 'gold', 850],
     ['> 나스닥 / S&P500 현재가 수집', 'gold', 1450],
@@ -697,26 +655,30 @@ async function showLoading() {
     cur.className = 'cursor'; $log.appendChild(cur);
   }, 4050);
 }
-
-function showResult(text) {
+function showResult(text, modelLabel) {
   $loading.style.display = 'none'; $result.style.display = 'flex';
   $error.style.display = 'none';
   $text.textContent = text; $rtime.textContent = kstLabel();
   $btnMain.style.display = 'none'; $btnRef.style.display = 'block';
   setStatus('active');
+  document.getElementById('subEngine').textContent = `${modelLabel} + Google Search`;
 }
-function showError(msg) {
+function showError(titleHtml, rawMsg, hintHtml) {
   $loading.style.display = 'none'; $result.style.display = 'flex';
-  $text.textContent = ''; $error.style.display = 'block';
-  $error.innerHTML = msg; $btnMain.disabled = false;
-  setStatus('error');
+  $text.textContent = '';
+  $error.style.display = 'block';
+  $error.innerHTML = `
+    <div class="err-title">⚠ ${titleHtml}</div>
+    ${hintHtml ? `<div class="err-hint">${hintHtml}</div>` : ''}
+    ${rawMsg ? `<div class="err-raw">RAW: ${rawMsg}</div>` : ''}
+  `;
+  $btnMain.disabled = false; setStatus('error');
 }
 function doRefresh() {
   $idle.style.display = 'flex'; $result.style.display = 'none';
   $loading.style.display = 'none';
   $btnMain.style.display = 'block'; $btnMain.disabled = false;
-  $btnRef.style.display = 'none'; setStatus('idle');
-  runBriefing();
+  $btnRef.style.display = 'none'; setStatus('idle'); runBriefing();
 }
 
 /* ── 히스토리 뷰어 ── */
@@ -741,14 +703,14 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ── Gemini API ── */
-async function runBriefing() {
-  const key = getApiKey();
-  if (!key) { openKeyModal(); return; }
+/* ── Gemini API 호출 (모델 폴백 포함) ── */
+const MODELS = [
+  { id: 'gemini-2.0-flash',      label: 'Gemini 2.0 Flash' },
+  { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+  { id: 'gemini-1.5-flash',      label: 'Gemini 1.5 Flash' },
+];
 
-  await showLoading();
-
-  const prompt = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
+const PROMPT = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
 Google 검색으로 지금 이 순간 KST 기준 최신 시장 데이터를 수집한 뒤 아래 형식으로 브리핑을 작성하세요.
 
 [오늘의 시황 — YYYY.MM.DD HH:MM KST]
@@ -772,49 +734,88 @@ WTI 원유    $xx.xx/bbl
 
 마크다운 없이 순수 텍스트만. 수치는 검색한 실제 최신 데이터 사용.`;
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          tools: [{ googleSearch: {} }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
-        })
-      }
-    );
+async function callGemini(modelId, key) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role:'user', parts:[{ text: PROMPT }] }],
+        tools: [{ googleSearch: {} }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
+      })
+    }
+  );
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data };
+}
 
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      const msg = e?.error?.message || `HTTP ${res.status}`;
-      if (res.status === 400 && msg.includes('API_KEY')) {
-        showError('⚠ API 키가 유효하지 않습니다.<br>⚙ 버튼에서 키를 다시 확인해주세요.');
-      } else if (res.status === 429) {
-        showError('⚠ 요청 한도 초과입니다. 잠시 후 다시 시도해주세요.');
-      } else {
-        showError(`⚠ ${msg}`);
-      }
-      return;
+async function runBriefing() {
+  const key = getApiKey();
+  if (!key) { openKeyModal(); return; }
+
+  await showLoading(MODELS[0].label);
+
+  for (let i = 0; i < MODELS.length; i++) {
+    const model = MODELS[i];
+
+    // 폴백 시 로그 추가
+    if (i > 0) {
+      await addLog(`> ${model.label} 로 재시도 중...`, 'steel', 0);
+      document.getElementById('subEngine').textContent = `${model.label} + Google Search`;
     }
 
-    const data = await res.json();
+    try {
+      const { ok, status, data } = await callGemini(model.id, key);
 
-    /* 응답 텍스트 추출 */
-    const text = data?.candidates?.[0]?.content?.parts
-      ?.filter(p => p.text)
-      ?.map(p => p.text)
-      ?.join('\n')
-      ?.trim();
+      if (!ok) {
+        const rawMsg = data?.error?.message || JSON.stringify(data?.error || data);
+        const errCode = data?.error?.code || status;
 
-    if (!text) throw new Error('응답이 비어있습니다. 다시 시도해주세요.');
+        // 429: 다음 모델로 폴백
+        if (status === 429 && i < MODELS.length - 1) {
+          await addLog(`> ${model.label} 한도 초과, 다음 모델 시도`, 'gold', 0);
+          continue;
+        }
 
-    showResult(text);
-    if (typeof window._saveBriefing === 'function') window._saveBriefing(text);
+        // 에러 종류별 안내
+        if (status === 400 || rawMsg.includes('API_KEY') || rawMsg.includes('API key')) {
+          showError('API 키가 유효하지 않습니다', rawMsg,
+            '⚙ 버튼을 눌러 키를 다시 확인해주세요.<br><a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>에서 새 키를 발급받을 수 있습니다.');
+        } else if (status === 429) {
+          showError('모든 모델 요청 한도 초과', rawMsg,
+            '무료 티어 한도(분당 15회)를 초과했습니다. 1~2분 후 다시 시도해주세요.');
+        } else if (status === 403) {
+          showError('API 키 권한 오류', rawMsg,
+            'Google AI Studio에서 해당 키의 권한을 확인해주세요.');
+        } else {
+          showError(`오류 (HTTP ${errCode})`, rawMsg, '');
+        }
+        return;
+      }
 
-  } catch(e) {
-    showError(`⚠ ${e.message || '알 수 없는 오류가 발생했습니다.'}`);
+      // 성공
+      const text = data?.candidates?.[0]?.content?.parts
+        ?.filter(p => p.text)?.map(p => p.text)?.join('\n')?.trim();
+
+      if (!text) {
+        showError('응답이 비어있습니다', JSON.stringify(data?.candidates?.[0]?.finishReason || ''),
+          '잠시 후 다시 시도해주세요.');
+        return;
+      }
+
+      showResult(text, model.label);
+      if (typeof window._saveBriefing === 'function') window._saveBriefing(text);
+      return;
+
+    } catch(e) {
+      if (i < MODELS.length - 1) {
+        await addLog(`> 연결 오류, 다음 모델 시도`, 'gold', 0);
+        continue;
+      }
+      showError('네트워크 오류', e.message, '인터넷 연결을 확인하고 다시 시도해주세요.');
+    }
   }
 }
 </script>
