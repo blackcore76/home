@@ -28,43 +28,37 @@
     appId:             "YOUR_APP_ID"
   };
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+  let app, auth, db, uid = null;
 
-  let uid = null;
+  try {
+    app  = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db   = getFirestore(app);
 
-  /* 익명 로그인 */
-  signInAnonymously(auth).catch(e => console.warn('Auth fail:', e));
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      uid = user.uid;
-      loadHistory();
-    }
-  });
+    signInAnonymously(auth).catch(e => console.warn('Auth:', e));
+    onAuthStateChanged(auth, user => {
+      if (user) { uid = user.uid; loadHistory(); }
+    });
+  } catch(e) {
+    console.warn('Firebase init skipped (config 미설정):', e.message);
+  }
 
-  /* Firestore 저장 */
   window._saveBriefing = async function(text) {
-    if (!uid) return;
+    if (!uid || !db) return;
     try {
       await addDoc(collection(db, 'users', uid, 'briefings'), {
-        content: text,
-        createdAt: serverTimestamp()
+        content: text, createdAt: serverTimestamp()
       });
       loadHistory();
-    } catch(e) { console.warn('Save fail:', e); }
+    } catch(e) { console.warn('Save:', e); }
   };
 
-  /* 히스토리 로드 */
-  window._loadHistory = async function() { await loadHistory(); };
-
   async function loadHistory() {
-    if (!uid) return;
+    if (!uid || !db) return;
     try {
       const q = query(
         collection(db, 'users', uid, 'briefings'),
-        orderBy('createdAt', 'desc'),
-        limit(20)
+        orderBy('createdAt', 'desc'), limit(20)
       );
       const snap = await getDocs(q);
       const items = snap.docs.map(d => ({
@@ -73,46 +67,38 @@
         ts: d.data().createdAt?.toDate() ?? new Date()
       }));
       renderHistory(items);
-    } catch(e) {
-      console.warn('History load fail:', e);
-      renderHistory([]);
-    }
+    } catch(e) { renderHistory([]); }
   }
 
   function pad(n) { return String(n).padStart(2,'0'); }
 
   function renderHistory(items) {
-    const list = document.getElementById('historyList');
+    const list  = document.getElementById('historyList');
     const empty = document.getElementById('historyEmpty');
     if (!list) return;
-
     if (!items.length) {
       list.innerHTML = '';
       empty.style.display = 'flex';
+      document.getElementById('histCount').textContent = '0건';
       return;
     }
     empty.style.display = 'none';
+    document.getElementById('histCount').textContent = `${items.length}건`;
 
     list.innerHTML = items.map((item, i) => {
       const kst = new Date(item.ts.getTime() + 9 * 3600000);
       const dateStr = `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}`;
       const timeStr = `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())}`;
-      // 첫 줄 (타이틀) 추출
-      const firstLine = item.content.split('\n').find(l => l.trim()) || '브리핑';
-      const preview = item.content.replace(firstLine, '').trim().slice(0, 60);
-
+      const preview = item.content.replace(/\[.*?\]/g,'').trim().slice(0, 55);
       return `
-        <div class="hist-item ${i===0?'hist-latest':''}" onclick="showHistoryItem(${i})" data-idx="${i}">
+        <div class="hist-item ${i===0?'hist-latest':''}" onclick="showHistoryItem(${i})">
           <div class="hist-meta">
             <span class="hist-date">${dateStr}</span>
             <span class="hist-time">${timeStr} KST</span>
           </div>
           <div class="hist-preview">${preview}…</div>
-        </div>
-      `;
+        </div>`;
     }).join('');
-
-    // 전역에 저장
     window._historyItems = items;
   }
 </script>
@@ -136,564 +122,330 @@
     --down:   #c05050;
     --border: rgba(255,255,255,0.06);
     --border2: rgba(255,255,255,0.10);
-
     --header-h: 48px;
     --subbar-h: 36px;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html, body {
-    height: 100%;
-    background: var(--ink);
-    color: var(--text);
-    font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    overflow: hidden;
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body {
+    height:100%; background:var(--ink); color:var(--text);
+    font-family:'Pretendard',-apple-system,'Apple SD Gothic Neo',sans-serif;
+    font-size:14px; font-weight:400; overflow:hidden;
   }
 
-  /* ══ 최상단 헤더 ══ */
+  /* ── 헤더 ── */
   .app-header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: var(--header-h);
-    background: var(--ink2);
-    border-bottom: 1px solid var(--border2);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    z-index: 100;
+    position:fixed; top:0; left:0; right:0;
+    height:var(--header-h);
+    background:var(--ink2); border-bottom:1px solid var(--border2);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; z-index:100;
   }
-
-  .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
+  .header-brand { display:flex; align-items:center; gap:10px; }
   .badge-num {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--gold);
-    background: rgba(201,168,76,0.12);
-    border: 1px solid rgba(201,168,76,0.25);
-    padding: 2px 7px;
-    border-radius: 2px;
-    letter-spacing: 0.06em;
+    font-size:10px; font-weight:600; color:var(--gold);
+    background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.25);
+    padding:2px 7px; border-radius:2px; letter-spacing:.06em;
   }
-
-  .brand-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--cream);
-    letter-spacing: 0.02em;
+  .brand-title { font-size:14px; font-weight:600; color:var(--cream); letter-spacing:.02em; }
+  .brand-sep   { color:var(--muted); font-size:12px; margin:0 2px; }
+  .brand-sub   { font-size:11px; color:var(--muted); }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .status-row  { display:flex; align-items:center; gap:6px; }
+  .status-dot  {
+    width:6px; height:6px; border-radius:50%;
+    background:var(--steel2); animation:pulse 2.5s ease-in-out infinite; flex-shrink:0;
   }
-
-  .brand-sep {
-    color: var(--muted);
-    font-size: 12px;
-    margin: 0 2px;
-  }
-
-  .brand-sub {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .status-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--steel2);
-    animation: pulse 2.5s ease-in-out infinite;
-    flex-shrink: 0;
-  }
-  .status-dot.active  { background: var(--up);   animation: none; }
-  .status-dot.loading { background: var(--gold2); }
-  .status-dot.error   { background: var(--down); animation: none; }
-
+  .status-dot.active  { background:var(--up);   animation:none; }
+  .status-dot.loading { background:var(--gold2); }
+  .status-dot.error   { background:var(--down); animation:none; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-  .status-text {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-  }
-
+  .status-text { font-size:11px; color:var(--muted); letter-spacing:.06em; }
   .clock-display {
-    font-size: 11px;
-    color: var(--stone2);
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    font-variant-numeric: tabular-nums;
+    font-size:11px; color:var(--stone2); font-weight:500;
+    letter-spacing:.12em; font-variant-numeric:tabular-nums;
   }
-
-  .btn-home {
-    font-size: 11px;
-    color: var(--muted);
-    text-decoration: none;
-    letter-spacing: 0.06em;
-    padding: 4px 10px;
-    border: 1px solid var(--border2);
-    border-radius: 2px;
-    transition: all 0.2s;
-    background: transparent;
-    cursor: pointer;
-    font-family: inherit;
+  .btn-icon {
+    font-size:11px; color:var(--muted); background:transparent;
+    border:1px solid var(--border2); border-radius:2px;
+    padding:4px 10px; cursor:pointer; font-family:inherit;
+    text-decoration:none; transition:all .2s;
   }
-  .btn-home:hover { color: var(--stone2); border-color: var(--stone3); }
+  .btn-icon:hover { color:var(--stone2); border-color:var(--stone3); }
 
-  /* ══ 서브바 ══ */
+  /* ── 서브바 ── */
   .sub-bar {
-    position: fixed;
-    top: var(--header-h);
-    left: 0; right: 0;
-    height: var(--subbar-h);
-    background: var(--ink);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 20px;
-    z-index: 90;
+    position:fixed; top:var(--header-h); left:0; right:0;
+    height:var(--subbar-h);
+    background:var(--ink); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 20px; gap:16px; z-index:90;
   }
+  .sub-label { font-size:10px; color:var(--muted); letter-spacing:.08em; }
+  .sub-val   { font-size:10px; color:var(--stone2); letter-spacing:.06em; }
+  .sub-sep   { color:var(--border2); }
 
-  .sub-label {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-  }
-
-  .sub-val {
-    font-size: 10px;
-    color: var(--stone2);
-    letter-spacing: 0.06em;
-  }
-
-  .sub-sep { color: var(--border2); }
-
-  /* ══ 바디 ══ */
+  /* ── 바디 ── */
   .app-body {
-    position: fixed;
-    top: calc(var(--header-h) + var(--subbar-h));
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    overflow: hidden;
+    position:fixed;
+    top:calc(var(--header-h) + var(--subbar-h));
+    bottom:0; left:0; right:0;
+    display:flex; overflow:hidden;
   }
 
-  /* ══ 메인 패널 ══ */
+  /* ── 메인 패널 ── */
   .panel-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border-right: 1px solid var(--border);
-    min-width: 0;
+    flex:1; display:flex; flex-direction:column;
+    overflow:hidden; border-right:1px solid var(--border); min-width:0;
   }
-
   .panel-main-inner {
-    flex: 1;
-    overflow-y: auto;
-    padding: 28px 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+    flex:1; overflow-y:auto;
+    padding:28px 32px;
+    display:flex; flex-direction:column; gap:24px;
   }
-
-  /* scrollbar */
-  .panel-main-inner::-webkit-scrollbar,
-  .history-list::-webkit-scrollbar { width: 4px; }
-  .panel-main-inner::-webkit-scrollbar-track,
-  .history-list::-webkit-scrollbar-track { background: transparent; }
-  .panel-main-inner::-webkit-scrollbar-thumb,
-  .history-list::-webkit-scrollbar-thumb { background: var(--ink3); border-radius: 2px; }
+  .panel-main-inner::-webkit-scrollbar { width:4px; }
+  .panel-main-inner::-webkit-scrollbar-thumb { background:var(--ink3); border-radius:2px; }
 
   /* idle */
   .idle-state {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 40px 0;
-    text-align: center;
-    min-height: 200px;
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:16px; padding:40px 0; text-align:center; min-height:200px;
   }
-
   .idle-icon {
-    width: 52px;
-    height: 52px;
-    border: 1px solid var(--border2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    position: relative;
+    width:52px; height:52px; border:1px solid var(--border2);
+    border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:22px; position:relative;
   }
   .idle-icon::after {
-    content: '';
-    position: absolute;
-    inset: -7px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    border-top-color: var(--steel2);
-    animation: spin 5s linear infinite;
+    content:''; position:absolute; inset:-7px; border-radius:50%;
+    border:1px solid var(--border); border-top-color:var(--steel2);
+    animation:spin 5s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .idle-title { font-size: 16px; font-weight: 500; color: var(--stone); }
-  .idle-desc  { font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 6px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .idle-title { font-size:16px; font-weight:500; color:var(--stone); }
+  .idle-desc  { font-size:12px; color:var(--muted); line-height:1.7; margin-top:6px; }
 
   /* loading */
-  .loading-state { display: none; flex-direction: column; gap: 16px; }
-
-  .progress-track {
-    height: 2px;
-    background: var(--ink3);
-    border-radius: 1px;
-    overflow: hidden;
-  }
+  .loading-state { display:none; flex-direction:column; gap:16px; }
+  .progress-track { height:2px; background:var(--ink3); border-radius:1px; overflow:hidden; }
   .progress-fill {
-    height: 100%;
-    width: 35%;
-    background: linear-gradient(90deg, transparent, var(--steel), var(--gold), transparent);
-    animation: scan 1.8s ease-in-out infinite;
+    height:100%; width:35%;
+    background:linear-gradient(90deg,transparent,var(--steel),var(--gold),transparent);
+    animation:scan 1.8s ease-in-out infinite;
   }
   @keyframes scan { 0%{transform:translateX(-200%)} 100%{transform:translateX(500%)} }
-
-  .log-area {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 2.2;
-    letter-spacing: 0.04em;
-  }
-  .log-line { opacity:0; animation: fadeIn .3s ease forwards; }
-  .log-line.gold  { color: var(--gold2); }
-  .log-line.steel { color: var(--steel); }
-  @keyframes fadeIn { to { opacity:1; } }
-
+  .log-area { font-size:11px; color:var(--muted); line-height:2.2; letter-spacing:.04em; }
+  .log-line { opacity:0; animation:fadeIn .3s ease forwards; }
+  .log-line.gold  { color:var(--gold2); }
+  .log-line.steel { color:var(--steel); }
+  @keyframes fadeIn { to{opacity:1} }
   .cursor {
-    display: inline-block;
-    width: 6px; height: 12px;
-    background: var(--steel);
-    vertical-align: middle;
-    margin-left: 3px;
-    animation: blink 1s step-end infinite;
+    display:inline-block; width:6px; height:12px;
+    background:var(--steel); vertical-align:middle; margin-left:3px;
+    animation:blink 1s step-end infinite;
   }
   @keyframes blink { 50%{opacity:0} }
 
   /* result */
-  .result-state { display: none; flex-direction: column; gap: 18px; }
-
+  .result-state { display:none; flex-direction:column; gap:18px; }
   .result-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:14px; border-bottom:1px solid var(--border);
   }
   .result-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--gold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size:10px; font-weight:600; color:var(--gold);
+    letter-spacing:.14em; text-transform:uppercase;
   }
-  .result-time { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
-
+  .result-time { font-size:10px; color:var(--muted); letter-spacing:.06em; }
   .briefing-text {
-    font-size: 14px;
-    font-weight: 300;
-    line-height: 2.0;
-    color: var(--text);
-    white-space: pre-wrap;
-    word-break: keep-all;
-    letter-spacing: 0.01em;
-    animation: slideUp .6s ease forwards;
+    font-size:14px; font-weight:300; line-height:2.0;
+    color:var(--text); white-space:pre-wrap; word-break:keep-all;
+    letter-spacing:.01em; animation:slideUp .6s ease forwards;
   }
-  @keyframes slideUp {
-    from { opacity:0; transform:translateY(6px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-
+  @keyframes slideUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
   .error-box {
-    display: none;
-    font-size: 12px;
-    color: var(--down);
-    padding: 12px 16px;
-    border: 1px solid rgba(192,80,80,0.2);
-    background: rgba(192,80,80,0.04);
-    border-radius: 2px;
-    letter-spacing: 0.03em;
+    display:none; font-size:12px; color:var(--down);
+    padding:12px 16px; border:1px solid rgba(192,80,80,.2);
+    background:rgba(192,80,80,.04); border-radius:2px; letter-spacing:.03em;
   }
 
-  /* 버튼 영역 */
-  .btn-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
+  /* 버튼 */
+  .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
   .btn-primary {
-    flex: 1;
-    min-width: 160px;
-    padding: 13px 20px;
-    background: transparent;
-    border: 1px solid var(--steel2);
-    color: var(--stone);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all .2s;
-    position: relative;
-    overflow: hidden;
+    flex:1; min-width:160px; padding:13px 20px;
+    background:transparent; border:1px solid var(--steel2);
+    color:var(--stone); font-family:inherit; font-size:12px;
+    font-weight:500; letter-spacing:.1em; cursor:pointer;
+    border-radius:2px; transition:all .2s; position:relative; overflow:hidden;
   }
   .btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(61,111,168,.08), transparent);
-    opacity: 0;
-    transition: opacity .2s;
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(61,111,168,.08),transparent);
+    opacity:0; transition:opacity .2s;
   }
-  .btn-primary:hover { border-color: var(--steel); color: var(--cream); box-shadow: 0 0 18px rgba(61,111,168,.12); }
-  .btn-primary:hover::before { opacity: 1; }
-  .btn-primary:active { transform: scale(.99); }
-  .btn-primary:disabled { opacity: .3; cursor: not-allowed; transform: none; }
-
+  .btn-primary:hover { border-color:var(--steel); color:var(--cream); box-shadow:0 0 18px rgba(61,111,168,.12); }
+  .btn-primary:hover::before { opacity:1; }
+  .btn-primary:active { transform:scale(.99); }
+  .btn-primary:disabled { opacity:.3; cursor:not-allowed; transform:none; }
   .btn-secondary {
-    padding: 13px 20px;
-    background: transparent;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all .2s;
-    display: none;
+    padding:13px 20px; background:transparent;
+    border:1px solid var(--border2); color:var(--muted);
+    font-family:inherit; font-size:12px; font-weight:500;
+    letter-spacing:.08em; cursor:pointer; border-radius:2px;
+    transition:all .2s; display:none;
   }
-  .btn-secondary:hover { border-color: var(--stone3); color: var(--stone2); }
+  .btn-secondary:hover { border-color:var(--stone3); color:var(--stone2); }
 
-  /* ══ 히스토리 패널 ══ */
+  /* ── 히스토리 패널 ── */
   .panel-history {
-    width: 300px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--ink2);
-    overflow: hidden;
+    width:300px; flex-shrink:0; display:flex;
+    flex-direction:column; background:var(--ink2); overflow:hidden;
   }
-
   .hist-header {
-    padding: 16px 20px 14px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
+    padding:16px 20px 14px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
   }
-
-  .hist-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--stone2);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .hist-count {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-  }
-
-  .history-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
-
+  .hist-title { font-size:11px; font-weight:600; color:var(--stone2); letter-spacing:.1em; text-transform:uppercase; }
+  .hist-count { font-size:10px; color:var(--muted); letter-spacing:.06em; }
+  .history-list { flex:1; overflow-y:auto; padding:6px 0; }
+  .history-list::-webkit-scrollbar { width:4px; }
+  .history-list::-webkit-scrollbar-thumb { background:var(--ink3); border-radius:2px; }
   .hist-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 100%;
-    color: var(--muted);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    padding: 20px;
-    text-align: center;
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:8px; height:100%;
+    color:var(--muted); font-size:12px; letter-spacing:.06em;
+    padding:20px; text-align:center;
   }
-
   .hist-item {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background .15s;
-    position: relative;
+    padding:13px 20px; border-bottom:1px solid var(--border);
+    cursor:pointer; transition:background .15s; position:relative;
   }
-  .hist-item:hover { background: var(--ink3); }
-  .hist-item.active { background: var(--ink3); }
-  .hist-item.hist-latest::before {
-    content: 'NEW';
-    position: absolute;
-    top: 14px; right: 14px;
-    font-size: 8px;
-    color: var(--gold2);
-    letter-spacing: 0.1em;
-    border: 1px solid rgba(201,168,76,0.25);
-    padding: 1px 5px;
-    border-radius: 2px;
+  .hist-item:hover { background:var(--ink3); }
+  .hist-item.hist-latest::after {
+    content:'NEW'; position:absolute; top:13px; right:14px;
+    font-size:8px; color:var(--gold2); letter-spacing:.1em;
+    border:1px solid rgba(201,168,76,.25); padding:1px 5px; border-radius:2px;
   }
-
-  .hist-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-  }
-  .hist-date { font-size: 12px; font-weight: 500; color: var(--stone); letter-spacing: 0.04em; }
-  .hist-time { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
-
+  .hist-meta { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .hist-date { font-size:12px; font-weight:500; color:var(--stone); letter-spacing:.04em; }
+  .hist-time { font-size:10px; color:var(--muted); letter-spacing:.06em; }
   .hist-preview {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.5;
-    letter-spacing: 0.02em;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    font-size:11px; color:var(--muted); line-height:1.5; letter-spacing:.02em;
+    overflow:hidden; display:-webkit-box;
+    -webkit-line-clamp:2; -webkit-box-orient:vertical;
   }
 
-  /* 히스토리 뷰어 오버레이 */
+  /* ── API 키 설정 모달 ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; z-index:300;
+    background:rgba(13,15,18,.92);
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal {
+    background:var(--ink2); border:1px solid var(--border2);
+    border-radius:2px; width:100%; max-width:480px; overflow:hidden;
+  }
+  .modal-header {
+    padding:16px 20px; background:var(--ink3);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .modal-title { font-size:13px; font-weight:600; color:var(--cream); letter-spacing:.02em; }
+  .modal-close {
+    background:none; border:none; color:var(--muted);
+    font-size:20px; cursor:pointer; line-height:1; padding:0 4px;
+    transition:color .2s;
+  }
+  .modal-close:hover { color:var(--stone); }
+  .modal-body { padding:24px 20px; display:flex; flex-direction:column; gap:16px; }
+  .modal-desc {
+    font-size:12px; color:var(--muted); line-height:1.7; letter-spacing:.02em;
+  }
+  .modal-desc a { color:var(--steel); text-decoration:none; }
+  .modal-desc a:hover { color:var(--stone2); }
+  .input-group { display:flex; flex-direction:column; gap:6px; }
+  .input-label { font-size:10px; color:var(--stone2); letter-spacing:.1em; text-transform:uppercase; }
+  .input-field {
+    background:var(--ink); border:1px solid var(--border2);
+    color:var(--text); font-family:'Pretendard',monospace;
+    font-size:12px; padding:10px 14px; border-radius:2px;
+    outline:none; letter-spacing:.04em; transition:border-color .2s;
+    width:100%;
+  }
+  .input-field:focus { border-color:var(--steel2); }
+  .input-field::placeholder { color:var(--muted); }
+  .modal-warn {
+    font-size:11px; color:var(--gold2); letter-spacing:.03em;
+    padding:10px 14px; border:1px solid rgba(143,110,42,.2);
+    background:rgba(143,110,42,.06); border-radius:2px; line-height:1.6;
+  }
+  .modal-footer { display:flex; gap:10px; }
+  .btn-modal-save {
+    flex:1; padding:12px; background:transparent;
+    border:1px solid var(--steel2); color:var(--stone);
+    font-family:inherit; font-size:12px; font-weight:500;
+    letter-spacing:.1em; cursor:pointer; border-radius:2px; transition:all .2s;
+  }
+  .btn-modal-save:hover { border-color:var(--steel); color:var(--cream); }
+  .btn-modal-cancel {
+    padding:12px 20px; background:transparent;
+    border:1px solid var(--border2); color:var(--muted);
+    font-family:inherit; font-size:12px; cursor:pointer;
+    border-radius:2px; transition:all .2s;
+  }
+  .btn-modal-cancel:hover { color:var(--stone2); }
+
+  /* ── 히스토리 뷰어 ── */
   .hist-viewer {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    background: rgba(13,15,18,0.85);
-    align-items: center;
-    justify-content: center;
-    padding: 40px 24px;
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(13,15,18,.85);
+    align-items:center; justify-content:center; padding:40px 24px;
   }
-  .hist-viewer.open { display: flex; }
-
+  .hist-viewer.open { display:flex; }
   .hist-viewer-inner {
-    background: var(--ink2);
-    border: 1px solid var(--border2);
-    border-radius: 2px;
-    width: 100%;
-    max-width: 680px;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    background:var(--ink2); border:1px solid var(--border2);
+    border-radius:2px; width:100%; max-width:680px;
+    max-height:80vh; display:flex; flex-direction:column; overflow:hidden;
   }
-
   .hist-viewer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--ink3);
-    flex-shrink: 0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    background:var(--ink3); flex-shrink:0;
   }
-  .hist-viewer-title {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--gold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-  .hist-viewer-ts { font-size: 10px; color: var(--muted); }
-
+  .hist-viewer-title { font-size:10px; font-weight:600; color:var(--gold); letter-spacing:.14em; text-transform:uppercase; }
+  .hist-viewer-ts    { font-size:10px; color:var(--muted); }
   .hist-viewer-close {
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 18px;
-    cursor: pointer;
-    line-height: 1;
-    padding: 2px 6px;
-    transition: color .2s;
+    background:none; border:none; color:var(--muted);
+    font-size:18px; cursor:pointer; padding:2px 6px; transition:color .2s;
   }
-  .hist-viewer-close:hover { color: var(--stone); }
-
-  .hist-viewer-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px 24px;
-  }
-  .hist-viewer-body::-webkit-scrollbar { width: 4px; }
-  .hist-viewer-body::-webkit-scrollbar-thumb { background: var(--ink3); }
-
+  .hist-viewer-close:hover { color:var(--stone); }
+  .hist-viewer-body { flex:1; overflow-y:auto; padding:24px; }
+  .hist-viewer-body::-webkit-scrollbar { width:4px; }
+  .hist-viewer-body::-webkit-scrollbar-thumb { background:var(--ink3); }
   .hist-viewer-text {
-    font-size: 14px;
-    font-weight: 300;
-    line-height: 2.0;
-    color: var(--text);
-    white-space: pre-wrap;
-    word-break: keep-all;
-    letter-spacing: 0.01em;
+    font-size:14px; font-weight:300; line-height:2.0;
+    color:var(--text); white-space:pre-wrap; word-break:keep-all; letter-spacing:.01em;
   }
 
-  /* ══ 반응형 — 모바일 ══ */
+  /* ── 반응형 ── */
   @media (max-width: 768px) {
-    html, body { overflow: auto; }
-
+    html,body { overflow:auto; }
     .app-body {
-      position: static;
-      flex-direction: column;
-      overflow: auto;
-      height: auto;
-      margin-top: calc(var(--header-h) + var(--subbar-h));
-      padding-bottom: 40px;
+      position:static; flex-direction:column; overflow:auto; height:auto;
+      margin-top:calc(var(--header-h) + var(--subbar-h)); padding-bottom:40px;
     }
-
-    .panel-main { border-right: none; border-bottom: 1px solid var(--border); }
-    .panel-main-inner { padding: 20px 16px; overflow: visible; }
-
-    .panel-history { width: 100%; }
-    .history-list { max-height: 320px; }
-
-    .btn-primary { min-width: 100%; }
-    .btn-secondary { width: 100%; }
-
-    .sub-bar { gap: 12px; overflow-x: auto; white-space: nowrap; }
+    .panel-main { border-right:none; border-bottom:1px solid var(--border); }
+    .panel-main-inner { padding:20px 16px; overflow:visible; }
+    .panel-history { width:100%; }
+    .history-list { max-height:280px; }
+    .btn-primary { min-width:100%; }
+    .sub-bar { gap:12px; overflow-x:auto; white-space:nowrap; }
   }
 </style>
 </head>
 <body>
 
-<!-- ══ 헤더 ══ -->
+<!-- 헤더 -->
 <header class="app-header">
   <div class="header-brand">
     <span class="badge-num">07</span>
@@ -707,11 +459,12 @@
       <span class="status-text" id="statusText">대기</span>
     </div>
     <span class="clock-display" id="clock">--:--:--</span>
-    <a class="btn-home" href="index.html">← 홈</a>
+    <button class="btn-icon" onclick="openKeyModal()" title="API 키 설정">⚙</button>
+    <a class="btn-icon" href="index.html">← 홈</a>
   </div>
 </header>
 
-<!-- ══ 서브바 ══ -->
+<!-- 서브바 -->
 <div class="sub-bar">
   <span class="sub-label">KST</span>
   <span class="sub-val" id="subDate">--.--.--</span>
@@ -723,14 +476,13 @@
   <span class="sub-val">Claude + Web Search</span>
 </div>
 
-<!-- ══ 바디 ══ -->
+<!-- 바디 -->
 <div class="app-body">
 
   <!-- 메인 패널 -->
   <div class="panel-main">
-    <div class="panel-main-inner" id="mainInner">
+    <div class="panel-main-inner">
 
-      <!-- idle -->
       <div class="idle-state" id="idleState">
         <div class="idle-icon">📡</div>
         <div>
@@ -741,13 +493,11 @@
         </div>
       </div>
 
-      <!-- loading -->
       <div class="loading-state" id="loadingState">
         <div class="progress-track"><div class="progress-fill"></div></div>
         <div class="log-area" id="logArea"></div>
       </div>
 
-      <!-- result -->
       <div class="result-state" id="resultState">
         <div class="result-meta">
           <span class="result-label">◆ 시황 브리핑</span>
@@ -757,7 +507,6 @@
         <div class="error-box" id="errorBox"></div>
       </div>
 
-      <!-- 버튼 -->
       <div class="btn-row">
         <button class="btn-primary" id="btnMain" onclick="runBriefing()">
           실시간 시황 브리핑 받기
@@ -774,19 +523,51 @@
   <div class="panel-history">
     <div class="hist-header">
       <span class="hist-title">◈ 브리핑 히스토리</span>
-      <span class="hist-count" id="histCount">최근 20건</span>
+      <span class="hist-count" id="histCount">—</span>
     </div>
     <div class="history-list" id="historyList"></div>
     <div class="hist-empty" id="historyEmpty">
       <span style="font-size:24px;opacity:.3">📂</span>
       <span>저장된 브리핑이 없습니다</span>
-      <span style="font-size:10px">브리핑 생성 시 자동 저장됩니다</span>
+      <span style="font-size:10px;margin-top:4px">브리핑 생성 시 자동 저장됩니다</span>
     </div>
   </div>
 
 </div>
 
-<!-- ══ 히스토리 뷰어 오버레이 ══ -->
+<!-- API 키 설정 모달 -->
+<div class="modal-overlay" id="keyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙ Anthropic API 키 설정</span>
+      <button class="modal-close" onclick="closeKeyModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">
+        Anthropic API 키를 입력하면 이 브라우저에만 저장됩니다.<br>
+        키는 <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>에서 발급받을 수 있습니다.
+      </p>
+      <div class="input-group">
+        <label class="input-label">API Key</label>
+        <input
+          class="input-field" id="apiKeyInput"
+          type="password" placeholder="sk-ant-api03-..."
+          autocomplete="off" spellcheck="false"
+        />
+      </div>
+      <div class="modal-warn">
+        ⚠ 이 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다.<br>
+        개인 전용 페이지에서만 사용하세요.
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-save" onclick="saveApiKey()">저장하기</button>
+        <button class="btn-modal-cancel" onclick="closeKeyModal()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 히스토리 뷰어 -->
 <div class="hist-viewer" id="histViewer" onclick="closeViewer(event)">
   <div class="hist-viewer-inner">
     <div class="hist-viewer-header">
@@ -803,22 +584,45 @@
 <script>
 /* ── 시계 ── */
 function pad(n) { return String(n).padStart(2,'0'); }
-
 function updateClock() {
-  const kst = new Date(Date.now() + 9 * 3600000);
+  const kst = new Date(Date.now() + 9*3600000);
   document.getElementById('clock').textContent =
     `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())}:${pad(kst.getUTCSeconds())}`;
   document.getElementById('subDate').textContent =
     `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}`;
 }
-updateClock();
-setInterval(updateClock, 1000);
+updateClock(); setInterval(updateClock, 1000);
 
 function kstLabel() {
-  const kst = new Date(Date.now() + 9 * 3600000);
+  const kst = new Date(Date.now() + 9*3600000);
   return `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}  `
        + `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())} KST`;
 }
+
+/* ── API 키 관리 ── */
+const KEY_STORAGE = 'bc_anthropic_key';
+
+function getApiKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
+
+function openKeyModal() {
+  document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('keyModal').classList.add('open');
+  setTimeout(() => document.getElementById('apiKeyInput').focus(), 50);
+}
+function closeKeyModal() { document.getElementById('keyModal').classList.remove('open'); }
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) { alert('API 키를 입력해주세요.'); return; }
+  if (!val.startsWith('sk-')) { alert('올바른 API 키 형식이 아닙니다.'); return; }
+  localStorage.setItem(KEY_STORAGE, val);
+  closeKeyModal();
+}
+
+/* 키 없으면 최초 진입 시 모달 자동 오픈 */
+window.addEventListener('DOMContentLoaded', () => {
+  if (!getApiKey()) openKeyModal();
+});
 
 /* ── DOM ── */
 const $idle    = document.getElementById('idleState');
@@ -833,20 +637,17 @@ const $dot     = document.getElementById('statusDot');
 const $slabel  = document.getElementById('statusText');
 const $rtime   = document.getElementById('resultTime');
 
-const STATUS_LABELS = { idle:'대기', loading:'수집 중', active:'완료', error:'오류' };
-
+const STATUS_MAP = { idle:'대기', loading:'수집 중', active:'완료', error:'오류' };
 function setStatus(s) {
   $dot.className = 'status-dot' + (s !== 'idle' ? ' '+s : '');
-  $slabel.textContent = STATUS_LABELS[s] || '';
+  $slabel.textContent = STATUS_MAP[s] || '';
 }
 
 function addLog(text, cls, delay) {
   return new Promise(r => setTimeout(() => {
     const d = document.createElement('div');
     d.className = 'log-line' + (cls ? ' '+cls : '');
-    d.textContent = text;
-    $log.appendChild(d);
-    r();
+    d.textContent = text; $log.appendChild(d); r();
   }, delay));
 }
 
@@ -854,11 +655,8 @@ async function showLoading() {
   $idle.style.display    = 'none';
   $result.style.display  = 'none';
   $loading.style.display = 'flex';
-  $btnMain.disabled = true;
-  $btnRef.style.display = 'none';
-  $log.innerHTML = '';
-  setStatus('loading');
-
+  $btnMain.disabled = true; $btnRef.style.display = 'none';
+  $log.innerHTML = ''; setStatus('loading');
   const steps = [
     ['> Claude AI 연결 중...', '', 0],
     ['> 웹 검색 도구 활성화', '', 350],
@@ -869,71 +667,62 @@ async function showLoading() {
     ['> 시장 흐름 분석 중...', 'steel', 3100],
     ['> 브리핑 생성 중', 'steel', 3800],
   ];
-  for (const [t,c,d] of steps) await addLog(t, c, d);
+  for (const [t,c,d] of steps) await addLog(t,c,d);
   setTimeout(() => {
     const cur = document.createElement('span');
-    cur.className = 'cursor';
-    $log.appendChild(cur);
+    cur.className = 'cursor'; $log.appendChild(cur);
   }, 4050);
 }
 
 function showResult(text) {
-  $loading.style.display = 'none';
-  $result.style.display  = 'flex';
-  $error.style.display   = 'none';
-  $text.textContent = text;
-  $rtime.textContent = kstLabel();
-  $btnMain.style.display = 'none';
-  $btnRef.style.display  = 'block';
+  $loading.style.display = 'none'; $result.style.display = 'flex';
+  $error.style.display = 'none';
+  $text.textContent = text; $rtime.textContent = kstLabel();
+  $btnMain.style.display = 'none'; $btnRef.style.display = 'block';
   setStatus('active');
 }
-
 function showError(msg) {
-  $loading.style.display = 'none';
-  $result.style.display  = 'flex';
-  $text.textContent = '';
-  $error.style.display   = 'block';
-  $error.textContent = '⚠ ' + msg;
-  $btnMain.disabled = false;
+  $loading.style.display = 'none'; $result.style.display = 'flex';
+  $text.textContent = ''; $error.style.display = 'block';
+  $error.textContent = '⚠ ' + msg; $btnMain.disabled = false;
   setStatus('error');
 }
-
 function doRefresh() {
-  $idle.style.display    = 'flex';
-  $result.style.display  = 'none';
+  $idle.style.display = 'flex'; $result.style.display = 'none';
   $loading.style.display = 'none';
-  $btnMain.style.display = 'block';
-  $btnMain.disabled = false;
-  $btnRef.style.display  = 'none';
-  setStatus('idle');
+  $btnMain.style.display = 'block'; $btnMain.disabled = false;
+  $btnRef.style.display = 'none'; setStatus('idle');
   runBriefing();
 }
 
 /* ── 히스토리 뷰어 ── */
 window.showHistoryItem = function(idx) {
   const items = window._historyItems;
-  if (!items || !items[idx]) return;
+  if (!items?.[idx]) return;
   const item = items[idx];
-  const kst = new Date(item.ts.getTime() + 9 * 3600000);
+  const kst = new Date(item.ts.getTime() + 9*3600000);
   document.getElementById('viewerTs').textContent =
     `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}  `
     + `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())} KST`;
   document.getElementById('viewerText').textContent = item.content;
   document.getElementById('histViewer').classList.add('open');
 };
-
 window.closeViewer = function(e) {
-  if (!e || e.target === document.getElementById('histViewer')) {
+  if (!e || e.target === document.getElementById('histViewer'))
     document.getElementById('histViewer').classList.remove('open');
-  }
 };
-
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') document.getElementById('histViewer').classList.remove('open');
+  if (e.key === 'Escape') {
+    document.getElementById('histViewer').classList.remove('open');
+    closeKeyModal();
+  }
 });
 
 /* ── Claude API ── */
 async function runBriefing() {
+  const key = getApiKey();
+  if (!key) { openKeyModal(); return; }
+
   await showLoading();
 
   const system = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
@@ -963,39 +752,40 @@ WTI 원유    $xx.xx/bbl
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system,
-        messages: [{
-          role: 'user',
-          content: '지금 웹 검색으로 실시간 데이터를 수집해서 오늘 KST 기준 시황 브리핑을 작성해줘.'
-        }],
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }]
+        messages: [{ role:'user', content:'지금 웹 검색으로 실시간 데이터를 수집해서 오늘 KST 기준 시황 브리핑을 작성해줘.' }],
+        tools: [{ type:'web_search_20250305', name:'web_search' }]
       })
     });
 
     if (!res.ok) {
       const e = await res.json().catch(()=>({}));
-      throw new Error(e?.error?.message || `HTTP ${res.status}`);
+      const msg = e?.error?.message || `HTTP ${res.status}`;
+      if (res.status === 401) {
+        showError('API 키가 유효하지 않습니다. ⚙ 버튼에서 키를 다시 확인해주세요.');
+      } else {
+        showError(msg);
+      }
+      return;
     }
 
     const data = await res.json();
     const text = (data.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('\n')
-      .trim();
+      .filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
 
     if (!text) throw new Error('응답이 비어있습니다. 다시 시도해주세요.');
-
     showResult(text);
 
-    // Firebase 저장
-    if (typeof window._saveBriefing === 'function') {
-      window._saveBriefing(text);
-    }
+    if (typeof window._saveBriefing === 'function') window._saveBriefing(text);
 
   } catch(e) {
     showError(e.message || '알 수 없는 오류가 발생했습니다.');
