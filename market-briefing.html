@@ -20,28 +20,24 @@
      ★ Firebase 설정 — 본인 프로젝트 값으로 교체
   ────────────────────────────────────────── */
   const firebaseConfig = {
-    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
-    projectId:         "my-bp-tracker-3d595",
-    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
-    messagingSenderId: "1016360206319",
-    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a
+    apiKey:            "YOUR_API_KEY",
+    authDomain:        "YOUR_PROJECT.firebaseapp.com",
+    projectId:         "YOUR_PROJECT_ID",
+    storageBucket:     "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId:             "YOUR_APP_ID"
   };
 
-  let app, auth, db, uid = null;
-
+  let db, uid = null;
   try {
-    app  = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db   = getFirestore(app);
-
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    db = getFirestore(app);
     signInAnonymously(auth).catch(e => console.warn('Auth:', e));
     onAuthStateChanged(auth, user => {
       if (user) { uid = user.uid; loadHistory(); }
     });
-  } catch(e) {
-    console.warn('Firebase init skipped (config 미설정):', e.message);
-  }
+  } catch(e) { console.warn('Firebase init skipped:', e.message); }
 
   window._saveBriefing = async function(text) {
     if (!uid || !db) return;
@@ -61,12 +57,11 @@
         orderBy('createdAt', 'desc'), limit(20)
       );
       const snap = await getDocs(q);
-      const items = snap.docs.map(d => ({
+      renderHistory(snap.docs.map(d => ({
         id: d.id,
         content: d.data().content,
         ts: d.data().createdAt?.toDate() ?? new Date()
-      }));
-      renderHistory(items);
+      })));
     } catch(e) { renderHistory([]); }
   }
 
@@ -77,19 +72,16 @@
     const empty = document.getElementById('historyEmpty');
     if (!list) return;
     if (!items.length) {
-      list.innerHTML = '';
-      empty.style.display = 'flex';
-      document.getElementById('histCount').textContent = '0건';
-      return;
+      list.innerHTML = ''; empty.style.display = 'flex';
+      document.getElementById('histCount').textContent = '0건'; return;
     }
     empty.style.display = 'none';
     document.getElementById('histCount').textContent = `${items.length}건`;
-
     list.innerHTML = items.map((item, i) => {
-      const kst = new Date(item.ts.getTime() + 9 * 3600000);
+      const kst = new Date(item.ts.getTime() + 9*3600000);
       const dateStr = `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}`;
       const timeStr = `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())}`;
-      const preview = item.content.replace(/\[.*?\]/g,'').trim().slice(0, 55);
+      const preview = item.content.replace(/\[.*?\]/g,'').trim().slice(0,55);
       return `
         <div class="hist-item ${i===0?'hist-latest':''}" onclick="showHistoryItem(${i})">
           <div class="hist-meta">
@@ -120,13 +112,13 @@
     --muted:  #6b6560;
     --up:     #4a9e6f;
     --down:   #c05050;
-    --border: rgba(255,255,255,0.06);
+    --border:  rgba(255,255,255,0.06);
     --border2: rgba(255,255,255,0.10);
     --header-h: 48px;
     --subbar-h: 36px;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html,body {
+  html, body {
     height:100%; background:var(--ink); color:var(--text);
     font-family:'Pretendard',-apple-system,'Apple SD Gothic Neo',sans-serif;
     font-size:14px; font-weight:400; overflow:hidden;
@@ -134,8 +126,7 @@
 
   /* ── 헤더 ── */
   .app-header {
-    position:fixed; top:0; left:0; right:0;
-    height:var(--header-h);
+    position:fixed; top:0; left:0; right:0; height:var(--header-h);
     background:var(--ink2); border-bottom:1px solid var(--border2);
     display:flex; align-items:center; justify-content:space-between;
     padding:0 20px; z-index:100;
@@ -150,16 +141,16 @@
   .brand-sep   { color:var(--muted); font-size:12px; margin:0 2px; }
   .brand-sub   { font-size:11px; color:var(--muted); }
   .header-right { display:flex; align-items:center; gap:16px; }
-  .status-row  { display:flex; align-items:center; gap:6px; }
-  .status-dot  {
+  .status-row   { display:flex; align-items:center; gap:6px; }
+  .status-dot {
     width:6px; height:6px; border-radius:50%;
     background:var(--steel2); animation:pulse 2.5s ease-in-out infinite; flex-shrink:0;
   }
-  .status-dot.active  { background:var(--up);   animation:none; }
+  .status-dot.active  { background:var(--up);    animation:none; }
   .status-dot.loading { background:var(--gold2); }
-  .status-dot.error   { background:var(--down); animation:none; }
+  .status-dot.error   { background:var(--down);  animation:none; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .status-text { font-size:11px; color:var(--muted); letter-spacing:.06em; }
+  .status-text   { font-size:11px; color:var(--muted); letter-spacing:.06em; }
   .clock-display {
     font-size:11px; color:var(--stone2); font-weight:500;
     letter-spacing:.12em; font-variant-numeric:tabular-nums;
@@ -174,8 +165,7 @@
 
   /* ── 서브바 ── */
   .sub-bar {
-    position:fixed; top:var(--header-h); left:0; right:0;
-    height:var(--subbar-h);
+    position:fixed; top:var(--header-h); left:0; right:0; height:var(--subbar-h);
     background:var(--ink); border-bottom:1px solid var(--border);
     display:flex; align-items:center; padding:0 20px; gap:16px; z-index:90;
   }
@@ -185,10 +175,8 @@
 
   /* ── 바디 ── */
   .app-body {
-    position:fixed;
-    top:calc(var(--header-h) + var(--subbar-h));
-    bottom:0; left:0; right:0;
-    display:flex; overflow:hidden;
+    position:fixed; top:calc(var(--header-h) + var(--subbar-h));
+    bottom:0; left:0; right:0; display:flex; overflow:hidden;
   }
 
   /* ── 메인 패널 ── */
@@ -197,14 +185,12 @@
     overflow:hidden; border-right:1px solid var(--border); min-width:0;
   }
   .panel-main-inner {
-    flex:1; overflow-y:auto;
-    padding:28px 32px;
+    flex:1; overflow-y:auto; padding:28px 32px;
     display:flex; flex-direction:column; gap:24px;
   }
   .panel-main-inner::-webkit-scrollbar { width:4px; }
   .panel-main-inner::-webkit-scrollbar-thumb { background:var(--ink3); border-radius:2px; }
 
-  /* idle */
   .idle-state {
     flex:1; display:flex; flex-direction:column;
     align-items:center; justify-content:center;
@@ -224,7 +210,6 @@
   .idle-title { font-size:16px; font-weight:500; color:var(--stone); }
   .idle-desc  { font-size:12px; color:var(--muted); line-height:1.7; margin-top:6px; }
 
-  /* loading */
   .loading-state { display:none; flex-direction:column; gap:16px; }
   .progress-track { height:2px; background:var(--ink3); border-radius:1px; overflow:hidden; }
   .progress-fill {
@@ -245,7 +230,6 @@
   }
   @keyframes blink { 50%{opacity:0} }
 
-  /* result */
   .result-state { display:none; flex-direction:column; gap:18px; }
   .result-meta {
     display:flex; align-items:center; justify-content:space-between;
@@ -265,10 +249,9 @@
   .error-box {
     display:none; font-size:12px; color:var(--down);
     padding:12px 16px; border:1px solid rgba(192,80,80,.2);
-    background:rgba(192,80,80,.04); border-radius:2px; letter-spacing:.03em;
+    background:rgba(192,80,80,.04); border-radius:2px; letter-spacing:.03em; line-height:1.6;
   }
 
-  /* 버튼 */
   .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
   .btn-primary {
     flex:1; min-width:160px; padding:13px 20px;
@@ -343,41 +326,64 @@
   .modal-overlay.open { display:flex; }
   .modal {
     background:var(--ink2); border:1px solid var(--border2);
-    border-radius:2px; width:100%; max-width:480px; overflow:hidden;
+    border-radius:2px; width:100%; max-width:500px; overflow:hidden;
   }
   .modal-header {
-    padding:16px 20px; background:var(--ink3);
-    border-bottom:1px solid var(--border);
+    padding:16px 20px; background:var(--ink3); border-bottom:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between;
   }
   .modal-title { font-size:13px; font-weight:600; color:var(--cream); letter-spacing:.02em; }
   .modal-close {
     background:none; border:none; color:var(--muted);
-    font-size:20px; cursor:pointer; line-height:1; padding:0 4px;
-    transition:color .2s;
+    font-size:20px; cursor:pointer; line-height:1; padding:0 4px; transition:color .2s;
   }
   .modal-close:hover { color:var(--stone); }
   .modal-body { padding:24px 20px; display:flex; flex-direction:column; gap:16px; }
-  .modal-desc {
-    font-size:12px; color:var(--muted); line-height:1.7; letter-spacing:.02em;
+
+  /* 무료 배지 */
+  .free-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(74,158,111,.1); border:1px solid rgba(74,158,111,.25);
+    color:var(--up); font-size:11px; font-weight:500;
+    padding:6px 12px; border-radius:2px; letter-spacing:.04em;
+    align-self:flex-start;
   }
-  .modal-desc a { color:var(--steel); text-decoration:none; }
-  .modal-desc a:hover { color:var(--stone2); }
+
+  .modal-steps {
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .step {
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .step-num {
+    width:20px; height:20px; border-radius:50%;
+    background:var(--ink3); border:1px solid var(--border2);
+    color:var(--gold); font-size:10px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; margin-top:1px;
+  }
+  .step-text {
+    font-size:12px; color:var(--muted); line-height:1.6; letter-spacing:.02em;
+  }
+  .step-text a { color:var(--steel); text-decoration:none; }
+  .step-text a:hover { color:var(--stone2); }
+  .step-text strong { color:var(--stone); font-weight:500; }
+
   .input-group { display:flex; flex-direction:column; gap:6px; }
   .input-label { font-size:10px; color:var(--stone2); letter-spacing:.1em; text-transform:uppercase; }
   .input-field {
     background:var(--ink); border:1px solid var(--border2);
     color:var(--text); font-family:'Pretendard',monospace;
     font-size:12px; padding:10px 14px; border-radius:2px;
-    outline:none; letter-spacing:.04em; transition:border-color .2s;
-    width:100%;
+    outline:none; letter-spacing:.04em; transition:border-color .2s; width:100%;
   }
   .input-field:focus { border-color:var(--steel2); }
   .input-field::placeholder { color:var(--muted); }
+
   .modal-warn {
-    font-size:11px; color:var(--gold2); letter-spacing:.03em;
-    padding:10px 14px; border:1px solid rgba(143,110,42,.2);
-    background:rgba(143,110,42,.06); border-radius:2px; line-height:1.6;
+    font-size:11px; color:var(--stone3); letter-spacing:.02em;
+    padding:10px 14px; border:1px solid var(--border2);
+    background:var(--ink3); border-radius:2px; line-height:1.6;
   }
   .modal-footer { display:flex; gap:10px; }
   .btn-modal-save {
@@ -428,7 +434,7 @@
   }
 
   /* ── 반응형 ── */
-  @media (max-width: 768px) {
+  @media (max-width:768px) {
     html,body { overflow:auto; }
     .app-body {
       position:static; flex-direction:column; overflow:auto; height:auto;
@@ -451,7 +457,7 @@
     <span class="badge-num">07</span>
     <span class="brand-title">AI 시황 브리핑</span>
     <span class="brand-sep">/</span>
-    <span class="brand-sub">Claude · Realtime</span>
+    <span class="brand-sub">Gemini · Realtime</span>
   </div>
   <div class="header-right">
     <div class="status-row">
@@ -473,13 +479,12 @@
   <span class="sub-val">US · KR · FX · Commodities</span>
   <span class="sub-sep">|</span>
   <span class="sub-label">엔진</span>
-  <span class="sub-val">Claude + Web Search</span>
+  <span class="sub-val">Gemini 2.0 Flash + Google Search</span>
 </div>
 
 <!-- 바디 -->
 <div class="app-body">
 
-  <!-- 메인 패널 -->
   <div class="panel-main">
     <div class="panel-main-inner">
 
@@ -488,7 +493,7 @@
         <div>
           <div class="idle-title">AI 실시간 시황 브리핑</div>
           <div class="idle-desc">
-            Claude가 웹 검색으로 현재 시장 데이터를 수집하고<br>한국어 브리핑을 생성합니다
+            Gemini가 Google 검색으로 현재 시장 데이터를 수집하고<br>한국어 브리핑을 생성합니다
           </div>
         </div>
       </div>
@@ -519,7 +524,6 @@
     </div>
   </div>
 
-  <!-- 히스토리 패널 -->
   <div class="panel-history">
     <div class="hist-header">
       <span class="hist-title">◈ 브리핑 히스토리</span>
@@ -539,26 +543,48 @@
 <div class="modal-overlay" id="keyModal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">⚙ Anthropic API 키 설정</span>
+      <span class="modal-title">⚙ Google AI API 키 설정</span>
       <button class="modal-close" onclick="closeKeyModal()">×</button>
     </div>
     <div class="modal-body">
-      <p class="modal-desc">
-        Anthropic API 키를 입력하면 이 브라우저에만 저장됩니다.<br>
-        키는 <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>에서 발급받을 수 있습니다.
-      </p>
+
+      <div class="free-badge">✓ 완전 무료 · 신용카드 불필요</div>
+
+      <div class="modal-steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 접속<br>
+            Google 계정으로 로그인
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>Create API key</strong> 클릭 → 키 복사
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            아래에 붙여넣기 후 저장
+          </div>
+        </div>
+      </div>
+
       <div class="input-group">
-        <label class="input-label">API Key</label>
+        <label class="input-label">Google AI API Key</label>
         <input
           class="input-field" id="apiKeyInput"
-          type="password" placeholder="sk-ant-api03-..."
+          type="password" placeholder="AIza..."
           autocomplete="off" spellcheck="false"
         />
       </div>
+
       <div class="modal-warn">
-        ⚠ 이 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다.<br>
-        개인 전용 페이지에서만 사용하세요.
+        🔒 키는 이 브라우저의 localStorage에만 저장되며 외부로 전송되지 않습니다.
       </div>
+
       <div class="modal-footer">
         <button class="btn-modal-save" onclick="saveApiKey()">저장하기</button>
         <button class="btn-modal-cancel" onclick="closeKeyModal()">취소</button>
@@ -599,9 +625,8 @@ function kstLabel() {
        + `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())} KST`;
 }
 
-/* ── API 키 관리 ── */
-const KEY_STORAGE = 'bc_anthropic_key';
-
+/* ── API 키 ── */
+const KEY_STORAGE = 'bc_gemini_key';
 function getApiKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
 
 function openKeyModal() {
@@ -610,16 +635,14 @@ function openKeyModal() {
   setTimeout(() => document.getElementById('apiKeyInput').focus(), 50);
 }
 function closeKeyModal() { document.getElementById('keyModal').classList.remove('open'); }
-
 function saveApiKey() {
   const val = document.getElementById('apiKeyInput').value.trim();
   if (!val) { alert('API 키를 입력해주세요.'); return; }
-  if (!val.startsWith('sk-')) { alert('올바른 API 키 형식이 아닙니다.'); return; }
+  if (!val.startsWith('AIza')) { alert('Google AI API 키는 AIza 로 시작합니다.\n다시 확인해주세요.'); return; }
   localStorage.setItem(KEY_STORAGE, val);
   closeKeyModal();
 }
 
-/* 키 없으면 최초 진입 시 모달 자동 오픈 */
 window.addEventListener('DOMContentLoaded', () => {
   if (!getApiKey()) openKeyModal();
 });
@@ -657,9 +680,10 @@ async function showLoading() {
   $loading.style.display = 'flex';
   $btnMain.disabled = true; $btnRef.style.display = 'none';
   $log.innerHTML = ''; setStatus('loading');
+
   const steps = [
-    ['> Claude AI 연결 중...', '', 0],
-    ['> 웹 검색 도구 활성화', '', 350],
+    ['> Gemini AI 연결 중...', '', 0],
+    ['> Google Search 그라운딩 활성화', '', 350],
     ['> KOSPI / KOSDAQ 데이터 조회', 'gold', 850],
     ['> 나스닥 / S&P500 현재가 수집', 'gold', 1450],
     ['> USD/KRW 환율 실시간 검색', 'gold', 1950],
@@ -684,7 +708,7 @@ function showResult(text) {
 function showError(msg) {
   $loading.style.display = 'none'; $result.style.display = 'flex';
   $text.textContent = ''; $error.style.display = 'block';
-  $error.textContent = '⚠ ' + msg; $btnMain.disabled = false;
+  $error.innerHTML = msg; $btnMain.disabled = false;
   setStatus('error');
 }
 function doRefresh() {
@@ -699,12 +723,11 @@ function doRefresh() {
 window.showHistoryItem = function(idx) {
   const items = window._historyItems;
   if (!items?.[idx]) return;
-  const item = items[idx];
-  const kst = new Date(item.ts.getTime() + 9*3600000);
+  const kst = new Date(items[idx].ts.getTime() + 9*3600000);
   document.getElementById('viewerTs').textContent =
     `${kst.getUTCFullYear()}.${pad(kst.getUTCMonth()+1)}.${pad(kst.getUTCDate())}  `
     + `${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())} KST`;
-  document.getElementById('viewerText').textContent = item.content;
+  document.getElementById('viewerText').textContent = items[idx].content;
   document.getElementById('histViewer').classList.add('open');
 };
 window.closeViewer = function(e) {
@@ -718,15 +741,15 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ── Claude API ── */
+/* ── Gemini API ── */
 async function runBriefing() {
   const key = getApiKey();
   if (!key) { openKeyModal(); return; }
 
   await showLoading();
 
-  const system = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
-웹 검색으로 KST 기준 최신 시장 데이터를 수집한 뒤 아래 형식으로 브리핑을 작성하세요.
+  const prompt = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
+Google 검색으로 지금 이 순간 KST 기준 최신 시장 데이터를 수집한 뒤 아래 형식으로 브리핑을 작성하세요.
 
 [오늘의 시황 — YYYY.MM.DD HH:MM KST]
 
@@ -750,45 +773,48 @@ WTI 원유    $xx.xx/bbl
 마크다운 없이 순수 텍스트만. 수치는 검색한 실제 최신 데이터 사용.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system,
-        messages: [{ role:'user', content:'지금 웹 검색으로 실시간 데이터를 수집해서 오늘 KST 기준 시황 브리핑을 작성해줘.' }],
-        tools: [{ type:'web_search_20250305', name:'web_search' }]
-      })
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          tools: [{ googleSearch: {} }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
+        })
+      }
+    );
 
     if (!res.ok) {
-      const e = await res.json().catch(()=>({}));
+      const e = await res.json().catch(() => ({}));
       const msg = e?.error?.message || `HTTP ${res.status}`;
-      if (res.status === 401) {
-        showError('API 키가 유효하지 않습니다. ⚙ 버튼에서 키를 다시 확인해주세요.');
+      if (res.status === 400 && msg.includes('API_KEY')) {
+        showError('⚠ API 키가 유효하지 않습니다.<br>⚙ 버튼에서 키를 다시 확인해주세요.');
+      } else if (res.status === 429) {
+        showError('⚠ 요청 한도 초과입니다. 잠시 후 다시 시도해주세요.');
       } else {
-        showError(msg);
+        showError(`⚠ ${msg}`);
       }
       return;
     }
 
     const data = await res.json();
-    const text = (data.content || [])
-      .filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+
+    /* 응답 텍스트 추출 */
+    const text = data?.candidates?.[0]?.content?.parts
+      ?.filter(p => p.text)
+      ?.map(p => p.text)
+      ?.join('\n')
+      ?.trim();
 
     if (!text) throw new Error('응답이 비어있습니다. 다시 시도해주세요.');
-    showResult(text);
 
+    showResult(text);
     if (typeof window._saveBriefing === 'function') window._saveBriefing(text);
 
   } catch(e) {
-    showError(e.message || '알 수 없는 오류가 발생했습니다.');
+    showError(`⚠ ${e.message || '알 수 없는 오류가 발생했습니다.'}`);
   }
 }
 </script>
