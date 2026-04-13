@@ -71,7 +71,7 @@
   // 현재 파일명으로 페이지 이름 자동 감지
   var FILE_LABELS = {
     'market-dashboard.html': '📊 마켓 대시보드',
-    'dashboard.html':        '📊 4분할 대시보드',
+    'dashboard.html':        '📊 4분할 차트보기',
     'daily-pick.html':       '📈 일일 주식 픽',
     'stocklens.html':        '💼 StockLens',
     'blood-pressure.html':   '❤️ 혈압 기록부',
