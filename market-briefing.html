@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -628,33 +627,23 @@ function setStatus(s) {
   $dot.className = 'status-dot' + (s !== 'idle' ? ' '+s : '');
   $slabel.textContent = STATUS_MAP[s] || '';
 }
-function addLog(text, cls, delay) {
-  return new Promise(r => setTimeout(() => {
-    const d = document.createElement('div');
-    d.className = 'log-line' + (cls ? ' '+cls : '');
-    d.textContent = text; $log.appendChild(d); r();
-  }, delay));
+function addLog(text, cls) {
+  const d = document.createElement('div');
+  d.className = 'log-line' + (cls ? ' '+cls : '');
+  d.textContent = text;
+  const cur = document.getElementById('logCursor');
+  if (cur) $log.insertBefore(d, cur);
+  else $log.appendChild(d);
 }
-async function showLoading(modelLabel) {
+
+function initLoading(modelLabel) {
   $idle.style.display = 'none'; $result.style.display = 'none';
   $loading.style.display = 'flex';
   $btnMain.disabled = true; $btnRef.style.display = 'none';
-  $log.innerHTML = ''; setStatus('loading');
-  const steps = [
-    [`> ${model.label} 연결 중...`, '', 0],
-    ['> Google Search 그라운딩 활성화', '', 350],
-    ['> KOSPI / KOSDAQ 데이터 조회', 'gold', 850],
-    ['> 나스닥 / S&P500 현재가 수집', 'gold', 1450],
-    ['> USD/KRW 환율 실시간 검색', 'gold', 1950],
-    ['> 국제 금값 · 원유 시세 조회', 'gold', 2450],
-    ['> 시장 흐름 분석 중...', 'steel', 3100],
-    ['> 브리핑 생성 중', 'steel', 3800],
-  ];
-  for (const [t,c,d] of steps) await addLog(t,c,d);
-  setTimeout(() => {
-    const cur = document.createElement('span');
-    cur.className = 'cursor'; $log.appendChild(cur);
-  }, 4050);
+  $log.innerHTML = '<span class="cursor" id="logCursor"></span>';
+  setStatus('loading');
+  addLog('> ' + modelLabel + ' 연결 중...', '');
+  addLog('> Google Search 그라운딩 활성화', '');
 }
 function showResult(text, modelLabel) {
   $loading.style.display = 'none'; $result.style.display = 'flex';
@@ -756,52 +745,56 @@ async function runBriefing() {
   const key = getApiKey();
   if (!key) { openKeyModal(); return; }
 
-  await showLoading(MODELS[0].label);
+  initLoading(MODELS[0].label);
 
   for (let i = 0; i < MODELS.length; i++) {
     const model = MODELS[i];
 
-    // 폴백 시 로그 추가
     if (i > 0) {
-      await addLog(`> ${model.label} 로 재시도 중...`, 'steel', 0);
-      document.getElementById('subEngine').textContent = `${model.label} + Google Search`;
+      addLog('> ' + model.label + ' 로 재시도 중...', 'steel');
+      document.getElementById('subEngine').textContent = model.label + ' + Google Search';
     }
 
     try {
+      addLog('> 데이터 수집 요청 전송 중...', 'gold');
       const { ok, status, data } = await callGemini(model.id, key);
 
       if (!ok) {
         const rawMsg = data?.error?.message || JSON.stringify(data?.error || data);
         const errCode = data?.error?.code || status;
 
-        // 429: 다음 모델로 폴백
         if (status === 429 && i < MODELS.length - 1) {
-          await addLog(`> ${model.label} 한도 초과, 다음 모델 시도`, 'gold', 0);
+          addLog('> ' + model.label + ' 한도 초과, 다음 모델 시도', 'gold');
+          continue;
+        }
+        if (status === 404 && i < MODELS.length - 1) {
+          addLog('> ' + model.label + ' 모델 없음, 다음 모델 시도', 'gold');
           continue;
         }
 
-        // 에러 종류별 안내
         if (status === 400 || rawMsg.includes('API_KEY') || rawMsg.includes('API key')) {
           showError('API 키가 유효하지 않습니다', rawMsg,
             '⚙ 버튼을 눌러 키를 다시 확인해주세요.<br><a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>에서 새 키를 발급받을 수 있습니다.');
         } else if (status === 429) {
           showError('모든 모델 요청 한도 초과', rawMsg,
-            '무료 티어 한도(분당 15회)를 초과했습니다. 1~2분 후 다시 시도해주세요.');
+            '무료 티어 한도를 초과했습니다. 1~2분 후 다시 시도해주세요.');
         } else if (status === 403) {
           showError('API 키 권한 오류', rawMsg,
             'Google AI Studio에서 해당 키의 권한을 확인해주세요.');
         } else {
-          showError(`오류 (HTTP ${errCode})`, rawMsg, '');
+          showError('오류 (HTTP ' + errCode + ')', rawMsg, '');
         }
         return;
       }
 
-      // 성공
+      addLog('> 브리핑 생성 완료', 'steel');
+
       const text = data?.candidates?.[0]?.content?.parts
         ?.filter(p => p.text)?.map(p => p.text)?.join('\n')?.trim();
 
       if (!text) {
-        showError('응답이 비어있습니다', JSON.stringify(data?.candidates?.[0]?.finishReason || ''),
+        showError('응답이 비어있습니다',
+          JSON.stringify(data?.candidates?.[0]?.finishReason || ''),
           '잠시 후 다시 시도해주세요.');
         return;
       }
@@ -812,7 +805,7 @@ async function runBriefing() {
 
     } catch(e) {
       if (i < MODELS.length - 1) {
-        await addLog(`> 연결 오류, 다음 모델 시도`, 'gold', 0);
+        addLog('> 연결 오류, 다음 모델 시도', 'gold');
         continue;
       }
       showError('네트워크 오류', e.message, '인터넷 연결을 확인하고 다시 시도해주세요.');
