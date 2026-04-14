@@ -701,15 +701,16 @@ const MODELS = [
 ];
 
 const PROMPT = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
-Google 검색으로 지금 이 순간 KST 기준 최신 시장 데이터를 수집한 뒤 아래 형식으로 브리핑을 작성하세요.
+Google 검색으로 지금 이 순간 KST 기준 최신 시장 데이터를 수집하세요.
+반드시 아래 형식을 끝까지 완성해서 출력하세요. 절대 중간에 끊지 마세요.
 
 [오늘의 시황 — YYYY.MM.DD HH:MM KST]
 
 📊 주요 지수
 KOSPI       xxx,xxx.xx  ▲/▼ xx.xx (+x.xx%)
 KOSDAQ      xxx.xx      ▲/▼ xx.xx (+x.xx%)
-나스닥      xx,xxx.xx   ▲/▼ xx.xx
-S&P500      x,xxx.xx    ▲/▼ xx.xx
+나스닥      xx,xxx.xx   ▲/▼ xx.xx (+x.xx%)
+S&P500      x,xxx.xx    ▲/▼ xx.xx (+x.xx%)
 
 💱 환율 · 원자재
 USD/KRW     x,xxx원
@@ -717,12 +718,13 @@ USD/KRW     x,xxx원
 WTI 원유    $xx.xx/bbl
 
 📌 핵심 흐름
-[오늘 시장 핵심 2~3줄. 주요 이슈, 섹터 동향, 전반적 분위기]
+(오늘 시장 핵심 3줄. 주요 이슈, 섹터 동향, 전반적 분위기를 반드시 작성)
 
 ⚡ 주목 포인트
-[투자자 관점 오늘 가장 주목할 1가지. 구체적 근거 포함]
+(투자자 관점 오늘 가장 주목할 1가지. 구체적 근거 포함. 반드시 작성)
 
-마크다운 없이 순수 텍스트만. 수치는 검색한 실제 최신 데이터 사용.`;
+위 4개 섹션을 모두 빠짐없이 완성하세요.
+마크다운 기호(**, ##, -, * 등) 없이 순수 텍스트만. 수치는 검색한 실제 최신 데이터 사용.`;
 
 async function callGemini(modelId, key) {
   const res = await fetch(
@@ -733,7 +735,7 @@ async function callGemini(modelId, key) {
       body: JSON.stringify({
         contents: [{ role:'user', parts:[{ text: PROMPT }] }],
         tools: [{ googleSearch: {} }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
+        generationConfig: { temperature: 0.3, maxOutputTokens: 4000 }
       })
     }
   );
@@ -789,14 +791,26 @@ async function runBriefing() {
 
       addLog('> 브리핑 생성 완료', 'steel');
 
-      const text = data?.candidates?.[0]?.content?.parts
-        ?.filter(p => p.text)?.map(p => p.text)?.join('\n')?.trim();
+      // 텍스트 파트 전체 수집 (grounding 응답 포함)
+      const candidate = data?.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+      const text = parts
+        .map(p => p.text || '')
+        .join('')
+        .trim();
+
+      const finishReason = candidate?.finishReason || '';
 
       if (!text) {
         showError('응답이 비어있습니다',
-          JSON.stringify(data?.candidates?.[0]?.finishReason || ''),
+          'finishReason: ' + finishReason,
           '잠시 후 다시 시도해주세요.');
         return;
+      }
+
+      // 응답이 중간에 잘린 경우 경고 표시
+      if (finishReason === 'MAX_TOKENS') {
+        addLog('⚠ 응답이 토큰 한도로 잘렸을 수 있습니다', 'gold');
       }
 
       showResult(text, model.label);
