@@ -37,13 +37,20 @@
   } catch(e) { console.warn('Firebase init skipped:', e.message); }
 
   window._saveBriefing = async function(text) {
-    if (!uid || !db) return;
+    if (!uid || !db) {
+      window._briefingSaveMsg = 'firebase_not_ready';
+      return;
+    }
     try {
       await addDoc(collection(db, 'users', uid, 'briefings'), {
         content: text, createdAt: serverTimestamp()
       });
+      window._briefingSaveMsg = 'ok';
       loadHistory();
-    } catch(e) { console.warn('Save:', e); }
+    } catch(e) {
+      window._briefingSaveMsg = 'error: ' + e.message;
+      console.warn('Save:', e);
+    }
   };
 
   async function loadHistory() {
@@ -468,7 +475,7 @@
   <span class="sub-val">US · KR · FX · Commodities</span>
   <span class="sub-sep">|</span>
   <span class="sub-label">엔진</span>
-  <span class="sub-val" id="subEngine">Gemini 2.5 Flash Lite + Google Search</span>
+  <span class="sub-val" id="subEngine">Gemini 2.5 Flash + Google Search</span>
 </div>
 
 <div class="app-body">
@@ -695,9 +702,9 @@ document.addEventListener('keydown', e => {
 
 /* ── Gemini API 호출 (모델 폴백 포함) ── */
 const MODELS = [
-  { id: 'gemini-2.5-flash-lite-preview-06-17', label: 'Gemini 2.5 Flash Lite' },
-  { id: 'gemini-2.5-flash',                    label: 'Gemini 2.5 Flash' },
-  { id: 'gemini-2.0-flash',                    label: 'Gemini 2.0 Flash' },
+  { id: 'gemini-2.5-flash',      label: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+  { id: 'gemini-2.0-flash',      label: 'Gemini 2.0 Flash' },
 ];
 
 const PROMPT = `당신은 블랙코어(BlackCore)의 전담 시황 브리퍼입니다.
@@ -814,7 +821,13 @@ async function runBriefing() {
       }
 
       showResult(text, model.label);
-      if (typeof window._saveBriefing === 'function') window._saveBriefing(text);
+      if (typeof window._saveBriefing === 'function') {
+        await window._saveBriefing(text);
+        const msg = window._briefingSaveMsg;
+        if (msg === 'ok') addLog('> Firebase 히스토리 저장 완료', 'steel');
+        else if (msg === 'firebase_not_ready') addLog('> Firebase 미설정 — 히스토리 저장 생략', 'gold');
+        else addLog('> 히스토리 저장 실패: ' + msg, 'gold');
+      }
       return;
 
     } catch(e) {
