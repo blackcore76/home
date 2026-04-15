@@ -1,19 +1,72 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📈 AI 주식 분석 브리핑</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .loader { border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>AI 주식 분석 브리핑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#06090d;--card:#0f1520;--cardh:#131b27;--border:rgba(99,155,255,.08);--bord2:rgba(99,155,255,.18);--text:#d1ddf0;--muted:#4a607a;--muted2:#6b84a0;--up:#00e676;--down:#ff3b5c;--accent:#3d8bff;--kr-down:#448aff}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;min-height:100vh;padding:18px 16px 28px;background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(30,60,130,.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 100%,rgba(10,40,90,.10) 0%,transparent 60%)}
+  header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bord2)}
+  .logo{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--accent);display:flex;align-items:center;gap:8px}
+  .logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:lp 3s ease-in-out infinite}
+  @keyframes lp{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
+  .hdr-r{text-align:right;font-size:10px;color:var(--muted2);line-height:1.8}
+  .srow{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:1px}
+  .ldot{width:5px;height:5px;border-radius:50%;background:var(--up);box-shadow:0 0 5px var(--up);animation:bl 2s infinite;flex-shrink:0}
+  .ldot.err{background:var(--down);box-shadow:0 0 5px var(--down);animation:none}
+  .ldot.load{background:#f59e0b;box-shadow:0 0 5px #f59e0b;animation:bl .5s infinite}
+  @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+  .rbtn{background:transparent;border:1px solid var(--bord2);color:var(--muted2);font-family:inherit;font-size:10px;padding:3px 10px;border-radius:4px;cursor:pointer;transition:all .2s}
+  .rbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .rbtn:active{transform:scale(.95)}
+  #pxStat{font-size:9px;color:var(--muted)}
+  .sec{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:20px 0 10px}
+  .sec span{flex-shrink:0}
+  .sec::after{content:'';flex:1;height:1px;background:var(--bord2)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr); grid-auto-rows: 1fr; height: calc(100vh - 160px); gap:14px}
+  .card {  display: flex;  flex-direction: column;  justify-content: space-between; }
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 13px 11px;position:relative;overflow:hidden;transition:border-color .3s,background .3s}
+  .card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(61,139,255,.04) 0%,transparent 60%);pointer-events:none}
+  .card:hover{border-color:var(--bord2);background:var(--cardh)}
+  .cn{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--muted2);text-transform:uppercase;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cp{font-size:24px;font-weight:700;line-height:1.25;margin:5px 0 3px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cc{font-size:13px;font-weight:600;white-space:nowrap}
+  .up{color:var(--up)}.down{color:var(--down)}.nt{color:var(--muted2)}
+  .kr-up{color:var(--down)}.kr-down{color:var(--kr-down)}
+  .sp{margin-top:8px;height:34px}
+  .sp svg{width:100%;height:100%;display:block}
+  .skel{height:34px;background:linear-gradient(90deg,var(--border) 25%,rgba(61,139,255,.06) 50%,var(--border) 75%);background-size:200% 100%;animation:sh 1.5s linear infinite;border-radius:3px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes fu{0%{background:rgba(0,230,118,.13)}100%{background:var(--card)}}
+  @keyframes fd{0%{background:rgba(255,59,92,.11)}100%{background:var(--card)}}
+  @keyframes fku{0%{background:rgba(255,59,92,.13)}100%{background:var(--card)}}
+  @keyframes fkd{0%{background:rgba(68,138,255,.13)}100%{background:var(--card)}}
+  .flu{animation:fu .7s ease-out}.fld{animation:fd .7s ease-out}
+  .flku{animation:fku .7s ease-out}.flkd{animation:fkd .7s ease-out}
+  #dbg{display:none;background:#0a0f18;border:1px solid var(--bord2);border-radius:8px;padding:12px;margin-top:14px;font-size:9px;color:var(--muted2);line-height:1.8;max-height:150px;overflow-y:auto}
+  #dbg.show{display:block}
+  .dbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:9px;padding:2px 8px;border-radius:3px;cursor:pointer;margin-top:12px;display:block;margin:12px auto 0}
+  footer{margin-top:18px;font-size:9px;color:var(--muted);text-align:center;padding-top:12px;border-top:1px solid var(--border);letter-spacing:.05em;line-height:1.9}
+  @media(max-width:920px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:600px){body{padding:12px 10px 20px}.grid{grid-template-columns:repeat(2,1fr);gap:8px}.cp{font-size:14px}}
+</style>
+<script src="home-bar.js"></script>
 </head>
 <body class="bg-slate-900 p-4 md:p-8 font-sans antialiased text-white">
 
-    <div class="max-w-2xl mx-auto bg-slate-800 shadow-2xl rounded-2xl p-6 border border-slate-700">
+    <!-- 탑바 (BlackCore 네비게이션) -->
+    <div class="topbar">
+        <a href="index.html">← BlackCore 홈</a>
+        <span class="topbar-sep">|</span>
+    <div class="logo"><div class="logo-dot"></div>AI 주식 분석 브리핑</div>
+    </div>
+
+    <div class="max-w-2xl mx-auto bg-slate-800 shadow-2xl rounded-2xl p-6 border border-slate-700 mt-4">
         
         <h1 class="text-3xl font-bold text-center text-blue-400 mb-2 flex items-center justify-center gap-2">
             📊 AI 주식 분석 브리핑 <span class="text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded-full">PRO</span>
@@ -258,7 +311,7 @@
                 const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
                 
                 const prompt = `오늘은 ${dateStr}입니다. 당신은 AI 수석 기술적 애널리스트입니다. 
-다음 주식 데이터를 바탕으로 기관 투자자에게 제공하는 심층 기술적 분석 리포트를 작성하세요.
+다음 주식 데이터를 바탕으로 개미 투자자에게 제공하는 심층 기술적 분석 리포트를 작성하세요.
 "오늘 기분이 좋아요" 같은 주관적 표현은 절대 금지입니다.
 
 분석 데이터:
@@ -276,24 +329,27 @@
 
 반드시 전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
 
-                // Gemini API 호출 (최신 무료 모델)
-                const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-                const aiResponse = await fetch(aiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.4, maxOutputTokens: 4192 }
-                    })
-                });
-                const aiData = await aiResponse.json();
+// Gemini API 호출 부분 전체를 이렇게 바꾸세요
+const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiKey}`;
+const aiResponse = await fetch(aiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+    })
+});
 
-                let aiText = '';
-                if (aiData.candidates && aiData.candidates.length > 0) {
-                    aiText = aiData.candidates[0].content.parts[0].text;
-                } else {
-                    aiText = 'AI 분석 중 오류 발생. API 키 또는 모델명을 확인하세요. (예: gemini-2.5-flash)';
-                }
+const aiData = await aiResponse.json();
+
+let aiText = '';
+if (aiData.candidates && aiData.candidates.length > 0) {
+    aiText = aiData.candidates[0].content.parts[0].text;
+} else if (aiData.error) {
+    aiText = `AI 분석 오류: ${aiData.error.message}`;
+} else {
+    aiText = 'AI 분석 중 오류 발생. API 키 또는 모델명을 확인하세요.';
+}
 
                 document.getElementById('analysisText').innerText = aiText;
 
