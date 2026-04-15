@@ -277,7 +277,7 @@
 반드시 전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
 
                 // Gemini API 호출 (최신 무료 모델)
-                const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+                const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`;
                 const aiResponse = await fetch(aiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
