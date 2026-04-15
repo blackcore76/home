@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 AI 주식 분석 리포트 </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .loader { border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-900 p-4 md:p-8 font-sans antialiased text-white">
+
+    <div class="max-w-2xl mx-auto bg-slate-800 shadow-2xl rounded-2xl p-6 border border-slate-700">
+        
+        <h1 class="text-3xl font-bold text-center text-blue-400 mb-2 flex items-center justify-center gap-2">
+            📊 AI 주식 분석 리포트 <span class="text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded-full">PRO</span>
+        </h1>
+        <p class="text-center text-slate-400 mb-4 text-sm">핀허브 실시간 데이터 + Gemini 심층 분석</p>
+
+        <!-- API 키 관리 (톱니바퀴 UI) -->
+        <div class="bg-slate-700/30 rounded-lg mb-4 border border-slate-600 overflow-hidden">
+            <div class="flex justify-between items-center p-3 bg-slate-700/50 cursor-pointer hover:bg-slate-700 transition" id="toggleApiKeyBtn">
+                <div class="flex items-center gap-2">
+                    <span class="text-yellow-400 text-lg">🔑</span>
+                    <span class="font-bold text-yellow-400 text-sm">API 키 관리</span>
+                    <span id="keyStatusBadge" class="text-xs px-2 py-0.5 rounded-full bg-green-900 text-green-300">✓ 저장됨</span>
+                </div>
+                <span class="text-slate-400 text-xl" id="toggleIcon">⚙️</span>
+            </div>
+            <div id="apiKeyPanel" class="hidden p-3 space-y-2 border-t border-slate-600 bg-slate-800/50">
+                <input type="password" id="finnhubKey" placeholder="Finnhub API Key" class="w-full p-2 bg-slate-900 border border-slate-600 rounded text-sm text-white placeholder-slate-500">
+                <input type="password" id="geminiKey" placeholder="Google Gemini API Key" class="w-full p-2 bg-slate-900 border border-slate-600 rounded text-sm text-white placeholder-slate-500">
+                <p class="text-xs text-slate-400">🔒 API 키는 브라우저 로컬 저장소에만 안전하게 보관됩니다.</p>
+            </div>
+        </div>
+
+        <!-- 검색창 -->
+        <div class="mb-6">
+            <label class="block text-slate-300 text-sm font-bold mb-2">🔍 주식 심볼 (예: AAPL, TSLA, QQQ 등 미국장만 가능)</label>
+            <div class="flex gap-2">
+                <input type="text" id="symbolInput" value="AAPL" class="flex-1 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-sm uppercase text-white font-mono text-lg">
+                <button id="fetchBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow transition text-sm">
+                    분석 시작
+                </button>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div id="loadingArea" class="hidden text-center py-10">
+            <div class="loader"></div>
+            <p class="text-slate-400 mt-2 text-sm">실시간 데이터 수신 및 AI 분석 리포트 생성 중...</p>
+        </div>
+
+        <!-- 결과 영역 -->
+        <div id="resultArea" class="hidden">
+            <!-- 가격 카드 -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="bg-slate-700 p-3 rounded-xl text-center border border-slate-600">
+                    <span class="text-xs text-slate-400 block">현재가</span>
+                    <span id="currentPrice" class="text-2xl font-bold text-white">-</span>
+                </div>
+                <div class="bg-slate-700 p-3 rounded-xl text-center border border-slate-600">
+                    <span class="text-xs text-slate-400 block">변동</span>
+                    <span id="changePercent" class="text-2xl font-bold">-</span>
+                </div>
+                <div class="bg-slate-700 p-3 rounded-xl text-center border border-slate-600">
+                    <span class="text-xs text-slate-400 block">변동폭</span>
+                    <span id="rangeValue" class="text-2xl font-bold text-blue-300">-</span>
+                </div>
+            </div>
+
+            <!-- 고급 차트 영역 -->
+            <div class="bg-slate-900 p-4 rounded-xl mb-6 border border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 mb-2 flex justify-between">
+                    <span>📉 일중 가격 범위 (확대 분석)</span>
+                    <span id="chartHelperText" class="text-blue-400">차트 자동 스케일링</span>
+                </h3>
+                <div class="h-48">
+                    <canvas id="advancedChart"></canvas>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-500 mt-2 px-2">
+                    <span>저가</span>
+                    <span>현재가</span>
+                    <span>고가</span>
+                </div>
+            </div>
+
+            <!-- AI 애널리스트 브리핑 -->
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-xl border border-blue-900/50 shadow-inner">
+                <div class="flex items-center gap-2 mb-3 border-b border-slate-700 pb-2">
+                    <span class="text-xl">🤵</span>
+                    <h3 class="text-md font-bold text-blue-300">AI 주식 분석 리포트 (심층 분석)</h3>
+                </div>
+                <div id="analysisText" class="text-slate-300 text-sm leading-relaxed whitespace-pre-line">
+                    분석 결과가 여기에 표시됩니다.
+                </div>
+            </div>
+        </div>
+
+        <!-- 에러 영역 -->
+        <div id="errorArea" class="hidden bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded relative mt-4 text-sm" role="alert">
+            <span id="errorMsg"></span>
+        </div>
+        
+        <p class="text-center text-slate-600 text-xs mt-6">* 데이터는 참고용이며, 투자 책임은 본인에게 있습니다.</p>
+    </div>
+
+    <script>
+        // ---------- 전역 변수 ----------
+        let myChart = null;
+        
+        // ---------- API 키 관리 (로컬 스토리지) ----------
+        const finnhubInput = document.getElementById('finnhubKey');
+        const geminiInput = document.getElementById('geminiKey');
+        const keyStatusBadge = document.getElementById('keyStatusBadge');
+        const toggleBtn = document.getElementById('toggleApiKeyBtn');
+        const panel = document.getElementById('apiKeyPanel');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        // 저장된 키 불러오기
+        const savedFinnhub = localStorage.getItem('finnhub_key');
+        const savedGemini = localStorage.getItem('gemini_key');
+        if (savedFinnhub) finnhubInput.value = savedFinnhub;
+        if (savedGemini) geminiInput.value = savedGemini;
+        updateKeyStatus();
+
+        // 키 저장 함수
+        function saveKeys() {
+            localStorage.setItem('finnhub_key', finnhubInput.value);
+            localStorage.setItem('gemini_key', geminiInput.value);
+            updateKeyStatus();
+        }
+
+        function updateKeyStatus() {
+            const hasBoth = finnhubInput.value && geminiInput.value;
+            keyStatusBadge.className = hasBoth ? 'text-xs px-2 py-0.5 rounded-full bg-green-900 text-green-300' : 'text-xs px-2 py-0.5 rounded-full bg-yellow-900 text-yellow-300';
+            keyStatusBadge.innerText = hasBoth ? '✓ 저장됨' : '⚠️ 입력 필요';
+        }
+
+        // 토글 버튼 클릭 시 패널 보이기/숨기기
+        toggleBtn.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+            toggleIcon.textContent = panel.classList.contains('hidden') ? '⚙️' : '▲';
+        });
+
+        // 입력할 때마다 자동 저장
+        finnhubInput.addEventListener('input', saveKeys);
+        geminiInput.addEventListener('input', saveKeys);
+
+        // ---------- 분석 실행 함수 ----------
+        async function fetchAndAnalyze() {
+            const finnhubKey = finnhubInput.value.trim();
+            const geminiKey = geminiInput.value.trim();
+            const symbol = document.getElementById('symbolInput').value.trim().toUpperCase();
+
+            if (!finnhubKey || !geminiKey) { 
+                alert('API 키를 모두 입력하세요. 톱니바퀴(⚙️)를 클릭하여 입력할 수 있습니다.'); 
+                return; 
+            }
+            if (!symbol) { 
+                alert('심볼을 입력하세요.'); 
+                return; 
+            }
+
+            // UI 리셋
+            document.getElementById('loadingArea').classList.remove('hidden');
+            document.getElementById('resultArea').classList.add('hidden');
+            document.getElementById('errorArea').classList.add('hidden');
+
+            try {
+                // 1. 주식 데이터 가져오기
+                const stockUrl = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${finnhubKey}`;
+                const stockResponse = await fetch(stockUrl);
+                const stockData = await stockResponse.json();
+
+                if (stockData.error || (stockData.c === 0 && stockData.h === 0)) {
+                    throw new Error('유효하지 않은 심볼이거나 데이터가 없습니다.');
+                }
+
+                // 숫자 포맷
+                const current = stockData.c;
+                const change = stockData.d;
+                const changePercent = stockData.dp;
+                const high = stockData.h;
+                const low = stockData.l;
+                
+                // 변동폭 계산
+                const range = (high - low).toFixed(2);
+                const rangePercent = ((range / low) * 100).toFixed(2);
+
+                // 화면 데이터 업데이트
+                document.getElementById('currentPrice').innerText = `$${current.toFixed(2)}`;
+                const changeEl = document.getElementById('changePercent');
+                changeEl.innerHTML = `${changePercent.toFixed(2)}% <span class="text-xs">($${change.toFixed(2)})</span>`;
+                changeEl.className = `text-2xl font-bold ${changePercent >= 0 ? 'text-red-400' : 'text-blue-400'}`;
+                document.getElementById('rangeValue').innerText = `$${range} (${rangePercent}%)`;
+
+                // ---- 고급 차트 그리기 ----
+                const ctx = document.getElementById('advancedChart').getContext('2d');
+                if (myChart) myChart.destroy();
+
+                const yAxisMin = low * 0.995; 
+                const yAxisMax = high * 1.005;
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['저가', '현재가', '고가'],
+                        datasets: [{
+                            label: '주가 추이 ($)',
+                            data: [low, current, high],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: ['#10b981', '#fbbf24', '#ef4444'],
+                            pointBorderColor: '#fff',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { 
+                                callbacks: { 
+                                    label: (ctx) => ` $${ctx.raw.toFixed(2)}` 
+                                } 
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: yAxisMin,
+                                max: yAxisMax,
+                                grid: { color: '#334155' },
+                                ticks: { 
+                                    callback: (value) => `$${value.toFixed(2)}`,
+                                    color: '#94a3b8',
+                                    font: { size: 10 }
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8' }
+                            }
+                        }
+                    }
+                });
+
+                // ---- AI 분석 (오늘 날짜 포함 + 전문가 프롬프트) ----
+                const today = new Date();
+                const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+                
+                const prompt = `오늘은 ${dateStr}입니다. 당신은 AI 수석 기술적 애널리스트입니다. 
+다음 주식 데이터를 바탕으로 기관 투자자에게 제공하는 심층 기술적 분석 리포트를 작성하세요.
+"오늘 기분이 좋아요" 같은 주관적 표현은 절대 금지입니다.
+
+분석 데이터:
+- 심볼: ${symbol}
+- 현재가: $${current.toFixed(2)}
+- 변동률: ${changePercent.toFixed(2)}%
+- 금일 레인지: $${range} (변동폭 ${rangePercent}%)
+
+분석 리포트에 반드시 포함할 항목:
+1. 현재 가격의 기술적 위치 (52주 신고가/신저가 대비, 또는 주요 이동평균선과의 관계를 추정하여 설명)
+2. 오늘의 변동성 분석 (레인지 비율이 평소 대비 높은지 낮은지 평가)
+3. 단기 추세 전망 (내일 또는 이번 주 예상 움직임)
+4. 주요 지지선과 저항선 레벨 제시
+5. 투자자들을 위한 액션 플랜 (관망, 분할 매수, 익절 등 구체적 제안)
+
+반드시 전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
+
+                // Gemini API 호출 (최신 무료 모델)
+                const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+                const aiResponse = await fetch(aiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+                    })
+                });
+                const aiData = await aiResponse.json();
+
+                let aiText = '';
+                if (aiData.candidates && aiData.candidates.length > 0) {
+                    aiText = aiData.candidates[0].content.parts[0].text;
+                } else {
+                    aiText = 'AI 분석 중 오류 발생. API 키 또는 모델명을 확인하세요. (예: gemini-2.0-flash-exp)';
+                }
+
+                document.getElementById('analysisText').innerText = aiText;
+
+                // 완료
+                document.getElementById('loadingArea').classList.add('hidden');
+                document.getElementById('resultArea').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loadingArea').classList.add('hidden');
+                document.getElementById('errorMsg').innerText = error.message || '네트워크 오류 또는 API 키 제한입니다.';
+                document.getElementById('errorArea').classList.remove('hidden');
+            }
+        }
+
+        // 이벤트 리스너 등록
+        document.getElementById('fetchBtn').addEventListener('click', fetchAndAnalyze);
+        document.getElementById('symbolInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') fetchAndAnalyze();
+        });
+
+        console.log("✅ Pro 모드 준비 완료! 오늘 날짜: " + new Date().toLocaleDateString('ko-KR'));
+    </script>
+</body>
+</html>
