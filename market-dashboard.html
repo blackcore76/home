@@ -311,10 +311,11 @@ function getRefreshSecs(){
   // 한국장: 평일 09:00~15:30 KST
   const krOpen=isWeekday&&hm>=9*60&&hm<15*60+30;
 
-  // 미국장: 평일 23:30~ + 다음날 ~06:00 KST (ET 09:30~16:00)
+  // 미국장: 평일 23:30~ + 다음날 ~06:00 KST
+    // 썸머타임: 평일 22:30~ + 다음날 ~05:00 KST
   // day 1~5이고 hm>=23:30  →  당일 야간 개장
   // day 2~6이고 hm<6:00    →  전날 야간 이어서 (토요일 새벽 포함)
-  const usOpen=(isWeekday&&hm>=23*60+30)||((day>=2&&day<=6)&&hm<6*60);
+  const usOpen=(isWeekday&&hm>=22*60+30)||((day>=2&&day<=6)&&hm<5*60);
 
   if(krOpen&&usOpen) return{secs:30,label:'KR·US 개장'};
   if(krOpen)         return{secs:30,label:'KR 개장'};
