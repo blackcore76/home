@@ -235,10 +235,10 @@
    label : 표시할 레이블 (생략 시 티커 부분 자동 추출)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const CHARTS = [
-    { symbol: "AMEX:SPY",      label: "S&P 500" },
-    { symbol: "NASDAQ:QQQ",    label: "나스닥 100" },
-    { symbol: "FX_IDC:USDKRW", label: "USD/KRW" },
-    { symbol: "OANDA:XAUUSD",  label: "금 (XAU/USD)" },
+    { symbol: "AMEX:SPY",      label: "" },
+    { symbol: "NASDAQ:QQQ",    label: "" },
+    { symbol: "FX_IDC:USDKRW", label: "" },
+    { symbol: "OANDA:XAUUSD",  label: "" },
 ];
 
 /* ── 공통 TradingView 설정 ── */
@@ -286,12 +286,7 @@ CHARTS.forEach((chart, i) => {
     const dot = document.createElement('div');
     dot.className = 'dot';
 
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'nav-label';
-    labelSpan.textContent = displayLabel;
-
     btn.appendChild(dot);
-    btn.appendChild(labelSpan);
     nav.appendChild(btn);
 
     // TradingView 위젯 생성
