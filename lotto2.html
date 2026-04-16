@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="로또픽커">
+<title>로또 픽커</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="home-bar.js"></script>
+<style>
+:root {
+    --bg:      #080c14;
+    --sf:      #0e1422;
+    --sf2:     #131b2d;
+    --sf3:     #181f30;
+    --bd:      #1e2d45;
+    --bd2:     #263548;
+    --text:    #c8d6e8;
+    --text2:   #7a91a8;
+    --text3:   #4a5f74;
+    --accent:  #00d4ff;
+    --green:   #00e676;
+    --red:     #ff5252;
+    --yellow:  #ffca28;
+    --mono:    'JetBrains Mono', monospace;
+    --sans:    'Noto Sans KR', sans-serif;
+    --c1: #fbc400;
+    --c2: #4db8ff;
+    --c3: #ff6b6b;
+    --c4: #aaaaaa;
+    --c5: #7ed957;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+/* ── HEADER ── */
+header {
+    position: sticky; top: 36px; z-index: 50;
+    background: rgba(8,12,20,.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--bd);
+    padding: 0 16px;
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
+.hd-right { font-family: var(--mono); font-size: 11px; color: var(--text3); letter-spacing: .05em; }
+
+/* ── 히어로 스트립 ── */
+.hero-strip {
+    background: linear-gradient(135deg, var(--sf), var(--bg));
+    border-bottom: 1px solid var(--bd);
+    padding: 20px 18px;
+    position: relative;
+    overflow: hidden;
+}
+.hero-strip::before {
+    content: '';
+    position: absolute; top: -60px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,212,255,.08), transparent 70%);
+    pointer-events: none;
+}
+.hero-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.hero-title { font-family: var(--mono); font-size: 24px; font-weight: 600; color: var(--accent); line-height: 1.2; }
+.hero-sub { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+/* ── 메인 컨테이너 ── */
+.wrap { padding: 18px 16px 100px; max-width: 600px; margin: 0 auto; }
+
+/* ── 카드 스타일 (피드 스타일) ── */
+.card {
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, background .2s;
+}
+.card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    border-radius: 3px 0 0 3px;
+}
+.card:hover { border-color: var(--bd2); background: var(--sf2); }
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bd);
+}
+.card-header .icon { font-size: 20px; }
+.card-header h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+/* ── 볼 슬롯 ── */
+.ball-slots {
+    display: flex;
+    gap: clamp(8px, 2.5vw, 16px);
+    justify-content: center;
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
+}
+.ball-slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.placeholder-ball {
+    width: clamp(44px, 10vw, 62px);
+    height: clamp(44px, 10vw, 62px);
+    border-radius: 50%;
+    background: rgba(255,255,255,.04);
+    border: 2px dashed rgba(255,255,255,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--text3);
+    transition: border-color .2s;
+}
+.ball-slot.pinned .placeholder-ball {
+    border-color: var(--accent);
+    background: rgba(0,212,255,.07);
+}
+
+.ball {
+    width: clamp(44px, 10vw, 62px);
+    height: clamp(44px, 10vw, 62px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--kr);
+    font-weight: 800;
+    font-size: clamp(16px, 3.5vw, 22px);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    position: relative;
+    opacity: 0;
+    transform: translateY(16px) scale(.72);
+    transition: opacity .45s cubic-bezier(.34,1.56,.64,1), transform .45s cubic-bezier(.34,1.56,.64,1);
+}
+.ball::before {
+    content: '';
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.35), transparent 60%);
+    pointer-events: none;
+}
+.ball.show { opacity: 1; transform: translateY(0) scale(1); }
+
+/* 드롭다운 */
+.slot-wrap { position: relative; width: clamp(44px, 10vw, 62px); }
+.slot-select {
+    width: 100%; appearance: none;
+    background: var(--sf2);
+    border: 1.5px solid var(--bd2);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--kr);
+    font-weight: 600;
+    font-size: clamp(10px, 2vw, 12px);
+    text-align: center;
+    padding: 5px 2px;
+    cursor: pointer;
+    outline: none;
+    transition: all .2s;
+}
+.slot-select:hover { border-color: var(--accent); background: rgba(0,212,255,.05); }
+.slot-select:focus { border-color: var(--ac
