@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="로또&연금복권">
+<title>로또 & 연금복권 — 통합 추첨기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="home-bar.js"></script>
+<style>
+:root {
+    --bg:      #080c14;
+    --sf:      #0e1422;
+    --sf2:     #131b2d;
+    --sf3:     #181f30;
+    --bd:      #1e2d45;
+    --bd2:     #263548;
+    --text:    #c8d6e8;
+    --text2:   #7a91a8;
+    --text3:   #4a5f74;
+    --accent:  #00d4ff;
+    --accent2: #0099cc;
+    --green:   #00e676;
+    --red:     #ff5252;
+    --yellow:  #ffca28;
+    --gold:    #f5c842;
+    --mono:    'JetBrains Mono', monospace;
+    --sans:    'Noto Sans KR', sans-serif;
+    --c1: #fbc400;
+    --c2: #4db8ff;
+    --c3: #ff6b6b;
+    --c4: #aaaaaa;
+    --c5: #7ed957;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+/* ── HEADER ── */
+header {
+    position: sticky; top: 36px; z-index: 50;
+    background: rgba(8,12,20,.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--bd);
+    padding: 0 16px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
+.hd-right { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: .05em; }
+
+/* ── 히어로 스트립 ── */
+.hero-strip {
+    background: linear-gradient(135deg, var(--sf), var(--bg));
+    border-bottom: 1px solid var(--bd);
+    padding: 20px 18px;
+    position: relative;
+    overflow: hidden;
+}
+.hero-strip::before {
+    content: '';
+    position: absolute; top: -60px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,212,255,.08), transparent 70%);
+    pointer-events: none;
+}
+.hero-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.hero-title { font-family: var(--mono); font-size: 24px; font-weight: 600; color: var(--accent); line-height: 1.2; }
+.hero-sub { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+/* ── 메인 컨테이너 ── */
+.wrap { padding: 18px 16px 100px; max-width: 600px; margin: 0 auto; }
+
+/* ── 카드 스타일 ── */
+.card {
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, background .2s;
+}
+.card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    border-radius: 3px 0 0 3px;
+}
+.card:hover { border-color: var(--bd2); background: var(--sf2); }
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bd);
+}
+.card-header .icon { font-size: 20px; }
+.card-header h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+/* ── 탭 네비게이션 ── */
+.tab-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--sf);
+    border-top: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 100;
+    padding: 0 12px;
+}
+.tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px 4px;
+    transition: all .15s;
+}
+.tab-btn .tab-icon { font-size: 20px; opacity: 0.5; transition: all .15s; }
+.tab-btn .tab-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: .05em;
+    transition: all .15s;
+}
+.tab-btn.active .tab-icon { opacity: 1; transform: translateY(-2px); }
+.tab-btn.active .tab-label { color: var(--accent); font-weight: 600; }
+
+/* ── 공통 볼/박스 스타일 ── */
+.ball-slots, .pension-slots {
+    display: flex;
+    gap: clamp(8px, 2.5vw, 16px);
+    justify-content: center;
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
+}
+.ball-slot, .pension-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.placeholder-ball, .pension-placeholder {
+    width: clamp(44px, 10vw, 62px);
+    height: clamp(44px, 10vw, 62px);
+    border-radius: 50%;
+    background: rgba(255,255,255,.04);
+    border: 2px dashed rgba(255,255,255,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--text3);
+    transition: border-color .2s;
+}
+.pension-placeholder {
+    border-radius: 12px;
+}
+.ball-slot.pinned .placeholder-ball,
+.pension-slot.pinned .pension-placeholder {
+    border-color: var(--accent);
+    background: rgba(0,212,255,.07);
+}
+
+.ball, .pension-ball {
+    width: clamp(44px, 10vw, 62px);
+    height: clamp(44px, 10vw, 62px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(16px, 3.5vw, 22px);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    position: relative;
+    opacity: 0;
+    transform: translateY(16px) scale(.72);
+    transition: opacity .45s cubic-bezier(.34,1.56,.64,1), transform .45s cubic-bezier(.34,1.56,.64,1);
+}
+.pension-ball {
+    border-radius: 12px;
+}
+.ball::before, .pension-ball::before {
+    content: '';
+    position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.35), transparent 60%);
+    pointer-events: none;
+}
+.ball.show, .pension-ball.show { opacity: 1; transform: translateY(0) scale(1); }
+
+.slot-wrap, .pension-slot-wrap {
+    position: relative;
+    width: clamp(44px, 10vw, 62px);
+}
+.slot-select, .pension-select {
+    width: 100%; appearance: none;
+    background: var(--sf2);
+    border: 1.5px solid var(--bd2);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: clamp(10px, 2vw, 12px);
+    text-align: center;
+    padding: 5px 2px;
+    cursor: pointer;
+    outline: none;
+    transition: all .2s;
+}
+.slot-select:hover, .pension-select:hover { border-color: var(--accent); background: rgba(0,212,255,.05); }
+.slot-select:focus, .pension-select:focus { border-color: var(--accent); color: var(--accent); }
+.slot-select.is-pinned, .pension-select.is-pinned { border-color: var(--accent); background: rgba(0,212,255,.1); color: var(--accent); }
+.slot-select.is-error, .pension-select.is-error { border-color: var(--red) !important; background: rgba(255,82,82,.1) !important; color: var(--red) !important; }
+.slot-wrap::after, .pension-slot-wrap::after {
+    content: '▾';
+    position: absolute; right: 5px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    color: var(--text3);
+    pointer-events: none;
+}
+
+.slot-hint-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+}
+.slot-hint { font-size: 11px; color: var(--text3); }
+.slot-hint .hl { color: var(--accent); font-weight: 700; }
+.reset-btn {
+    background: transparent;
+    border: 1px solid var(--bd2);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all .15s;
+}
+.reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* ── 공통 버튼 ── */
+.btn-draw {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    cursor: pointer;
+    transition: all .15s;
+    box-shadow: 0 0 20px rgba(0,212,255,.3);
+    margin-bottom: 20px;
+}
+.btn-draw:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,212,255,.5); }
+.btn-draw:active:not(:disabled) { transform: translateY(0) scale(.98); }
+.btn-draw:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+/* ── 히스토리 (공통) ── */
+.hist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.hist-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(0,212,255,.1);
+    border: 1px solid rgba(0,212,255,.2);
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+.history-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all .2s;
+    animation: slideIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+.history-row:hover { border-color: var(--bd2); background: var(--sf3); }
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.history-index {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    min-width: 28px;
+}
+.history-balls { display: flex; gap: 6px; flex-wrap: wrap; }
+.mini-ball {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 10px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    position: relative;
+}
+.mini-ball::before {
+    content: '';
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, rgba(255,255,255,.35), transparent 55%);
+}
+.pension-mini {
+    width: 28px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+}
+.pension-mini.m-digit {
+    color: var(--accent);
+    background: var(--sf3);
+    border: 1px solid var(--bd2);
+}
+.pension-mini.m-jo {
+    color: var(--yellow);
+    background: var(--sf3);
+    border: 1px solid rgba(255,202,40,.3);
+}
+.h-divider {
+    font-size: 12px;
+    color: var(--text3);
+    margin: 0 2px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 2;
+}
+
+/* ── 토스트 ── */
+#error-toast {
+    position: fixed; bottom: 68px; left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: rgba(255,82,82,.12);
+    border: 1px solid rgba(255,82,82,.3);
+    color: var(--red);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 40px;
+    backdrop-filter: blur(12px);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    white-space: nowrap;
+    pointer-events: none;
+}
+#error-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── 탭 콘텐츠 전환 ── */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+@media (max-width: 480px) {
+    .ball-slots, .pension-slots { gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo"><div class="logo-dot"></div>Lotto & Pension</div>
+    <div class="hd-right">행운의 숫자</div>
+</header>
+
+<div class="hero-strip">
+    <div class="hero-label">Lucky Draw</div>
+    <div class="hero-title" id="heroTitle">로또 6/45</div>
+    <div class="hero-sub" id="heroSub">1~45 중 6개를 뽑아보세요</div>
+</div>
+
+<div class="wrap">
+    <!-- 로또 탭 콘텐츠 -->
+    <div id="lottoContent" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">🎲</span>
+                <h3>추첨 번호</h3>
+            </div>
+            <div class="ball-slots" id="lotto-slots"></div>
+            <div class="slot-hint-row">
+                <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
+                <button class="reset-btn" onclick="resetLottoSlots()">↺ 초기화</button>
+            </div>
+        </div>
+
+        <button id="drawLottoBtn" class="btn-draw" onclick="drawLotto(event)">🍀 로또 번호 뽑기</button>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">📋</span>
+                <h3>로또 추첨 기록</h3>
+            </div>
+            <div class="hist-header">
+                <span style="font-size: 11px; color: var(--text2);">최근 10회</span>
+                <div class="hist-count" id="lotto-count-badge">0 / 10</div>
+            </div>
+            <div id="lotto-history-list">
+                <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 연금복권 탭 콘텐츠 (드롭다운 버전) -->
+    <div id="pensionContent" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">💰</span>
+                <h3>추첨 번호</h3>
+            </div>
+            <div class="pension-slots" id="pension-slots"></div>
+            <div class="slot-hint-row">
+                <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
+                <button class="reset-btn" onclick="resetPensionSlots()">↺ 초기화</button>
+            </div>
+        </div>
+
+        <button id="drawPensionBtn" class="btn-draw" onclick="drawPension(event)">💰 연금복권 번호 뽑기</button>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">📋</span>
+                <h3>연금복권 추첨 기록</h3>
+            </div>
+            <div class="hist-header">
+                <span style="font-size: 11px; color: var(--text2);">최근 10회</span>
+                <div class="hist-count" id="pension-count-badge">0 / 10</div>
+            </div>
+            <div id="pension-history-list">
+                <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 하단 탭 네비게이션 -->
+<div class="tab-nav">
+    <button class="tab-btn active" data-tab="lotto" onclick="switchTab('lotto')">
+        <span class="tab-icon">🎰</span>
+        <span class="tab-label">로또 6/45</span>
+    </button>
+    <button class="tab-btn" data-tab="pension" onclick="switchTab('pension')">
+        <span class="tab-icon">💰</span>
+        <span class="tab-label">연금복권 720+</span>
+    </button>
+</div>
+
+<div id="error-toast"></div>
+
+<script>
+// ============================================================
+// 공통 함수
+// ============================================================
+function showToast(msg) {
+    const t = document.getElementById('error-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function getBallColor(n) {
+    if (n <= 10) return '#fbc400';
+    if (n <= 20) return '#4db8ff';
+    if (n <= 30) return '#ff6b6b';
+    if (n <= 40) return '#aaaaaa';
+    return '#7ed957';
+}
+function getBallShadow(n) {
+    if (n <= 10) return '0 0 12px rgba(251,196,0,.5)';
+    if (n <= 20) return '0 0 12px rgba(77,184,255,.5)';
+    if (n <= 30) return '0 0 12px rgba(255,107,107,.5)';
+    if (n <= 40) return '0 0 12px rgba(170,170,170,.3)';
+    return '0 0 12px rgba(126,217,87,.5)';
+}
+
+// ============================================================
+// 로또 6/45 관련 코드
+// ============================================================
+let lottoHistory = [];
+
+function buildLottoSlots() {
+    const wrap = document.getElementById('lotto-slots');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    for (let i = 0; i < 6; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'ball-slot';
+        slot.dataset.idx = i;
+
+        const ph = document.createElement('div');
+        ph.className = 'placeholder-ball';
+        ph.textContent = '?';
+        ph.id = `lotto-ph-${i}`;
+        slot.appendChild(ph);
+
+        const sw = document.createElement('div');
+        sw.className = 'slot-wrap';
+        const sel = document.createElement('select');
+        sel.className = 'slot-select';
+        sel.id = `lotto-sel-${i}`;
+
+        const autoOpt = document.createElement('option');
+        autoOpt.value = ''; autoOpt.textContent = '자동';
+        sel.appendChild(autoOpt);
+        for (let n = 1; n <= 45; n++) {
+            const opt = document.createElement('option');
+            opt.value = n; opt.textContent = n;
+            sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => onLottoSlotChange(i));
+        sw.appendChild(sel);
+        slot.appendChild(sw);
+        wrap.appendChild(slot);
+    }
+}
+
+function onLottoSlotChange(idx) {
+    const sel = document.getElementById(`lotto-sel-${idx}`);
+    const slot = sel.closest('.ball-slot');
+    sel.classList.toggle('is-pinned', sel.value !== '');
+    slot.classList.toggle('pinned', sel.value !== '');
+    clearLottoErrors();
+    validateLottoPinnedNums();
+}
+
+function clearLottoErrors() {
+    document.querySelectorAll('#lotto-slots .slot-select').forEach(s => s.classList.remove('is-error'));
+}
+
+function validateLottoPinnedNums() {
+    const vals = getLottoPinnedValues();
+    const seen = {};
+    vals.forEach(({ idx, num }) => { if (!seen[num]) seen[num] = []; seen[num].push(idx); });
+    let hasDup = false;
+    Object.values(seen).forEach(list => {
+        if (list.length > 1) { hasDup = true; list.forEach(i => document.getElementById(`lotto-sel-${i}`).classList.add('is-error')); }
+    });
+    return !hasDup;
+}
+
+function getLottoPinnedValues() {
+    const result = [];
+    for (let i = 0; i < 6; i++) {
+        const sel = document.getElementById(`lotto-sel-${i}`);
+        if (sel && sel.value !== '') result.push({ idx: i, num: parseInt(sel.value) });
+    }
+    return result;
+}
+
+function resetLottoSlots() {
+    for (let i = 0; i < 6; i++) {
+        const sel = document.getElementById(`lotto-sel-${i}`);
+        if (sel) {
+            sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
+            const slot = sel.closest('.ball-slot');
+            if (slot) slot.classList.remove('pinned');
+        }
+        const ph = document.getElementById(`lotto-ph-${i}`);
+        if (ph) {
+            ph.className = 'placeholder-ball'; ph.textContent = '?'; ph.style.cssText = '';
+        }
+    }
+}
+
+function drawLotto(e) {
+    const btn = document.getElementById('drawLottoBtn');
+    if (!btn) return;
+    clearLottoErrors();
+    if (!validateLottoPinnedNums()) { showToast('⚠️ 중복된 고정 번호가 있어요!'); return; }
+
+    const pinned = getLottoPinnedValues();
+    const pinnedNums = pinned.map(p => p.num);
+    const autoNums = [];
+    while (autoNums.length < 6 - pinned.length) {
+        const r = Math.floor(Math.random() * 45) + 1;
+        if (!pinnedNums.includes(r) && !autoNums.includes(r)) autoNums.push(r);
+    }
+
+    const finalNums = new Array(6);
+    pinned.forEach(p => { finalNums[p.idx] = p.num; });
+    let autoIdx = 0;
+    for (let i = 0; i < 6; i++) { if (finalNums[i] === undefined) finalNums[i] = autoNums[autoIdx++]; }
+
+    btn.disabled = true;
+    btn.textContent = '🎲 추첨 중…';
+
+    let completedCount = 0;
+    finalNums.forEach((num, slotIdx) => {
+        const isFixed = pinnedNums.includes(num) && pinned.some(p => p.idx === slotIdx);
+        setTimeout(() => {
+            const ph = document.getElementById(`lotto-ph-${slotIdx}`);
+            if (!ph) return;
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.textContent = num;
+            ball.style.backgroundColor = getBallColor(num);
+            ball.style.boxShadow = getBallShadow(num);
+            if (isFixed) { ball.style.outline = '2px solid var(--accent)'; ball.style.outlineOffset = '2px'; }
+            ph.replaceWith(ball);
+            ball.id = `lotto-ph-${slotIdx}`;
+            requestAnimationFrame(() => setTimeout(() => ball.classList.add('show'), 10));
+
+            completedCount++;
+            if (completedCount === 6) {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = '🍀 로또 번호 뽑기';
+                    updateLottoHistory(finalNums);
+                    showToast('🎉 추첨 완료! 🎉');
+                }, 500);
+            }
+        }, slotIdx * 700);
+    });
+}
+
+function updateLottoHistory(nums) {
+    lottoHistory.unshift([...nums]);
+    if (lottoHistory.length > 10) lottoHistory.pop();
+    document.getElementById('lotto-count-badge').textContent = `${lottoHistory.length} / 10`;
+
+    const list = document.getElementById('lotto-history-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    if (lottoHistory.length === 0) {
+        list.innerHTML = '<div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>';
+        return;
+    }
+    
+    lottoHistory.forEach((set, i) => {
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        const idx = document.createElement('div');
+        idx.className = 'history-index';
+        idx.textContent = `#${i + 1}`;
+        row.appendChild(idx);
+        const ballWrap = document.createElement('div');
+        ballWrap.className = 'history-balls';
+        [...set].sort((a, b) => a - b).forEach(n => {
+            const mini = document.createElement('div');
+            mini.className = 'mini-ball';
+            mini.style.backgroundColor = getBallColor(n);
+            mini.style.boxShadow = getBallShadow(n);
+            mini.textContent = n;
+            ballWrap.appendChild(mini);
+        });
+        row.appendChild(ballWrap);
+        list.appendChild(row);
+    });
+}
+
+// ============================================================
+// 연금복권 720+ 관련 코드 (드롭다운 버전)
+// ============================================================
+let pensionHistory = [];
+
+function buildPensionSlots() {
+    const wrap = document.getElementById('pension-slots');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    
+    // 조(1~5) 드롭다운
+    const joSlot = document.createElement('div');
+    joSlot.className = 'pension-slot';
+    joSlot.dataset.idx = 0;
+    
+    const joPh = document.createElement('div');
+    joPh.className = 'pension-placeholder';
+    joPh.textContent = '?';
+    joPh.id = `pension-ph-0`;
+    joSlot.appendChild(joPh);
+    
+    const joSw = document.createElement('div');
+    joSw.className = 'pension-slot-wrap';
+    const joSel = document.createElement('select');
+    joSel.className = 'pension-select';
+    joSel.id = `pension-sel-0`;
+    
+    const joAutoOpt = document.createElement('option');
+    joAutoOpt.value = ''; joAutoOpt.textContent = '자동';
+    joSel.appendChild(joAutoOpt);
+    for (let n = 1; n <= 5; n++) {
+        const opt = document.createElement('option');
+        opt.value = n; opt.textContent = n;
+        joSel.appendChild(opt);
+    }
+    joSel.addEventListener('change', () => onPensionSlotChange(0));
+    joSw.appendChild(joSel);
+    joSlot.appendChild(joSw);
+    wrap.appendChild(joSlot);
+    
+    // 구분선
+    const divider = document.createElement('div');
+    divider.className = 'pension-divider';
+    divider.textContent = '—';
+    wrap.appendChild(divider);
+    
+    // 6자리 숫자 (0~9)
+    for (let i = 1; i <= 6; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'pension-slot';
+        slot.dataset.idx = i;
+        
+        const ph = document.createElement('div');
+        ph.className = 'pension-placeholder';
+        ph.textContent = '?';
+        ph.id = `pension-ph-${i}`;
+        slot.appendChild(ph);
+        
+        const sw = document.createElement('div');
+        sw.className = 'pension-slot-wrap';
+        const sel = document.createElement('select');
+        sel.className = 'pension-select';
+        sel.id = `pension-sel-${i}`;
+        
+        const autoOpt = document.createElement('option');
+        autoOpt.value = ''; autoOpt.textContent = '자동';
+        sel.appendChild(autoOpt);
+        for (let n = 0; n <= 9; n++) {
+            const opt = document.createElement('option');
+            opt.value = n; opt.textContent = n;
+            sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => onPensionSlotChange(i));
+        sw.appendChild(sel);
+        slot.appendChild(sw);
+        wrap.appendChild(slot);
+    }
+}
+
+function onPensionSlotChange(idx) {
+    const sel = document.getElementById(`pension-sel-${idx}`);
+    const slot = sel.closest('.pension-slot');
+    sel.classList.toggle('is-pinned', sel.value !== '');
+    slot.classList.toggle('pinned', sel.value !== '');
+    clearPensionErrors();
+    validatePensionPinnedNums();
+}
+
+function clearPensionErrors() {
+    document.querySelectorAll('#pension-slots .pension-select').forEach(s => s.classList.remove('is-error'));
+}
+
+function validatePensionPinnedNums() {
+    // 연금복권은 중복 검사 필요 없음 (조와 각 자리 숫자는 독립적)
+    return true;
+}
+
+function getPensionPinnedValues() {
+    const result = [];
+    for (let i = 0; i <= 6; i++) {
+        const sel = document.getElementById(`pension-sel-${i}`);
+        if (sel && sel.value !== '') result.push({ idx: i, num: parseInt(sel.value) });
+    }
+    return result;
+}
+
+function resetPensionSlots() {
+    for (let i = 0; i <= 6; i++) {
+        const sel = document.getElementById(`pension-sel-${i}`);
+        if (sel) {
+            sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
+            const slot = sel.closest('.pension-slot');
+            if (slot) slot.classList.remove('pinned');
+        }
+        const ph = document.getElementById(`pension-ph-${i}`);
+        if (ph) {
+            ph.className = 'pension-placeholder'; ph.textContent = '?'; ph.style.cssText = '';
+        }
+    }
+}
+
+function drawPension(e) {
+    const btn = document.getElementById('drawPensionBtn');
+    if (!btn) return;
+    
+    const pinned = getPensionPinnedValues();
+    const pinnedMap = new Map();
+    pinned.forEach(p => { pinnedMap.set(p.idx, p.num); });
+    
+    const finalNums = new Array(7);
+    for (let i = 0; i <= 6; i++) {
+        if (pinnedMap.has(i)) {
+            finalNums[i] = pinnedMap.get(i);
+        } else {
+            finalNums[i] = (i === 0) ? Math.floor(Math.random() * 5) + 1 : Math.floor(Math.random() * 10);
+        }
+    }
+    
+    btn.disabled = true;
+    btn.textContent = '💰 추첨 중…';
+    
+    let completedCount = 0;
+    for (let slotIdx = 0; slotIdx <= 6; slotIdx++) {
+        const num = finalNums[slotIdx];
+        const isFixed = pinnedMap.has(slotIdx);
+        
+        setTimeout(() => {
+            const ph = document.getElementById(`pension-ph-${slotIdx}`);
+            if (!ph) return;
+            const ball = document.createElement('div');
+            ball.className = 'pension-ball';
+            if (slotIdx === 0) {
+                ball.style.backgroundColor = 'rgba(255,202,40,.15)';
+                ball.style.border = '2px solid var(--yellow)';
+                ball.style.color = 'var(--yellow)';
+            } else {
+                ball.style.backgroundColor = 'rgba(0,212,255,.1)';
+                ball.style.border = '2px solid var(--accent)';
+                ball.style.color = 'var(--accent)';
+            }
+            ball.textContent = num;
+            ball.style.boxShadow = '0 4px 16px rgba(0,0,0,.3)';
+            if (isFixed) { ball.style.outline = '2px solid var(--accent)'; ball.style.outlineOffset = '2px'; }
+            ph.replaceWith(ball);
+            ball.id = `pension-ph-${slotIdx}`;
+            requestAnimationFrame(() => setTimeout(() => ball.classList.add('show'), 10));
+            
+            completedCount++;
+            if (completedCount === 7) {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = '💰 연금복권 번호 뽑기';
+                    savePensionResult(finalNums);
+                    showToast('🎉 추첨 완료! 🎉');
+                }, 500);
+            }
+        }, slotIdx * 600);
+    }
+}
+
+function savePensionResult(nums) {
+    const result = Array.from(nums);
+    pensionHistory.unshift(result);
+    if (pensionHistory.length > 10) pensionHistory.pop();
+    renderPensionHistory();
+}
+
+function renderPensionHistory() {
+    document.getElementById('pension-count-badge').textContent = `${pensionHistory.length} / 10`;
+    const list = document.getElementById('pension-history-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (pensionHistory.length === 0) {
+        list.innerHTML = '<div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>';
+        return;
+    }
+    pensionHistory.forEach((res, i) => {
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        const idx = document.createElement('div');
+        idx.className = 'history-index';
+        idx.textContent = `#${i+1}`;
+        row.appendChild(idx);
+        res.forEach((num, j) => {
+            const mini = document.createElement('div');
+            mini.className = j === 0 ? 'pension-mini m-jo' : 'pension-mini m-digit';
+            mini.textContent = num;
+            row.appendChild(mini);
+            if (j === 0) {
+                const d = document.createElement('span');
+                d.className = 'h-divider';
+                d.textContent = '—';
+                row.appendChild(d);
+            }
+        });
+        list.appendChild(row);
+    });
+}
+
+// ============================================================
+// 탭 전환
+// ============================================================
+function switchTab(tab) {
+    const lottoContent = document.getElementById('lottoContent');
+    const pensionContent = document.getElementById('pensionContent');
+    const btns = document.querySelectorAll('.tab-btn');
+    const heroTitle = document.getElementById('heroTitle');
+    const heroSub = document.getElementById('heroSub');
+
+    btns.forEach(btn => btn.classList.remove('active'));
+    if (tab === 'lotto') {
+        lottoContent.classList.add('active');
+        pensionContent.classList.remove('active');
+        document.querySelector('.tab-btn[data-tab="lotto"]').classList.add('active');
+        heroTitle.textContent = '로또 6/45';
+        heroSub.textContent = '1~45 중 6개를 뽑아보세요';
+    } else {
+        lottoContent.classList.remove('active');
+        pensionContent.classList.add('active');
+        document.querySelector('.tab-btn[data-tab="pension"]').classList.add('active');
+        heroTitle.textContent = '연금복권 720+';
+        heroSub.textContent = '조(1~5) + 6자리 숫자 (0~9)';
+    }
+}
+
+// ============================================================
+// 초기화
+// ============================================================
+buildLottoSlots();
+buildPensionSlots();
+</script>
+</body>
+</html>
