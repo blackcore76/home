@@ -286,12 +286,7 @@ CHARTS.forEach((chart, i) => {
     const dot = document.createElement('div');
     dot.className = 'dot';
 
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'nav-label';
-    labelSpan.textContent = displayLabel;
-
     btn.appendChild(dot);
-    btn.appendChild(labelSpan);
     nav.appendChild(btn);
 
     // TradingView 위젯 생성
