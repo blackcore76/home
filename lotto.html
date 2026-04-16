@@ -2,12 +2,12 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
 <meta name="theme-color" content="#080c14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="로또픽커">
-<title>로또 픽커</title>
+<meta name="apple-mobile-web-app-title" content="로또&연금복권">
+<title>로또 & 연금복권 — 통합 추첨기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="home-bar.js"></script>
@@ -23,9 +23,11 @@
     --text2:   #7a91a8;
     --text3:   #4a5f74;
     --accent:  #00d4ff;
+    --accent2: #0099cc;
     --green:   #00e676;
     --red:     #ff5252;
     --yellow:  #ffca28;
+    --gold:    #f5c842;
     --mono:    'JetBrains Mono', monospace;
     --sans:    'Noto Sans KR', sans-serif;
     --c1: #fbc400;
@@ -51,12 +53,14 @@ header {
     border-bottom: 1px solid var(--bd);
     padding: 0 16px;
     height: 52px;
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 .logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
 .logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
-.hd-right { font-family: var(--mono); font-size: 11px; color: var(--text3); letter-spacing: .05em; }
+.hd-right { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: .05em; }
 
 /* ── 히어로 스트립 ── */
 .hero-strip {
@@ -80,7 +84,7 @@ header {
 /* ── 메인 컨테이너 ── */
 .wrap { padding: 18px 16px 100px; max-width: 600px; margin: 0 auto; }
 
-/* ── 카드 스타일 (피드 스타일) ── */
+/* ── 카드 스타일 ── */
 .card {
     background: var(--sf);
     border: 1px solid var(--bd);
@@ -118,17 +122,61 @@ header {
     color: var(--accent);
 }
 
-/* ── 볼 슬롯 ── */
-.ball-slots {
+/* ── 탭 네비게이션 ── */
+.tab-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--sf);
+    border-top: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 100;
+    padding: 0 12px;
+}
+.tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px 4px;
+    transition: all .15s;
+}
+.tab-btn .tab-icon { font-size: 20px; opacity: 0.5; transition: all .15s; }
+.tab-btn .tab-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: .05em;
+    transition: all .15s;
+}
+.tab-btn.active .tab-icon { opacity: 1; transform: translateY(-2px); }
+.tab-btn.active .tab-label { color: var(--accent); font-weight: 600; }
+
+/* ── 공통 볼/박스 스타일 ── */
+.ball-slots, .pension-slots {
     display: flex;
     gap: clamp(8px, 2.5vw, 16px);
     justify-content: center;
     flex-wrap: nowrap;
     margin-bottom: 16px;
 }
-.ball-slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ball-slot, .pension-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
 
-.placeholder-ball {
+.placeholder-ball, .pension-placeholder {
     width: clamp(44px, 10vw, 62px);
     height: clamp(44px, 10vw, 62px);
     border-radius: 50%;
@@ -141,19 +189,23 @@ header {
     color: var(--text3);
     transition: border-color .2s;
 }
-.ball-slot.pinned .placeholder-ball {
+.pension-placeholder {
+    border-radius: 12px;
+}
+.ball-slot.pinned .placeholder-ball,
+.pension-slot.pinned .pension-placeholder {
     border-color: var(--accent);
     background: rgba(0,212,255,.07);
 }
 
-.ball {
+.ball, .pension-ball {
     width: clamp(44px, 10vw, 62px);
     height: clamp(44px, 10vw, 62px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--kr);
+    font-family: var(--sans);
     font-weight: 800;
     font-size: clamp(16px, 3.5vw, 22px);
     color: #fff;
@@ -163,23 +215,28 @@ header {
     transform: translateY(16px) scale(.72);
     transition: opacity .45s cubic-bezier(.34,1.56,.64,1), transform .45s cubic-bezier(.34,1.56,.64,1);
 }
-.ball::before {
+.pension-ball {
+    border-radius: 12px;
+}
+.ball::before, .pension-ball::before {
     content: '';
-    position: absolute; inset: 0; border-radius: 50%;
+    position: absolute; inset: 0; border-radius: inherit;
     background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.35), transparent 60%);
     pointer-events: none;
 }
-.ball.show { opacity: 1; transform: translateY(0) scale(1); }
+.ball.show, .pension-ball.show { opacity: 1; transform: translateY(0) scale(1); }
 
-/* 드롭다운 */
-.slot-wrap { position: relative; width: clamp(44px, 10vw, 62px); }
-.slot-select {
+.slot-wrap, .pension-slot-wrap {
+    position: relative;
+    width: clamp(44px, 10vw, 62px);
+}
+.slot-select, .pension-select {
     width: 100%; appearance: none;
     background: var(--sf2);
     border: 1.5px solid var(--bd2);
     border-radius: 8px;
     color: var(--text2);
-    font-family: var(--kr);
+    font-family: var(--sans);
     font-weight: 600;
     font-size: clamp(10px, 2vw, 12px);
     text-align: center;
@@ -188,11 +245,11 @@ header {
     outline: none;
     transition: all .2s;
 }
-.slot-select:hover { border-color: var(--accent); background: rgba(0,212,255,.05); }
-.slot-select:focus { border-color: var(--accent); color: var(--accent); }
-.slot-select.is-pinned { border-color: var(--accent); background: rgba(0,212,255,.1); color: var(--accent); }
-.slot-select.is-error { border-color: var(--red) !important; background: rgba(255,82,82,.1) !important; color: var(--red) !important; }
-.slot-wrap::after {
+.slot-select:hover, .pension-select:hover { border-color: var(--accent); background: rgba(0,212,255,.05); }
+.slot-select:focus, .pension-select:focus { border-color: var(--accent); color: var(--accent); }
+.slot-select.is-pinned, .pension-select.is-pinned { border-color: var(--accent); background: rgba(0,212,255,.1); color: var(--accent); }
+.slot-select.is-error, .pension-select.is-error { border-color: var(--red) !important; background: rgba(255,82,82,.1) !important; color: var(--red) !important; }
+.slot-wrap::after, .pension-slot-wrap::after {
     content: '▾';
     position: absolute; right: 5px; top: 50%;
     transform: translateY(-50%);
@@ -226,11 +283,11 @@ header {
 }
 .reset-btn:hover { color: var(--red); border-color: var(--red); }
 
-/* ── 추첨 버튼 ── */
+/* ── 공통 버튼 ── */
 .btn-draw {
     width: 100%;
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-    color: var(--accent);
+    color: #000;
     border: none;
     border-radius: 12px;
     padding: 16px;
@@ -241,12 +298,13 @@ header {
     cursor: pointer;
     transition: all .15s;
     box-shadow: 0 0 20px rgba(0,212,255,.3);
+    margin-bottom: 20px;
 }
 .btn-draw:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,212,255,.5); }
 .btn-draw:active:not(:disabled) { transform: translateY(0) scale(.98); }
 .btn-draw:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
-/* ── 히스토리 ── */
+/* ── 히스토리 (공통) ── */
 .hist-header {
     display: flex;
     justify-content: space-between;
@@ -293,7 +351,7 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--kr);
+    font-family: var(--sans);
     font-weight: 800;
     font-size: 10px;
     color: #fff;
@@ -304,6 +362,31 @@ header {
     content: '';
     position: absolute; inset: 0; border-radius: 50%;
     background: radial-gradient(circle at 35% 28%, rgba(255,255,255,.35), transparent 55%);
+}
+.pension-mini {
+    width: 28px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+}
+.pension-mini.m-digit {
+    color: var(--accent);
+    background: var(--sf3);
+    border: 1px solid var(--bd2);
+}
+.pension-mini.m-jo {
+    color: var(--yellow);
+    background: var(--sf3);
+    border: 1px solid rgba(255,202,40,.3);
+}
+.h-divider {
+    font-size: 12px;
+    color: var(--text3);
+    margin: 0 2px;
 }
 
 .empty-state {
@@ -316,7 +399,7 @@ header {
 
 /* ── 토스트 ── */
 #error-toast {
-    position: fixed; bottom: 28px; left: 50%;
+    position: fixed; bottom: 68px; left: 50%;
     transform: translateX(-50%) translateY(16px);
     background: rgba(255,82,82,.12);
     border: 1px solid rgba(255,82,82,.3);
@@ -334,74 +417,118 @@ header {
 }
 #error-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ── 컨페티 ── */
-.confetti-piece {
-    position: fixed;
-    width: 6px;
-    height: 6px;
-    border-radius: 1px;
-    z-index: 9998;
-    pointer-events: none;
-}
-@keyframes confettiFall {
-    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
-    100% { opacity: 0; transform: translateY(160px) rotate(540deg); }
-}
+/* ── 탭 콘텐츠 전환 ── */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
 @media (max-width: 480px) {
-    .ball-slots { gap: 6px; }
+    .ball-slots, .pension-slots { gap: 6px; }
 }
 </style>
 </head>
 <body>
 
 <header>
-    <div class="logo"><div class="logo-dot"></div>LottoPicker</div>
-    <div class="hd-right">LOTTO 6/45</div>
+    <div class="logo"><div class="logo-dot"></div>Lotto & Pension</div>
+    <div class="hd-right">행운의 숫자</div>
 </header>
 
 <div class="hero-strip">
     <div class="hero-label">Lucky Draw</div>
-    <div class="hero-title">행운의 번호 추첨기</div>
-    <div class="hero-sub">1~45 중 6개를 뽑아 운명을 확인하세요</div>
+    <div class="hero-title" id="heroTitle">로또 6/45</div>
+    <div class="hero-sub" id="heroSub">1~45 중 6개를 뽑아보세요</div>
 </div>
 
 <div class="wrap">
-    <!-- 추첨 카드 -->
-    <div class="card">
-        <div class="card-header">
-            <span class="icon">🎲</span>
-            <h3>추첨 번호</h3>
+    <!-- 로또 탭 콘텐츠 -->
+    <div id="lottoContent" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">🎲</span>
+                <h3>추첨 번호</h3>
+            </div>
+            <div class="ball-slots" id="lotto-slots"></div>
+            <div class="slot-hint-row">
+                <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
+                <button class="reset-btn" onclick="resetLottoSlots()">↺ 초기화</button>
+            </div>
         </div>
-        <div class="ball-slots" id="ball-slots"></div>
-        <div class="slot-hint-row">
-            <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
-            <button class="reset-btn" onclick="resetAllSlots()">↺ 초기화</button>
+
+        <button id="drawLottoBtn" class="btn-draw" onclick="drawLotto(event)">🍀 로또 번호 뽑기</button>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">📋</span>
+                <h3>로또 추첨 기록</h3>
+            </div>
+            <div class="hist-header">
+                <span style="font-size: 11px; color: var(--text2);">최근 10회</span>
+                <div class="hist-count" id="lotto-count-badge">0 / 10</div>
+            </div>
+            <div id="lotto-history-list">
+                <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
+            </div>
         </div>
     </div>
 
-    <!-- 추첨 버튼 -->
-    <button id="drawBtn" class="btn-draw" onclick="drawLotto(event)">🍀 운명의 번호 뽑기</button>
+    <!-- 연금복권 탭 콘텐츠 (드롭다운 버전) -->
+    <div id="pensionContent" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">💰</span>
+                <h3>추첨 번호</h3>
+            </div>
+            <div class="pension-slots" id="pension-slots"></div>
+            <div class="slot-hint-row">
+                <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
+                <button class="reset-btn" onclick="resetPensionSlots()">↺ 초기화</button>
+            </div>
+        </div>
 
-    <!-- 히스토리 카드 -->
-    <div class="card">
-        <div class="card-header">
-            <span class="icon">📋</span>
-            <h3>추첨 기록</h3>
-        </div>
-        <div class="hist-header">
-            <span style="font-size: 11px; color: var(--text2);">최근 10회</span>
-            <div class="hist-count" id="count-badge">0 / 10</div>
-        </div>
-        <div id="history-list">
-            <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다<br>버튼을 눌러 행운의 번호를 뽑아보세요!</div>
+        <button id="drawPensionBtn" class="btn-draw" onclick="drawPension(event)">💰 연금복권 번호 뽑기</button>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">📋</span>
+                <h3>연금복권 추첨 기록</h3>
+            </div>
+            <div class="hist-header">
+                <span style="font-size: 11px; color: var(--text2);">최근 10회</span>
+                <div class="hist-count" id="pension-count-badge">0 / 10</div>
+            </div>
+            <div id="pension-history-list">
+                <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
+            </div>
         </div>
     </div>
+</div>
+
+<!-- 하단 탭 네비게이션 -->
+<div class="tab-nav">
+    <button class="tab-btn active" data-tab="lotto" onclick="switchTab('lotto')">
+        <span class="tab-icon">🎰</span>
+        <span class="tab-label">로또 6/45</span>
+    </button>
+    <button class="tab-btn" data-tab="pension" onclick="switchTab('pension')">
+        <span class="tab-icon">💰</span>
+        <span class="tab-label">연금복권 720+</span>
+    </button>
 </div>
 
 <div id="error-toast"></div>
 
 <script>
+// ============================================================
+// 공통 함수
+// ============================================================
+function showToast(msg) {
+    const t = document.getElementById('error-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
 function getBallColor(n) {
     if (n <= 10) return '#fbc400';
     if (n <= 20) return '#4db8ff';
@@ -417,27 +544,14 @@ function getBallShadow(n) {
     return '0 0 12px rgba(126,217,87,.5)';
 }
 
-function showToast(msg) {
-    const t = document.getElementById('error-toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
-}
+// ============================================================
+// 로또 6/45 관련 코드
+// ============================================================
+let lottoHistory = [];
 
-function spawnConfetti(x, y) {
-    const colors = ['#00d4ff', '#fbc400', '#4db8ff', '#7ed957', '#ff6b6b'];
-    for (let i = 0; i < 24; i++) {
-        const el = document.createElement('div');
-        el.className = 'confetti-piece';
-        el.style.cssText = `left:${x+(Math.random()-.5)*140}px;top:${y}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation:confettiFall ${.7+Math.random()*.8}s ease-out ${Math.random()*.3}s forwards;`;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1500);
-    }
-}
-
-function buildSlots() {
-    const wrap = document.getElementById('ball-slots');
+function buildLottoSlots() {
+    const wrap = document.getElementById('lotto-slots');
+    if (!wrap) return;
     wrap.innerHTML = '';
     for (let i = 0; i < 6; i++) {
         const slot = document.createElement('div');
@@ -447,14 +561,14 @@ function buildSlots() {
         const ph = document.createElement('div');
         ph.className = 'placeholder-ball';
         ph.textContent = '?';
-        ph.id = `ph-${i}`;
+        ph.id = `lotto-ph-${i}`;
         slot.appendChild(ph);
 
         const sw = document.createElement('div');
         sw.className = 'slot-wrap';
         const sel = document.createElement('select');
         sel.className = 'slot-select';
-        sel.id = `sel-${i}`;
+        sel.id = `lotto-sel-${i}`;
 
         const autoOpt = document.createElement('option');
         autoOpt.value = ''; autoOpt.textContent = '자동';
@@ -464,64 +578,68 @@ function buildSlots() {
             opt.value = n; opt.textContent = n;
             sel.appendChild(opt);
         }
-        sel.addEventListener('change', () => onSlotChange(i));
+        sel.addEventListener('change', () => onLottoSlotChange(i));
         sw.appendChild(sel);
         slot.appendChild(sw);
         wrap.appendChild(slot);
     }
 }
 
-function onSlotChange(idx) {
-    const sel = document.getElementById(`sel-${idx}`);
+function onLottoSlotChange(idx) {
+    const sel = document.getElementById(`lotto-sel-${idx}`);
     const slot = sel.closest('.ball-slot');
     sel.classList.toggle('is-pinned', sel.value !== '');
     slot.classList.toggle('pinned', sel.value !== '');
-    clearErrors();
-    validatePinnedNums();
+    clearLottoErrors();
+    validateLottoPinnedNums();
 }
 
-function clearErrors() {
-    document.querySelectorAll('.slot-select').forEach(s => s.classList.remove('is-error'));
+function clearLottoErrors() {
+    document.querySelectorAll('#lotto-slots .slot-select').forEach(s => s.classList.remove('is-error'));
 }
 
-function validatePinnedNums() {
-    const vals = getPinnedValues();
+function validateLottoPinnedNums() {
+    const vals = getLottoPinnedValues();
     const seen = {};
     vals.forEach(({ idx, num }) => { if (!seen[num]) seen[num] = []; seen[num].push(idx); });
     let hasDup = false;
     Object.values(seen).forEach(list => {
-        if (list.length > 1) { hasDup = true; list.forEach(i => document.getElementById(`sel-${i}`).classList.add('is-error')); }
+        if (list.length > 1) { hasDup = true; list.forEach(i => document.getElementById(`lotto-sel-${i}`).classList.add('is-error')); }
     });
     return !hasDup;
 }
 
-function getPinnedValues() {
+function getLottoPinnedValues() {
     const result = [];
     for (let i = 0; i < 6; i++) {
-        const sel = document.getElementById(`sel-${i}`);
-        if (sel.value !== '') result.push({ idx: i, num: parseInt(sel.value) });
+        const sel = document.getElementById(`lotto-sel-${i}`);
+        if (sel && sel.value !== '') result.push({ idx: i, num: parseInt(sel.value) });
     }
     return result;
 }
 
-function resetAllSlots() {
+function resetLottoSlots() {
     for (let i = 0; i < 6; i++) {
-        const sel = document.getElementById(`sel-${i}`);
-        sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
-        document.getElementById(`ph-${i}`).closest('.ball-slot').classList.remove('pinned');
-        const ph = document.getElementById(`ph-${i}`);
-        ph.className = 'placeholder-ball'; ph.textContent = '?'; ph.style.cssText = '';
+        const sel = document.getElementById(`lotto-sel-${i}`);
+        if (sel) {
+            sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
+            const slot = sel.closest('.ball-slot');
+            if (slot) slot.classList.remove('pinned');
+        }
+        const ph = document.getElementById(`lotto-ph-${i}`);
+        if (ph) {
+            ph.className = 'placeholder-ball'; ph.textContent = '?'; ph.style.cssText = '';
+        }
     }
 }
 
-const historyData = [];
-
 function drawLotto(e) {
-    const btn = document.getElementById('drawBtn');
-    clearErrors();
-    if (!validatePinnedNums()) { showToast('⚠️ 중복된 고정 번호가 있어요!'); return; }
+    const btn = document.getElementById('drawLottoBtn');
+    if (!btn) return;
+    clearLottoErrors();
+    if (!validateLottoPinnedNums()) { showToast('⚠️ 중복된 고정 번호가 있어요!'); return; }
 
-    const pinned = getPinnedValues();
+    const pinned = getLottoPinnedValues();
     const pinnedNums = pinned.map(p => p.num);
     const autoNums = [];
     while (autoNums.length < 6 - pinned.length) {
@@ -541,7 +659,8 @@ function drawLotto(e) {
     finalNums.forEach((num, slotIdx) => {
         const isFixed = pinnedNums.includes(num) && pinned.some(p => p.idx === slotIdx);
         setTimeout(() => {
-            const ph = document.getElementById(`ph-${slotIdx}`);
+            const ph = document.getElementById(`lotto-ph-${slotIdx}`);
+            if (!ph) return;
             const ball = document.createElement('div');
             ball.className = 'ball';
             ball.textContent = num;
@@ -549,40 +668,43 @@ function drawLotto(e) {
             ball.style.boxShadow = getBallShadow(num);
             if (isFixed) { ball.style.outline = '2px solid var(--accent)'; ball.style.outlineOffset = '2px'; }
             ph.replaceWith(ball);
-            ball.id = `ph-${slotIdx}`;
+            ball.id = `lotto-ph-${slotIdx}`;
             requestAnimationFrame(() => setTimeout(() => ball.classList.add('show'), 10));
 
             completedCount++;
             if (completedCount === 6) {
                 setTimeout(() => {
                     btn.disabled = false;
-                    btn.textContent = '🍀 운명의 번호 뽑기';
-                    updateHistory(finalNums);
-                    const r = btn.getBoundingClientRect();
-                    spawnConfetti(r.left + r.width / 2, r.top);
+                    btn.textContent = '🍀 로또 번호 뽑기';
+                    updateLottoHistory(finalNums);
+                    showToast('🎉 추첨 완료! 🎉');
                 }, 500);
             }
         }, slotIdx * 700);
     });
 }
 
-function updateHistory(nums) {
-    historyData.unshift([...nums]);
-    if (historyData.length > 10) historyData.pop();
-    document.getElementById('count-badge').textContent = `${historyData.length} / 10`;
+function updateLottoHistory(nums) {
+    lottoHistory.unshift([...nums]);
+    if (lottoHistory.length > 10) lottoHistory.pop();
+    document.getElementById('lotto-count-badge').textContent = `${lottoHistory.length} / 10`;
 
-    const list = document.getElementById('history-list');
+    const list = document.getElementById('lotto-history-list');
+    if (!list) return;
     list.innerHTML = '';
-    historyData.forEach((set, i) => {
+    
+    if (lottoHistory.length === 0) {
+        list.innerHTML = '<div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>';
+        return;
+    }
+    
+    lottoHistory.forEach((set, i) => {
         const row = document.createElement('div');
         row.className = 'history-row';
-        row.style.animationDelay = i === 0 ? '0ms' : `${i * 30}ms`;
-
         const idx = document.createElement('div');
         idx.className = 'history-index';
         idx.textContent = `#${i + 1}`;
         row.appendChild(idx);
-
         const ballWrap = document.createElement('div');
         ballWrap.className = 'history-balls';
         [...set].sort((a, b) => a - b).forEach(n => {
@@ -598,7 +720,256 @@ function updateHistory(nums) {
     });
 }
 
-buildSlots();
+// ============================================================
+// 연금복권 720+ 관련 코드 (드롭다운 버전)
+// ============================================================
+let pensionHistory = [];
+
+function buildPensionSlots() {
+    const wrap = document.getElementById('pension-slots');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    
+    // 조(1~5) 드롭다운
+    const joSlot = document.createElement('div');
+    joSlot.className = 'pension-slot';
+    joSlot.dataset.idx = 0;
+    
+    const joPh = document.createElement('div');
+    joPh.className = 'pension-placeholder';
+    joPh.textContent = '?';
+    joPh.id = `pension-ph-0`;
+    joSlot.appendChild(joPh);
+    
+    const joSw = document.createElement('div');
+    joSw.className = 'pension-slot-wrap';
+    const joSel = document.createElement('select');
+    joSel.className = 'pension-select';
+    joSel.id = `pension-sel-0`;
+    
+    const joAutoOpt = document.createElement('option');
+    joAutoOpt.value = ''; joAutoOpt.textContent = '자동';
+    joSel.appendChild(joAutoOpt);
+    for (let n = 1; n <= 5; n++) {
+        const opt = document.createElement('option');
+        opt.value = n; opt.textContent = n;
+        joSel.appendChild(opt);
+    }
+    joSel.addEventListener('change', () => onPensionSlotChange(0));
+    joSw.appendChild(joSel);
+    joSlot.appendChild(joSw);
+    wrap.appendChild(joSlot);
+    
+    // 구분선
+    const divider = document.createElement('div');
+    divider.className = 'pension-divider';
+    divider.textContent = '—';
+    wrap.appendChild(divider);
+    
+    // 6자리 숫자 (0~9)
+    for (let i = 1; i <= 6; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'pension-slot';
+        slot.dataset.idx = i;
+        
+        const ph = document.createElement('div');
+        ph.className = 'pension-placeholder';
+        ph.textContent = '?';
+        ph.id = `pension-ph-${i}`;
+        slot.appendChild(ph);
+        
+        const sw = document.createElement('div');
+        sw.className = 'pension-slot-wrap';
+        const sel = document.createElement('select');
+        sel.className = 'pension-select';
+        sel.id = `pension-sel-${i}`;
+        
+        const autoOpt = document.createElement('option');
+        autoOpt.value = ''; autoOpt.textContent = '자동';
+        sel.appendChild(autoOpt);
+        for (let n = 0; n <= 9; n++) {
+            const opt = document.createElement('option');
+            opt.value = n; opt.textContent = n;
+            sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => onPensionSlotChange(i));
+        sw.appendChild(sel);
+        slot.appendChild(sw);
+        wrap.appendChild(slot);
+    }
+}
+
+function onPensionSlotChange(idx) {
+    const sel = document.getElementById(`pension-sel-${idx}`);
+    const slot = sel.closest('.pension-slot');
+    sel.classList.toggle('is-pinned', sel.value !== '');
+    slot.classList.toggle('pinned', sel.value !== '');
+    clearPensionErrors();
+    validatePensionPinnedNums();
+}
+
+function clearPensionErrors() {
+    document.querySelectorAll('#pension-slots .pension-select').forEach(s => s.classList.remove('is-error'));
+}
+
+function validatePensionPinnedNums() {
+    // 연금복권은 중복 검사 필요 없음 (조와 각 자리 숫자는 독립적)
+    return true;
+}
+
+function getPensionPinnedValues() {
+    const result = [];
+    for (let i = 0; i <= 6; i++) {
+        const sel = document.getElementById(`pension-sel-${i}`);
+        if (sel && sel.value !== '') result.push({ idx: i, num: parseInt(sel.value) });
+    }
+    return result;
+}
+
+function resetPensionSlots() {
+    for (let i = 0; i <= 6; i++) {
+        const sel = document.getElementById(`pension-sel-${i}`);
+        if (sel) {
+            sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
+            const slot = sel.closest('.pension-slot');
+            if (slot) slot.classList.remove('pinned');
+        }
+        const ph = document.getElementById(`pension-ph-${i}`);
+        if (ph) {
+            ph.className = 'pension-placeholder'; ph.textContent = '?'; ph.style.cssText = '';
+        }
+    }
+}
+
+function drawPension(e) {
+    const btn = document.getElementById('drawPensionBtn');
+    if (!btn) return;
+    
+    const pinned = getPensionPinnedValues();
+    const pinnedMap = new Map();
+    pinned.forEach(p => { pinnedMap.set(p.idx, p.num); });
+    
+    const finalNums = new Array(7);
+    for (let i = 0; i <= 6; i++) {
+        if (pinnedMap.has(i)) {
+            finalNums[i] = pinnedMap.get(i);
+        } else {
+            finalNums[i] = (i === 0) ? Math.floor(Math.random() * 5) + 1 : Math.floor(Math.random() * 10);
+        }
+    }
+    
+    btn.disabled = true;
+    btn.textContent = '💰 추첨 중…';
+    
+    let completedCount = 0;
+    for (let slotIdx = 0; slotIdx <= 6; slotIdx++) {
+        const num = finalNums[slotIdx];
+        const isFixed = pinnedMap.has(slotIdx);
+        
+        setTimeout(() => {
+            const ph = document.getElementById(`pension-ph-${slotIdx}`);
+            if (!ph) return;
+            const ball = document.createElement('div');
+            ball.className = 'pension-ball';
+            if (slotIdx === 0) {
+                ball.style.backgroundColor = 'rgba(255,202,40,.15)';
+                ball.style.border = '2px solid var(--yellow)';
+                ball.style.color = 'var(--yellow)';
+            } else {
+                ball.style.backgroundColor = 'rgba(0,212,255,.1)';
+                ball.style.border = '2px solid var(--accent)';
+                ball.style.color = 'var(--accent)';
+            }
+            ball.textContent = num;
+            ball.style.boxShadow = '0 4px 16px rgba(0,0,0,.3)';
+            if (isFixed) { ball.style.outline = '2px solid var(--accent)'; ball.style.outlineOffset = '2px'; }
+            ph.replaceWith(ball);
+            ball.id = `pension-ph-${slotIdx}`;
+            requestAnimationFrame(() => setTimeout(() => ball.classList.add('show'), 10));
+            
+            completedCount++;
+            if (completedCount === 7) {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = '💰 연금복권 번호 뽑기';
+                    savePensionResult(finalNums);
+                    showToast('🎉 추첨 완료! 🎉');
+                }, 500);
+            }
+        }, slotIdx * 600);
+    }
+}
+
+function savePensionResult(nums) {
+    const result = Array.from(nums);
+    pensionHistory.unshift(result);
+    if (pensionHistory.length > 10) pensionHistory.pop();
+    renderPensionHistory();
+}
+
+function renderPensionHistory() {
+    document.getElementById('pension-count-badge').textContent = `${pensionHistory.length} / 10`;
+    const list = document.getElementById('pension-history-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (pensionHistory.length === 0) {
+        list.innerHTML = '<div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>';
+        return;
+    }
+    pensionHistory.forEach((res, i) => {
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        const idx = document.createElement('div');
+        idx.className = 'history-index';
+        idx.textContent = `#${i+1}`;
+        row.appendChild(idx);
+        res.forEach((num, j) => {
+            const mini = document.createElement('div');
+            mini.className = j === 0 ? 'pension-mini m-jo' : 'pension-mini m-digit';
+            mini.textContent = num;
+            row.appendChild(mini);
+            if (j === 0) {
+                const d = document.createElement('span');
+                d.className = 'h-divider';
+                d.textContent = '—';
+                row.appendChild(d);
+            }
+        });
+        list.appendChild(row);
+    });
+}
+
+// ============================================================
+// 탭 전환
+// ============================================================
+function switchTab(tab) {
+    const lottoContent = document.getElementById('lottoContent');
+    const pensionContent = document.getElementById('pensionContent');
+    const btns = document.querySelectorAll('.tab-btn');
+    const heroTitle = document.getElementById('heroTitle');
+    const heroSub = document.getElementById('heroSub');
+
+    btns.forEach(btn => btn.classList.remove('active'));
+    if (tab === 'lotto') {
+        lottoContent.classList.add('active');
+        pensionContent.classList.remove('active');
+        document.querySelector('.tab-btn[data-tab="lotto"]').classList.add('active');
+        heroTitle.textContent = '로또 6/45';
+        heroSub.textContent = '1~45 중 6개를 뽑아보세요';
+    } else {
+        lottoContent.classList.remove('active');
+        pensionContent.classList.add('active');
+        document.querySelector('.tab-btn[data-tab="pension"]').classList.add('active');
+        heroTitle.textContent = '연금복권 720+';
+        heroSub.textContent = '조(1~5) + 6자리 숫자 (0~9)';
+    }
+}
+
+// ============================================================
+// 초기화
+// ============================================================
+buildLottoSlots();
+buildPensionSlots();
 </script>
 </body>
 </html>
