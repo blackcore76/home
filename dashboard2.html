@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="theme-color" content="#080c14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="4분할 대시보드">
+    <title>4분할 차트 — 글로벌 마켓 대시보드</title>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:      #080c14;
+            --sf:      #0e1422;
+            --sf2:     #131b2d;
+            --sf3:     #181f30;
+            --bd:      #1e2d45;
+            --bd2:     #263548;
+            --text:    #c8d6e8;
+            --text2:   #7a91a8;
+            --text3:   #4a5f74;
+            --accent:  #00d4ff;
+            --accent2: #0099cc;
+            --green:   #00e676;
+            --red:     #ff5252;
+            --mono:    'JetBrains Mono', monospace;
+            --sans:    'Noto Sans KR', sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg);
+            font-family: var(--sans);
+        }
+
+        /* ── 헤더 (피드 스타일) ── */
+        header {
+            position: fixed;
+            top: 36px;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(8,12,20,.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--bd);
+            padding: 0 16px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}
+            50%{opacity:.4;box-shadow:0 0 3px var(--accent)}
+        }
+        .header-badge {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text3);
+            background: var(--sf);
+            border: 1px solid var(--bd);
+            border-radius: 20px;
+            padding: 3px 10px;
+        }
+
+        /* ── PC: fixed 2×2 그리드 ── */
+        .grid-container {
+            position: fixed;
+            top: 84px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background-color: #000;
+        }
+
+        .chart-box {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            background: var(--sf2);
+        }
+
+        .swipe-left, .swipe-right { display: none; }
+        .mobile-nav { display: none; }
+
+        /* ── 모바일/태블릿 (≤1024px) ── */
+        @media (max-width: 1024px) {
+            header { top: 36px; }
+            .grid-container {
+                position: fixed;
+                top: 84px;
+                left: 0;
+                right: 0;
+                bottom: 52px;
+                display: block;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                scroll-snap-type: y mandatory;
+                -webkit-overflow-scrolling: touch;
+                background-color: var(--bg);
+            }
+
+            .chart-box {
+                width: 100%;
+                height: 100%;
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+                background: var(--sf2);
+            }
+
+            .swipe-left, .swipe-right {
+                display: block;
+                position: absolute;
+                top: 0; bottom: 0;
+                width: 20px;
+                z-index: 10;
+            }
+            .swipe-left  { left: 0; }
+            .swipe-right { right: 0; }
+
+            .mobile-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0; left: 0; right: 0;
+                height: 52px;
+                background: var(--sf);
+                border-top: 1px solid var(--bd);
+                z-index: 100;
+                align-items: center;
+                justify-content: space-around;
+                padding: 0 12px;
+            }
+
+            .nav-btn {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px 4px;
+                cursor: pointer;
+                border: none;
+                background: transparent;
+                -webkit-tap-highlight-color: transparent;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .nav-label {
+                font-family: var(--mono);
+                font-size: 9px;
+                color: var(--text3);
+                transition: color .2s;
+            }
+
+            .nav-btn.active .nav-label {
+                color: var(--accent);
+            }
+
+            .nav-btn .dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--text3);
+                transition: all .25s ease;
+            }
+
+            .nav-btn.active .dot {
+                width: 8px;
+                height: 8px;
+                background: var(--accent);
+                box-shadow: 0 0 8px var(--accent);
+            }
+        }
+
+        /* ── 작은 화면에서 헤더 여백 조정 ── */
+        @media (max-width: 600px) {
+            header { height: 44px; top: 36px; }
+            .grid-container { top: 80px; }
+        }
+    </style>
+    <script src="home-bar.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <div class="logo-dot"></div>
+        4분할 차트 대시보드
+    </div>
+    <div class="header-badge">30분봉 · 실시간</div>
+</header>
+
+<div class="grid-container" id="scrollWrap">
+    <!-- chart-box는 JS가 CHARTS 배열 기준으로 동적 생성 -->
+</div>
+
+<nav class="mobile-nav" id="mobileNav">
+    <!-- 네비 버튼도 JS가 자동 생성 -->
+</nav>
+
+<script type="text/javascript">
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ★ 여기만 수정하면 차트+네비가 자동으로 바뀜
+   symbol: "거래소:티커" 형식
+   label : 표시할 레이블 (생략 시 티커 부분 자동 추출)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const CHARTS = [
+    { symbol: "AMEX:SPY",      label: "S&P 500" },
+    { symbol: "NASDAQ:QQQ",    label: "나스닥 100" },
+    { symbol: "FX_IDC:USDKRW", label: "USD/KRW" },
+    { symbol: "OANDA:XAUUSD",  label: "금 (XAU/USD)" },
+];
+
+/* ── 공통 TradingView 설정 ── */
+const COMMON = {
+    autosize: true,
+    interval: "30",
+    timezone: "Asia/Seoul",
+    theme: "dark",
+    style: "1",
+    locale: "kr",
+    enable_publishing: false,
+    allow_symbol_change: true,
+    hide_side_toolbar: false,
+    details: false,
+    hotlist: false,
+    calendar: false,
+};
+
+/* ── DOM 생성 ── */
+const wrap = document.getElementById('scrollWrap');
+const nav  = document.getElementById('mobileNav');
+
+const widgets = []; // 위젯 인스턴스 보관
+
+CHARTS.forEach((chart, i) => {
+    const id = `chart_tv_${i}`;
+    const displayLabel = chart.label || chart.symbol.split(':')[1] || chart.symbol;
+
+    // chart-box
+    const box = document.createElement('div');
+    box.className = 'chart-box';
+    box.id = id;
+
+    const sl = document.createElement('div'); sl.className = 'swipe-left';
+    const sr = document.createElement('div'); sr.className = 'swipe-right';
+    box.appendChild(sl);
+    box.appendChild(sr);
+    wrap.appendChild(box);
+
+    // 네비 버튼 (dot + 레이블)
+    const btn = document.createElement('button');
+    btn.className = 'nav-btn' + (i === 0 ? ' active' : '');
+    btn.onclick = () => goTo(i);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'nav-label';
+    labelSpan.textContent = displayLabel;
+
+    btn.appendChild(dot);
+    btn.appendChild(labelSpan);
+    nav.appendChild(btn);
+
+    // TradingView 위젯 생성
+    const w = new TradingView.widget({
+        ...COMMON,
+        symbol: chart.symbol,
+        container_id: id,
+    });
+    widgets.push(w);
+});
+
+/* ── 네비게이션 ── */
+const btns = [...nav.querySelectorAll('.nav-btn')];
+
+function goTo(idx) {
+    idx = Math.max(0, Math.min(CHARTS.length - 1, idx));
+    wrap.scrollTo({ top: wrap.clientHeight * idx, behavior: 'smooth' });
+}
+
+function syncNav() {
+    const idx = Math.round(wrap.scrollTop / wrap.clientHeight);
+    btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+}
+wrap.addEventListener('scroll', syncNav, { passive: true });
+
+/* ── 엣지 오버레이 스와이프 ── */
+let ty0 = null, tx0 = null;
+document.querySelectorAll('.swipe-left, .swipe-right').forEach(el => {
+    el.addEventListener('touchstart', e => {
+        ty0 = e.touches[0].clientY;
+        tx0 = e.touches[0].clientX;
+    }, { passive: true });
+
+    el.addEventListener('touchend', e => {
+        if (ty0 === null) return;
+        const dy = ty0 - e.changedTouches[0].clientY;
+        const dx = Math.abs(tx0 - e.changedTouches[0].clientX);
+        if (Math.abs(dy) > 40 && Math.abs(dy) > dx) {
+            const cur = Math.round(wrap.scrollTop / wrap.clientHeight);
+            goTo(cur + (dy > 0 ? 1 : -1));
+        }
+        ty0 = tx0 = null;
+    }, { passive: true });
+});
+
+// 창 크기 변경 시 차트 리사이즈 대비
+window.addEventListener('resize', () => {
+    widgets.forEach(w => {
+        try { w.resize(); } catch(e) {}
+    });
+});
+
+</script>
+</body>
+</html>
