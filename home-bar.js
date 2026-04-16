@@ -2,7 +2,7 @@
   /* ── BlackCore 홈 네비게이션 바 ──
      어느 페이지에나 <script src="home-bar.js"></script> 한 줄로 삽입됩니다.
   ─────────────────────────────── */
-  var INDEX_URL = 'index.html';   // 인덱스 경로 (GitHub Pages 루트 기준)
+  var INDEX_URL = 'index.html';
 
   var css = `
     #bc-home-bar {
@@ -52,46 +52,83 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    #bc-home-bar .bc-right {
+    /* 우측 버튼 그룹 */
+    #bc-home-bar .bc-right-group {
       margin-left: auto;
-      color: #2a3a50;
-      font-size: 10px;
-      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       flex-shrink: 0;
     }
-    /* 바 높이만큼 body 상단 여백 추가 (기존 레이아웃 밀리지 않게) */
+    /* HOME 링크 버튼 */
+    #bc-home-bar .bc-home-btn {
+      color: #4a607a !important;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      background: transparent;
+      border: 1px solid rgba(99,155,255,0.15);
+      border-radius: 5px;
+      padding: 2px 8px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    #bc-home-bar .bc-home-btn:hover {
+      color: #3d8bff !important;
+      border-color: rgba(61,139,255,0.4);
+      background: rgba(61,139,255,0.08);
+    }
+    /* 로그아웃 버튼 — 홈바 안으로 통합 */
+    #auth-logout-btn {
+      position: static !important;
+      background: rgba(255,255,255,0.06) !important;
+      color: #6a8099 !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      padding: 2px 8px !important;
+      border-radius: 5px !important;
+      font-size: 10px !important;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    #auth-logout-btn:hover {
+      color: #ff6b6b !important;
+      border-color: rgba(255,107,107,0.4) !important;
+      background: rgba(255,107,107,0.08) !important;
+    }
+    /* 바 높이만큼 body 상단 여백 추가 */
     body { padding-top: 36px !important; }
-    /* sticky 헤더가 있는 앱은 top 값 보정 */
-    .hd[style*="sticky"], header[style*="sticky"],
-    .hd, header {
+    header {
       top: 36px !important;
     }
   `;
 
-  // 현재 파일명으로 페이지 이름 자동 감지
   var FILE_LABELS = {
-    'market-dashboard.html': '📊 마켓 대시보드',
-    'dashboard.html':        '📊 4분할 차트보기',
-    'daily-pick.html':       '📈 일일 주식 픽',
-    'stocklens.html':        '💼 StockLens',
-    'blood-pressure.html':   '❤️ 혈압 기록부',
-    'blood-glucose.html':    '🩸 혈당 기록부',
-    'lotto.html':            '🎰 로또 픽커',
+    'market-aibriefing.html': '📊 AI 마켓브리핑',
+    'market-dashboard.html':  '📊 마켓 대시보드',
+    'dashboard.html':         '📊 4분할 차트보기',
+    'daily-pick.html':        '📈 일일 주식 픽',
+    'stocklens.html':         '💼 StockLens',
+    'daily-feed.html':        '💬 데일리 피드',
+    'blood-pressure.html':    '❤️ 혈압 기록부',
+    'lotto.html':             '🎰 로또 픽커',
   };
 
   var filename = location.pathname.split('/').pop() || 'index.html';
   var pageLabel = FILE_LABELS[filename] || document.title || filename;
 
-  // 인덱스 페이지면 바 삽입 안 함
   if (filename === 'index.html' || filename === '') return;
 
   function inject() {
-    // 스타일 주입
     var style = document.createElement('style');
     style.textContent = css;
     document.head.appendChild(style);
 
-    // 바 DOM 생성
     var bar = document.createElement('div');
     bar.id = 'bc-home-bar';
     bar.innerHTML =
@@ -102,12 +139,13 @@
       '</a>' +
       '<span class="bc-sep">›</span>' +
       '<span class="bc-cur">' + pageLabel + '</span>' +
-      '<span class="bc-right">⌂ HOME</span>';
+      '<div class="bc-right-group" id="bc-right-group">' +
+        '<a href="' + INDEX_URL + '" class="bc-home-btn">⌂ HOME</a>' +
+      '</div>';
 
     document.body.insertBefore(bar, document.body.firstChild);
   }
 
-  // DOM 준비 여부에 따라 즉시 또는 DOMContentLoaded 후 삽입
   if (document.body) {
     inject();
   } else {
