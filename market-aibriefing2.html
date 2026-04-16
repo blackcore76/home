@@ -342,7 +342,7 @@
             <span class="badge">실시간 데이터</span>
         </div>
         <div class="search-group">
-            <label class="search-label">심볼 (예: AAPL, TSLA, MSFT)</label>
+            <label class="search-label">심볼 (예: AAPL, TSLA, MSFT / 한국 티커 분석 불가!)</label>
             <div class="search-box">
                 <input type="text" id="symbolInput" value="AAPL" class="search-input" placeholder="심볼 입력">
                 <button id="fetchBtn" class="btn-primary">분석 시작</button>
@@ -545,7 +545,7 @@
 
 반드시 전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
 
-            const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+            const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiKey}`;
             const aiResponse = await fetch(aiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
