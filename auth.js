@@ -39,35 +39,42 @@
     };
   }
 
-  // 로그아웃 버튼 (우상단 고정)
+  // 로그아웃 버튼 — 홈바 우측 그룹 안에 삽입, 없으면 우상단 고정
   function createLogoutBtn(user) {
-    const existing = document.getElementById('auth-logout-btn');
-    if (existing) return;
+    if (document.getElementById('auth-logout-btn')) return;
+
     const btn = document.createElement('button');
     btn.id = 'auth-logout-btn';
     btn.title = user.email;
-    btn.style.cssText = `
-      position:fixed; top:12px; right:12px; z-index:9999;
-      background:rgba(255,255,255,0.08); color:#aaa;
-      border:1px solid rgba(255,255,255,0.15);
-      padding:4px 10px; border-radius:6px;
-      font-size:0.75rem; cursor:pointer;
-    `;
     btn.textContent = '로그아웃';
     btn.onclick = () => firebase.auth().signOut();
-    document.body.appendChild(btn);
+
+    // 홈바 우측 그룹이 있으면 그 안 맨 앞에 삽입 (HOME 버튼 왼쪽)
+    const rightGroup = document.getElementById('bc-right-group');
+    if (rightGroup) {
+      rightGroup.insertBefore(btn, rightGroup.firstChild);
+    } else {
+      // 홈바 없는 페이지 대비 폴백 — 우상단 고정
+      btn.style.cssText = `
+        position:fixed; top:6px; right:12px; z-index:9999;
+        background:rgba(255,255,255,0.08); color:#aaa;
+        border:1px solid rgba(255,255,255,0.15);
+        padding:4px 10px; border-radius:6px;
+        font-size:0.75rem; cursor:pointer;
+        font-family:'JetBrains Mono', monospace;
+      `;
+      document.body.appendChild(btn);
+    }
   }
 
   // 인증 상태 감시 — 핵심 로직
   firebase.auth().onAuthStateChanged(user => {
     const overlay = document.getElementById('auth-overlay');
     if (user) {
-      // 로그인됨 — 오버레이 제거
       if (overlay) overlay.remove();
       createLogoutBtn(user);
       console.log('[Auth] 로그인 완료:', user.email);
     } else {
-      // 미로그인 — 오버레이 표시
       if (!overlay) createOverlay();
       const logoutBtn = document.getElementById('auth-logout-btn');
       if (logoutBtn) logoutBtn.remove();
