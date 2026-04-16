@@ -189,4 +189,416 @@ header {
     transition: all .2s;
 }
 .slot-select:hover { border-color: var(--accent); background: rgba(0,212,255,.05); }
-.slot-select:focus { border-color: var(--ac
+.slot-select:focus { border-color: var(--accent); color: var(--accent); }
+.slot-select.is-pinned { border-color: var(--accent); background: rgba(0,212,255,.1); color: var(--accent); }
+.slot-select.is-error { border-color: var(--red) !important; background: rgba(255,82,82,.1) !important; color: var(--red) !important; }
+.slot-wrap::after {
+    content: '▾';
+    position: absolute; right: 5px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    color: var(--text3);
+    pointer-events: none;
+}
+
+.slot-hint-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+}
+.slot-hint { font-size: 11px; color: var(--text3); }
+.slot-hint .hl { color: var(--accent); font-weight: 700; }
+.reset-btn {
+    background: transparent;
+    border: 1px solid var(--bd2);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all .15s;
+}
+.reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* ── 추첨 버튼 ── */
+.btn-draw {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    cursor: pointer;
+    transition: all .15s;
+    box-shadow: 0 0 20px rgba(0,212,255,.3);
+}
+.btn-draw:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,212,255,.5); }
+.btn-draw:active:not(:disabled) { transform: translateY(0) scale(.98); }
+.btn-draw:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+/* ── 히스토리 ── */
+.hist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.hist-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(0,212,255,.1);
+    border: 1px solid rgba(0,212,255,.2);
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+.history-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all .2s;
+    animation: slideIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+.history-row:hover { border-color: var(--bd2); background: var(--sf3); }
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.history-index {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    min-width: 28px;
+}
+.history-balls { display: flex; gap: 6px; flex-wrap: wrap; }
+.mini-ball {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--kr);
+    font-weight: 800;
+    font-size: 10px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    position: relative;
+}
+.mini-ball::before {
+    content: '';
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, rgba(255,255,255,.35), transparent 55%);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 2;
+}
+
+/* ── 토스트 ── */
+#error-toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: rgba(255,82,82,.12);
+    border: 1px solid rgba(255,82,82,.3);
+    color: var(--red);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 40px;
+    backdrop-filter: blur(12px);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    white-space: nowrap;
+    pointer-events: none;
+}
+#error-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── 컨페티 ── */
+.confetti-piece {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+    z-index: 9998;
+    pointer-events: none;
+}
+@keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(160px) rotate(540deg); }
+}
+
+@media (max-width: 480px) {
+    .ball-slots { gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo"><div class="logo-dot"></div>LottoPicker</div>
+    <div class="hd-right">LOTTO 6/45</div>
+</header>
+
+<div class="hero-strip">
+    <div class="hero-label">Lucky Draw</div>
+    <div class="hero-title">행운의 번호 추첨기</div>
+    <div class="hero-sub">1~45 중 6개를 뽑아 운명을 확인하세요</div>
+</div>
+
+<div class="wrap">
+    <!-- 추첨 카드 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="icon">🎲</span>
+            <h3>추첨 번호</h3>
+        </div>
+        <div class="ball-slots" id="ball-slots"></div>
+        <div class="slot-hint-row">
+            <div class="slot-hint">드롭다운으로 번호 <span class="hl">고정</span> 가능</div>
+            <button class="reset-btn" onclick="resetAllSlots()">↺ 초기화</button>
+        </div>
+    </div>
+
+    <!-- 추첨 버튼 -->
+    <button id="drawBtn" class="btn-draw" onclick="drawLotto(event)">🍀 운명의 번호 뽑기</button>
+
+    <!-- 히스토리 카드 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="icon">📋</span>
+            <h3>추첨 기록</h3>
+        </div>
+        <div class="hist-header">
+            <span style="font-size: 11px; color: var(--text2);">최근 10회</span>
+            <div class="hist-count" id="count-badge">0 / 10</div>
+        </div>
+        <div id="history-list">
+            <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다<br>버튼을 눌러 행운의 번호를 뽑아보세요!</div>
+        </div>
+    </div>
+</div>
+
+<div id="error-toast"></div>
+
+<script>
+function getBallColor(n) {
+    if (n <= 10) return '#fbc400';
+    if (n <= 20) return '#4db8ff';
+    if (n <= 30) return '#ff6b6b';
+    if (n <= 40) return '#aaaaaa';
+    return '#7ed957';
+}
+function getBallShadow(n) {
+    if (n <= 10) return '0 0 12px rgba(251,196,0,.5)';
+    if (n <= 20) return '0 0 12px rgba(77,184,255,.5)';
+    if (n <= 30) return '0 0 12px rgba(255,107,107,.5)';
+    if (n <= 40) return '0 0 12px rgba(170,170,170,.3)';
+    return '0 0 12px rgba(126,217,87,.5)';
+}
+
+function showToast(msg) {
+    const t = document.getElementById('error-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function spawnConfetti(x, y) {
+    const colors = ['#00d4ff', '#fbc400', '#4db8ff', '#7ed957', '#ff6b6b'];
+    for (let i = 0; i < 24; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `left:${x+(Math.random()-.5)*140}px;top:${y}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation:confettiFall ${.7+Math.random()*.8}s ease-out ${Math.random()*.3}s forwards;`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1500);
+    }
+}
+
+function buildSlots() {
+    const wrap = document.getElementById('ball-slots');
+    wrap.innerHTML = '';
+    for (let i = 0; i < 6; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'ball-slot';
+        slot.dataset.idx = i;
+
+        const ph = document.createElement('div');
+        ph.className = 'placeholder-ball';
+        ph.textContent = '?';
+        ph.id = `ph-${i}`;
+        slot.appendChild(ph);
+
+        const sw = document.createElement('div');
+        sw.className = 'slot-wrap';
+        const sel = document.createElement('select');
+        sel.className = 'slot-select';
+        sel.id = `sel-${i}`;
+
+        const autoOpt = document.createElement('option');
+        autoOpt.value = ''; autoOpt.textContent = '자동';
+        sel.appendChild(autoOpt);
+        for (let n = 1; n <= 45; n++) {
+            const opt = document.createElement('option');
+            opt.value = n; opt.textContent = n;
+            sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => onSlotChange(i));
+        sw.appendChild(sel);
+        slot.appendChild(sw);
+        wrap.appendChild(slot);
+    }
+}
+
+function onSlotChange(idx) {
+    const sel = document.getElementById(`sel-${idx}`);
+    const slot = sel.closest('.ball-slot');
+    sel.classList.toggle('is-pinned', sel.value !== '');
+    slot.classList.toggle('pinned', sel.value !== '');
+    clearErrors();
+    validatePinnedNums();
+}
+
+function clearErrors() {
+    document.querySelectorAll('.slot-select').forEach(s => s.classList.remove('is-error'));
+}
+
+function validatePinnedNums() {
+    const vals = getPinnedValues();
+    const seen = {};
+    vals.forEach(({ idx, num }) => { if (!seen[num]) seen[num] = []; seen[num].push(idx); });
+    let hasDup = false;
+    Object.values(seen).forEach(list => {
+        if (list.length > 1) { hasDup = true; list.forEach(i => document.getElementById(`sel-${i}`).classList.add('is-error')); }
+    });
+    return !hasDup;
+}
+
+function getPinnedValues() {
+    const result = [];
+    for (let i = 0; i < 6; i++) {
+        const sel = document.getElementById(`sel-${i}`);
+        if (sel.value !== '') result.push({ idx: i, num: parseInt(sel.value) });
+    }
+    return result;
+}
+
+function resetAllSlots() {
+    for (let i = 0; i < 6; i++) {
+        const sel = document.getElementById(`sel-${i}`);
+        sel.value = ''; sel.classList.remove('is-pinned', 'is-error');
+        document.getElementById(`ph-${i}`).closest('.ball-slot').classList.remove('pinned');
+        const ph = document.getElementById(`ph-${i}`);
+        ph.className = 'placeholder-ball'; ph.textContent = '?'; ph.style.cssText = '';
+    }
+}
+
+const historyData = [];
+
+function drawLotto(e) {
+    const btn = document.getElementById('drawBtn');
+    clearErrors();
+    if (!validatePinnedNums()) { showToast('⚠️ 중복된 고정 번호가 있어요!'); return; }
+
+    const pinned = getPinnedValues();
+    const pinnedNums = pinned.map(p => p.num);
+    const autoNums = [];
+    while (autoNums.length < 6 - pinned.length) {
+        const r = Math.floor(Math.random() * 45) + 1;
+        if (!pinnedNums.includes(r) && !autoNums.includes(r)) autoNums.push(r);
+    }
+
+    const finalNums = new Array(6);
+    pinned.forEach(p => { finalNums[p.idx] = p.num; });
+    let autoIdx = 0;
+    for (let i = 0; i < 6; i++) { if (finalNums[i] === undefined) finalNums[i] = autoNums[autoIdx++]; }
+
+    btn.disabled = true;
+    btn.textContent = '🎲 추첨 중…';
+
+    let completedCount = 0;
+    finalNums.forEach((num, slotIdx) => {
+        const isFixed = pinnedNums.includes(num) && pinned.some(p => p.idx === slotIdx);
+        setTimeout(() => {
+            const ph = document.getElementById(`ph-${slotIdx}`);
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.textContent = num;
+            ball.style.backgroundColor = getBallColor(num);
+            ball.style.boxShadow = getBallShadow(num);
+            if (isFixed) { ball.style.outline = '2px solid var(--accent)'; ball.style.outlineOffset = '2px'; }
+            ph.replaceWith(ball);
+            ball.id = `ph-${slotIdx}`;
+            requestAnimationFrame(() => setTimeout(() => ball.classList.add('show'), 10));
+
+            completedCount++;
+            if (completedCount === 6) {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = '🍀 운명의 번호 뽑기';
+                    updateHistory(finalNums);
+                    const r = btn.getBoundingClientRect();
+                    spawnConfetti(r.left + r.width / 2, r.top);
+                }, 500);
+            }
+        }, slotIdx * 700);
+    });
+}
+
+function updateHistory(nums) {
+    historyData.unshift([...nums]);
+    if (historyData.length > 10) historyData.pop();
+    document.getElementById('count-badge').textContent = `${historyData.length} / 10`;
+
+    const list = document.getElementById('history-list');
+    list.innerHTML = '';
+    historyData.forEach((set, i) => {
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        row.style.animationDelay = i === 0 ? '0ms' : `${i * 30}ms`;
+
+        const idx = document.createElement('div');
+        idx.className = 'history-index';
+        idx.textContent = `#${i + 1}`;
+        row.appendChild(idx);
+
+        const ballWrap = document.createElement('div');
+        ballWrap.className = 'history-balls';
+        [...set].sort((a, b) => a - b).forEach(n => {
+            const mini = document.createElement('div');
+            mini.className = 'mini-ball';
+            mini.style.backgroundColor = getBallColor(n);
+            mini.style.boxShadow = getBallShadow(n);
+            mini.textContent = n;
+            ballWrap.appendChild(mini);
+        });
+        row.appendChild(ballWrap);
+        list.appendChild(row);
+    });
+}
+
+buildSlots();
+</script>
+</body>
+</html>
