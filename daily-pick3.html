@@ -650,7 +650,7 @@ function truncCell(text, type) {
   const limit = 20;
   if(text.length<=limit) return `<span>${escapeHtml(text)}</span>`;
   const preview = escapeHtml(text.substring(0,limit))+'…';
-  const full = escapeHtml(text);
+  const full = text.replace(/"/g, '&quot;');
   const label = type==='target'?'목표가':'비고';
   return `<span class="trunc-wrap"><span class="trunc-text">${preview}</span><span class="trunc-btn" data-full="${full}" data-label="${label}" onclick="openGlobalPopover(event,this)">펼치기 ▾</span></span>`;
 }
