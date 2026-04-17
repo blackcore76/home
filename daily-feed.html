@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -14,7 +13,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<!-- Firebase 초기화 — auth.js보다 반드시 먼저 실행 -->
+<!-- Firebase 초기화 -->
 <script>
   firebase.initializeApp({
     apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
@@ -73,7 +72,17 @@ header {
 .sdot.live { background: var(--green); box-shadow: 0 0 5px var(--green); animation: bl 3s infinite; }
 .sdot.load { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); animation: bl .6s infinite; }
 .sdot.err  { background: var(--red); }
-@keyframes bl { 0%,100%{opacity:1}50%{opacity:.2} }
+@keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
+.user-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text2); background: var(--sf2);
+  border: 1px solid var(--bd); border-radius: 20px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.user-badge .user-email { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-badge:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── INPUT AREA ── */
 .input-wrap {
@@ -181,6 +190,11 @@ textarea::placeholder { color: var(--text3); }
   padding: 2px 8px;
 }
 .feed-mood { font-size: 14px; }
+.feed-author {
+  font-family: var(--mono); font-size: 9px; color: var(--text3);
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
+  padding: 2px 6px;
+}
 .feed-time {
   font-family: var(--mono); font-size: 10px; color: var(--text3);
   margin-left: auto;
@@ -240,19 +254,68 @@ textarea::placeholder { color: var(--text3); }
   opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── 로그인 모달 (간단) ── */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.login-overlay.open { opacity: 1; pointer-events: all; }
+.login-modal {
+  background: var(--sf);
+  border: 1px solid var(--bd2);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  transform: scale(.9);
+  transition: transform .2s;
+}
+.login-overlay.open .login-modal { transform: scale(1); }
+.login-modal .icon { font-size: 48px; margin-bottom: 16px; }
+.login-modal h3 { font-family: var(--mono); font-size: 16px; margin-bottom: 8px; }
+.login-modal p { font-size: 12px; color: var(--text3); margin-bottom: 24px; }
+.login-modal .btn-login {
+  background: var(--accent); color: #000; border: none;
+  border-radius: 10px; padding: 12px 24px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  width: 100%;
+}
+.login-modal .btn-login:hover { background: #33ddff; }
+.login-modal .btn-cancel {
+  background: transparent; border: 1px solid var(--bd2);
+  color: var(--text2); border-radius: 10px;
+  padding: 10px 20px; font-size: 13px;
+  cursor: pointer; margin-top: 12px;
+  width: 100%;
+}
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo"><div class="logo-dot"></div>데일리 피드</div>
-  <div class="sync-badge">
-    <div class="sdot load" id="sdot"></div>
-    <span id="stxt">연결 중...</span>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <div class="sync-badge">
+      <div class="sdot load" id="sdot"></div>
+      <span id="stxt">연결 중...</span>
+    </div>
+    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
+      <span>👤</span>
+      <span class="user-email" id="userEmail">로그인</span>
+    </div>
   </div>
 </header>
 
-<!-- 입력 영역 -->
+<!-- 입력 영역 (항상 보임, 비로그인시 클릭하면 로그인 모달) -->
 <div class="input-wrap">
   <div class="input-box">
     <div class="input-date-row">
@@ -270,7 +333,7 @@ textarea::placeholder { color: var(--text3); }
     <textarea id="inText" placeholder="오늘의 생각을 기록하세요..." rows="4" oninput="updateChar()"></textarea>
     <div class="input-footer">
       <span class="char-count" id="charCount">0 / 3000</span>
-      <button class="btn-submit" id="btnSubmit" onclick="submitFeed()">
+      <button class="btn-submit" id="btnSubmit" onclick="checkLoginAndSubmit()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         게시
       </button>
@@ -291,6 +354,17 @@ textarea::placeholder { color: var(--text3); }
 <!-- 토스트 -->
 <div class="toast" id="toast"></div>
 
+<!-- 로그인 모달 -->
+<div class="login-overlay" id="loginModal" onclick="if(event.target===this) closeLoginModal()">
+  <div class="login-modal">
+    <div class="icon">🔐</div>
+    <h3>로그인이 필요합니다</h3>
+    <p>글을 작성하거나 수정/삭제하려면<br>Google 계정으로 로그인해주세요</p>
+    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
+    <button class="btn-cancel" onclick="closeLoginModal()">취소</button>
+  </div>
+</div>
+
 <script>
 /* ── firebase.initializeApp은 <head>에서 완료 ── */
 const db  = firebase.firestore();
@@ -299,6 +373,9 @@ const COL = 'dailyfeed';
 /* ── 상태 ── */
 let feeds   = [];
 let selMood = '';
+let currentUser = null;
+let pendingAction = null;  // 로그인 후 실행할 작업 저장
+let pendingData = null;
 
 /* ── 날짜 초기화 ── */
 document.getElementById('inDate').value = todayStr();
@@ -340,6 +417,10 @@ function fmtTime(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
+function formatEmail(email) {
+  if (!email) return '익명';
+  return email.split('@')[0];
+}
 
 /* ── 동기화 상태 ── */
 function setSS(state) {
@@ -350,7 +431,7 @@ function setSS(state) {
   txt.textContent = map[state] || '—';
 }
 
-/* ── Firestore 실시간 리스너 ── */
+/* ── Firestore 실시간 리스너 (읽기는 누구나) ── */
 function initSync() {
   setSS('load');
   db.collection(COL)
@@ -366,8 +447,89 @@ function initSync() {
     });
 }
 
-/* ── 게시 ── */
+/* ── 로그인 모달 ── */
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('open');
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+  pendingAction = null;
+  pendingData = null;
+}
+
+/* ── 로그인 트리거 ── */
+async function triggerLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await firebase.auth().signInWithPopup(provider);
+    closeLoginModal();
+    // 저장된 pending 작업이 있으면 실행
+    if (pendingAction) {
+      if (pendingAction === 'submit') {
+        await submitFeed();
+      } else if (pendingAction === 'edit' && pendingData) {
+        await saveEdit(pendingData.id);
+      } else if (pendingAction === 'delete' && pendingData) {
+        await deleteFeed(pendingData.id);
+      }
+      pendingAction = null;
+      pendingData = null;
+    }
+  } catch(e) {
+    toast('❌ 로그인 실패: ' + e.message);
+  }
+}
+
+/* ── UI 업데이트 (로그인 상태에 따라) ── */
+function updateUIForUser(user) {
+  currentUser = user;
+  const userEmailSpan = document.getElementById('userEmail');
+  
+  if (user) {
+    userEmailSpan.textContent = formatEmail(user.email);
+    toast(`✅ ${user.email} 님 환영합니다!`);
+  } else {
+    userEmailSpan.textContent = '로그인';
+  }
+}
+
+/* ── 로그인 체크 후 실행 ── */
+function checkLoginAndSubmit() {
+  if (!currentUser) {
+    pendingAction = 'submit';
+    showLoginModal();
+    return;
+  }
+  submitFeed();
+}
+
+function checkLoginAndEdit(id) {
+  if (!currentUser) {
+    pendingAction = 'edit';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  startEdit(id);
+}
+
+function checkLoginAndDelete(id) {
+  if (!currentUser) {
+    pendingAction = 'delete';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  deleteFeed(id);
+}
+
+/* ── 게시 (로그인 필요) ── */
 async function submitFeed() {
+  if (!currentUser) {
+    // 이론상 여기 올 일 없음 (위에서 체크함)
+    return;
+  }
+
   const text = document.getElementById('inText').value.trim();
   const date = document.getElementById('inDate').value;
   if (!text) return;
@@ -379,6 +541,8 @@ async function submitFeed() {
       date,
       mood:      selMood || '',
       text,
+      userId:    currentUser.uid,
+      userEmail: currentUser.email,
       createdAt: new Date().toISOString(),
     });
     document.getElementById('inText').value = '';
@@ -393,8 +557,17 @@ async function submitFeed() {
   }
 }
 
-/* ── 삭제 ── */
+/* ── 삭제 (작성자 본인만 가능) ── */
 async function deleteFeed(id) {
+  if (!currentUser) return;
+
+  const feed = feeds.find(f => f.id === id);
+  if (!feed) return;
+  if (feed.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 글만 삭제할 수 있습니다!');
+    return;
+  }
+
   if (!confirm('이 기록을 삭제하시겠습니까?')) return;
   try {
     await db.collection(COL).doc(id).delete();
@@ -404,8 +577,17 @@ async function deleteFeed(id) {
   }
 }
 
-/* ── 편집 모드 ── */
+/* ── 편집 모드 (작성자 본인만 가능) ── */
 function startEdit(id) {
+  if (!currentUser) return;
+
+  const feed = feeds.find(f => f.id === id);
+  if (!feed) return;
+  if (feed.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 글만 수정할 수 있습니다!');
+    return;
+  }
+
   const item = document.getElementById('item-' + id);
   if (!item) return;
   item.querySelector('.feed-content').classList.add('editing');
@@ -413,13 +595,24 @@ function startEdit(id) {
   ea.classList.add('active');
   ea.querySelector('textarea').focus();
 }
+
 function cancelEdit(id) {
   const item = document.getElementById('item-' + id);
   if (!item) return;
   item.querySelector('.feed-content').classList.remove('editing');
   item.querySelector('.edit-area').classList.remove('active');
 }
+
 async function saveEdit(id) {
+  if (!currentUser) return;
+
+  const feed = feeds.find(f => f.id === id);
+  if (!feed) return;
+  if (feed.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 글만 수정할 수 있습니다!');
+    return;
+  }
+
   const item = document.getElementById('item-' + id);
   if (!item) return;
   const newText = item.querySelector('.edit-area textarea').value.trim();
@@ -435,7 +628,7 @@ async function saveEdit(id) {
   }
 }
 
-/* ── 렌더링 ── */
+/* ── 렌더링 (작성자 표시 포함) ── */
 function getFiltered() {
   const fd = document.getElementById('filterDate').value;
   const ft = document.getElementById('filterText').value.trim().toLowerCase();
@@ -456,7 +649,7 @@ function renderFeed() {
       <div class="empty">
         <div class="empty-icon">🗒️</div>
         <p>아직 기록이 없습니다</p>
-        <p class="hint">위 입력창으로 첫 번째 생각을 남겨보세요</p>
+        <p class="hint">첫 번째 생각을 남겨보세요</p>
       </div>`;
     return;
   }
@@ -483,10 +676,11 @@ function renderFeed() {
         <div class="feed-item" id="item-${f.id}">
           <div class="feed-item-header">
             ${f.mood ? `<span class="feed-mood">${f.mood}</span>` : ''}
+            <span class="feed-author">👤 ${formatEmail(f.userEmail || '익명')}</span>
             <span class="feed-time">${fmtTime(f.createdAt)}${f.updatedAt ? ' · 수정됨' : ''}</span>
             <div class="feed-actions">
-              <button class="btn-icon edit" title="수정" onclick="startEdit('${f.id}')">✏️</button>
-              <button class="btn-icon del" title="삭제" onclick="deleteFeed('${f.id}')">🗑️</button>
+              <button class="btn-icon edit" title="수정" onclick="checkLoginAndEdit('${f.id}')">✏️</button>
+              <button class="btn-icon del" title="삭제" onclick="checkLoginAndDelete('${f.id}')">🗑️</button>
             </div>
           </div>
           <div class="feed-content">${escHtml(f.text)}</div>
@@ -523,12 +717,17 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-/* ── Enter로 게시 ── */
+/* ── Enter로 게시 (로그인 체크 포함) ── */
 document.getElementById('inText').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    submitFeed();
+    checkLoginAndSubmit();
   }
+});
+
+/* ── 인증 상태 감시 ── */
+firebase.auth().onAuthStateChanged(user => {
+  updateUIForUser(user);
 });
 
 /* ── 부팅 ── */
