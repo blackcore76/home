@@ -1,8 +1,10 @@
 // auth.js — Firebase Google 로그인 공통 모듈
-// 모든 PWA 파일에서 <script src="auth.js"> 로 불러오면 됨
-
 (function () {
   const GOOGLE_PROVIDER = new firebase.auth.GoogleAuthProvider();
+  
+  // daily-feed2.html 체크 (오버레이 제외할 페이지 목록)
+  const NO_OVERLAY_PAGES = ['daily-feed2.html', 'daily-feed.html'];
+  const isNoOverlayPage = NO_OVERLAY_PAGES.some(page => window.location.pathname.includes(page));
 
   // 로그인 오버레이 생성
   function createOverlay() {
@@ -39,7 +41,7 @@
     };
   }
 
-  // 로그아웃 버튼 — 홈바 우측 그룹 안에 삽입, 없으면 우상단 고정
+  // 로그아웃 버튼 생성
   function createLogoutBtn(user) {
     if (document.getElementById('auth-logout-btn')) return;
 
@@ -49,12 +51,10 @@
     btn.textContent = '로그아웃';
     btn.onclick = () => firebase.auth().signOut();
 
-    // 홈바 우측 그룹이 있으면 그 안 맨 앞에 삽입 (HOME 버튼 왼쪽)
     const rightGroup = document.getElementById('bc-right-group');
     if (rightGroup) {
       rightGroup.insertBefore(btn, rightGroup.firstChild);
     } else {
-      // 홈바 없는 페이지 대비 폴백 — 우상단 고정
       btn.style.cssText = `
         position:fixed; top:6px; right:12px; z-index:9999;
         background:rgba(255,255,255,0.08); color:#aaa;
@@ -67,20 +67,28 @@
     }
   }
 
-  // 인증 상태 감시 — 핵심 로직
+  // 인증 상태 감시
   firebase.auth().onAuthStateChanged(user => {
     const overlay = document.getElementById('auth-overlay');
+    
     if (user) {
+      // 로그인됨
       if (overlay) overlay.remove();
       createLogoutBtn(user);
       console.log('[Auth] 로그인 완료:', user.email);
-  // auth.js 수정 버전 (daily-feed 전용)
-    if (window.location.pathname.includes('daily-feed2.html'))
-  // 오버레이 띄우지 않음
     } else {
-      if (!overlay) createOverlay();
+      // 로그아웃됨
       const logoutBtn = document.getElementById('auth-logout-btn');
       if (logoutBtn) logoutBtn.remove();
+      
+      // 제외 페이지에서는 오버레이를 띄우지 않음
+      if (isNoOverlayPage) {
+        console.log('[Auth] 제외 페이지 - 오버레이 생략');
+        return;
+      }
+      
+      // 나머지 페이지에서만 오버레이 생성
+      if (!overlay) createOverlay();
     }
   });
 })();
