@@ -52,6 +52,7 @@ body {
   padding-bottom: 80px;
 }
 
+/* 헤더 */
 header {
   position: sticky; top: 36px; z-index: 50;
   background: rgba(8,12,20,.92);
@@ -68,6 +69,7 @@ header {
 @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
 .hbtn-group { display: flex; gap: 8px; align-items: center; }
 
+/* 동기화 배지 */
 .sync-badge {
   display: flex; align-items: center; gap: 5px;
   font-family: var(--mono); font-size: 10px; color: var(--text3);
@@ -88,16 +90,7 @@ header {
 .sync-txt.offline { color: var(--red); }
 .sync-txt.saving  { color: var(--accent); }
 
-.hbtn {
-  background: var(--sf); border: 1px solid var(--bd);
-  border-radius: 6px; width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 14px; color: var(--text2);
-  transition: all .15s;
-}
-.hbtn:hover { border-color: var(--accent); color: var(--accent); }
-.hbtn:disabled { opacity: .4; pointer-events: none; }
-
+/* 사용자 배지 */
 .user-badge {
   display: flex; align-items: center; gap: 6px;
   font-family: var(--mono); font-size: 10px;
@@ -108,11 +101,23 @@ header {
 }
 .user-badge:hover { border-color: var(--accent); color: var(--accent); }
 
+.hbtn {
+  background: var(--sf); border: 1px solid var(--bd);
+  border-radius: 6px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text2);
+  transition: all .15s;
+}
+.hbtn:hover { border-color: var(--accent); color: var(--accent); }
+.hbtn:disabled { opacity: .4; pointer-events: none; }
+
+/* 메인 컨테이너 */
 .container {
   width: 100%;
   padding: 20px 16px;
 }
 
+/* 카드 */
 .card {
   background: var(--sf);
   border: 1px solid var(--bd);
@@ -132,7 +137,6 @@ header {
   border-radius: 3px 0 0 3px;
 }
 .card:hover { border-color: var(--bd2); background: var(--sf2); }
-
 .card-header {
   display: flex;
   align-items: center;
@@ -179,6 +183,7 @@ header {
 .chip-val.pos { color: var(--green); }
 .chip-val.neg { color: var(--red); }
 
+/* 환율 바 */
 .fxbar {
   background: var(--sf2);
   border: 1px solid var(--bd);
@@ -204,6 +209,7 @@ header {
 }
 .fx-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* 탭 */
 .tabs {
   display: flex;
   gap: 8px;
@@ -231,6 +237,7 @@ header {
 }
 .tab:not(.on):hover { border-color: var(--accent); color: var(--accent); }
 
+/* 리스트 헤더 */
 .list-head {
   display: flex;
   justify-content: space-between;
@@ -249,6 +256,7 @@ header {
 }
 .sort-btn:hover { color: var(--accent); }
 
+/* 종목 카드 */
 .stock-card {
   background: var(--sf);
   border: 1px solid var(--bd);
@@ -343,6 +351,7 @@ header {
 .s-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-bottom: 3px; }
 .s-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
 
+/* FAB 버튼 */
 .fab {
   position: fixed;
   bottom: 24px;
@@ -366,30 +375,40 @@ header {
 .fab:hover { transform: scale(1.05) translateY(-2px); }
 .fab:active { transform: scale(.95); }
 
-.ov {
-  position: fixed; inset: 0; z-index: 200;
+/* 모달 (화면 중앙 고정) */
+.overlay {
+  position: fixed;
+  inset: 0;
   background: rgba(0,0,0,.8);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(4px);
+  z-index: 200;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
 }
-.ov.open { opacity: 1; pointer-events: all; }
+.overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
 .modal {
   background: var(--sf);
   border: 1px solid var(--bd2);
-  border-radius: 20px 20px 0 0;
+  border-radius: 16px;
   width: 100%;
   max-width: 500px;
-  margin: 0 auto;
   max-height: 90vh;
   overflow-y: auto;
-  transform: translateY(100%);
-  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+  transform: translateY(20px);
+  transition: transform .2s;
 }
-.ov.open .modal { transform: translateY(0); }
+.overlay.open .modal {
+  transform: translateY(0);
+}
 .m-sticky {
   position: sticky; top: 0;
   background: var(--sf);
@@ -412,6 +431,7 @@ header {
 }
 .modal-body { padding: 20px; }
 
+/* 폼 */
 .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .fg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
 .fl {
@@ -453,6 +473,7 @@ header {
 .btn-red { background: rgba(255,82,82,.12); border: 1px solid rgba(255,82,82,.3); color: var(--red); }
 .btn-red:hover { background: rgba(255,82,82,.2); }
 
+/* 상세 모달 내부 */
 .det-hero {
   background: var(--sf2);
   border: 1px solid var(--bd);
@@ -537,6 +558,7 @@ header {
 .det-val { font-family: var(--mono); font-size: 12px; }
 .brow3 { display: flex; gap: 8px; margin-top: 16px; }
 
+/* 컨펌 다이얼로그 */
 .cfm-ov {
   position: fixed; inset: 0; z-index: 600;
   background: rgba(0,0,0,.85);
@@ -561,6 +583,7 @@ header {
 .cfm-msg { font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
 .cfm-btns { display: flex; gap: 10px; }
 
+/* 토스트 */
 .toast {
   position: fixed;
   bottom: 90px;
@@ -580,6 +603,7 @@ header {
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* 로그인 모달 */
 .login-overlay {
   position: fixed; inset: 0; z-index: 1000;
   background: rgba(0,0,0,.85);
@@ -704,11 +728,10 @@ header {
   <div id="list"></div>
 </div>
 
-<button class="fab" onclick="checkLoginAndOpenAdd()">＋</button>
-<div class="toast" id="toast"></div>
+<button class="fab" id="fabBtn" onclick="checkLoginAndOpenAdd()">＋</button>
 
 <!-- ADD/EDIT OVERLAY -->
-<div class="ov hidden" id="ov-add" onclick="bgClose(event,'ov-add')">
+<div class="overlay hidden" id="ov-add" onclick="if(event.target===this) closeOv('ov-add')">
   <div class="modal">
     <div class="m-sticky">
       <div class="m-handle"></div>
@@ -743,7 +766,7 @@ header {
 </div>
 
 <!-- DETAIL OVERLAY -->
-<div class="ov hidden" id="ov-det" onclick="bgClose(event,'ov-det')">
+<div class="overlay hidden" id="ov-det" onclick="if(event.target===this) closeOv('ov-det')">
   <div class="modal" id="det-body"></div>
 </div>
 
@@ -770,6 +793,8 @@ header {
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 const db = firebase.firestore();
 const COL = 'stocklens';
@@ -786,6 +811,7 @@ let currentUser = null;
 let pendingAction = null;
 let pendingData = null;
 
+// 동기화 배지
 function setSyncStatus(state) {
   const dot = document.getElementById('syncDot');
   const txt = document.getElementById('syncTxt');
@@ -795,6 +821,7 @@ function setSyncStatus(state) {
   txt.textContent = labels[state] || labels.offline;
 }
 
+// Firestore 실시간
 function initSync() {
   setSyncStatus('connecting');
   db.collection(COL).onSnapshot(snap => {
@@ -812,6 +839,7 @@ function initSync() {
   });
 }
 
+// 저장
 async function persist() {
   _syncing = true;
   setSyncStatus('saving');
@@ -836,6 +864,7 @@ async function persist() {
   }
 }
 
+// 삭제
 async function persistDelete(id) {
   _syncing = true;
   setSyncStatus('saving');
@@ -851,6 +880,7 @@ async function persistDelete(id) {
   }
 }
 
+// 로그인 관련
 function showLoginModal() {
   document.getElementById('loginModal').classList.add('open');
 }
@@ -865,31 +895,41 @@ async function triggerLogin() {
   try {
     await firebase.auth().signInWithPopup(provider);
     closeLoginModal();
-    if (pendingAction === 'add') {
-      openAdd();
-    } else if (pendingAction === 'edit' && pendingData) {
-      openEdit(pendingData.id);
-    } else if (pendingAction === 'delete' && pendingData) {
-      doDelete(pendingData.id);
-    }
-    pendingAction = null;
-    pendingData = null;
   } catch(e) {
     toast('❌ 로그인 실패: ' + e.message);
   }
+}
+
+function formatEmail(email) {
+  return email ? email.split('@')[0] : '익명';
 }
 
 function updateUIForUser(user) {
   currentUser = user;
   const userEmailSpan = document.getElementById('userEmail');
   if (user) {
-    userEmailSpan.textContent = user.email.split('@')[0];
+    userEmailSpan.textContent = formatEmail(user.email);
     toast(`✅ ${user.email} 님 환영합니다!`);
+    
+    if (pendingAction) {
+      setTimeout(() => {
+        if (pendingAction === 'add') {
+          openAdd();
+        } else if (pendingAction === 'edit' && pendingData) {
+          openEdit(pendingData.id);
+        } else if (pendingAction === 'delete' && pendingData) {
+          doDelete(pendingData.id);
+        }
+        pendingAction = null;
+        pendingData = null;
+      }, 300);
+    }
   } else {
     userEmailSpan.textContent = '로그인';
   }
 }
 
+// 권한 체크
 function checkLoginAndOpenAdd() {
   if (!currentUser) {
     pendingAction = 'add';
@@ -919,10 +959,7 @@ function checkLoginAndDelete(id) {
   doDelete(id);
 }
 
-function formatEmail(email) {
-  return email ? email.split('@')[0] : '익명';
-}
-
+// 유틸 함수
 function fKRW(n) { if(n==null||isNaN(n)) return '—'; const a=Math.abs(n), s=n<0?'-':''; if(a>=1e8) return s+(a/1e8).toFixed(2)+'억'; return s+Math.round(a).toLocaleString('ko-KR')+'원'; }
 function fNum(n,d) { d=d===undefined?2:d; if(n==null||isNaN(n)) return '—'; return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); }
 function fP(h,p) { if(p==null||isNaN(p)) return '—'; return h.market==='US'?'$'+fNum(p):fKRW(p); }
@@ -932,6 +969,7 @@ function buyKRW(h) { return h.market==='US' ? h.buyPrice*h.qty*(h.buyFX||fx||1) 
 function curKRW(h) { if(!h.curPrice) return null; return h.market==='US' ? h.curPrice*h.qty*(fx||h.buyFX||1) : h.curPrice*h.qty; }
 function calcPnl(h) { const bk=buyKRW(h), ck=curKRW(h); if(!ck) return null; const d=ck-bk, pct=bk>0?d/bk*100:0; return { d, pct, bk, ck }; }
 
+// 요약 업데이트
 function updateSummary() {
   const priced = H.filter(h => h.curPrice);
   const bset = new Set(); H.forEach(h => (h.brokers||[h.broker]).forEach(b => bset.add(b)));
@@ -951,6 +989,7 @@ function updateSummary() {
   document.getElementById('total-sub').innerHTML = (up?'▲ 수익 ':'▼ 손실 ')+Math.abs(pct).toFixed(2)+'% · 매수금액 '+fKRW(tB);
 }
 
+// 리스트 렌더링
 function renderList() {
   let list = H.filter(h => tab==='all' || h.market===tab);
   list = list.slice().sort((a,b) => {
@@ -997,12 +1036,28 @@ function renderList() {
 }
 function renderAll() { updateSummary(); renderList(); }
 
+// 탭/정렬
 function setTab(t, el) { tab=t; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); el.classList.add('on'); renderList(); }
 function cycleSort() { const m=['pnl','value','name','broker'], l={pnl:'수익률순',value:'평가액순',name:'이름순',broker:'증권사순'}; sortM=m[(m.indexOf(sortM)+1)%m.length]; document.getElementById('sort-lbl').textContent=l[sortM]; renderList(); }
 
-function openOv(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
-function closeOv(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; if(id==='ov-add') editId=null; }
-function bgClose(e,id) { if(e.target===e.currentTarget) closeOv(id); }
+// 모달 관련
+function openOv(id) { 
+  const el = document.getElementById(id);
+  if(el) {
+    el.classList.remove('hidden');
+    el.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+function closeOv(id) { 
+  const el = document.getElementById(id);
+  if(el) {
+    el.classList.remove('open');
+    setTimeout(() => el.classList.add('hidden'), 300);
+    document.body.style.overflow = '';
+    if(id==='ov-add') editId = null;
+  }
+}
 
 function onMarketChange() {
   const m = document.getElementById('f-market').value;
@@ -1033,6 +1088,10 @@ function openAdd() {
 function openEdit(id) {
   const h = H.find(x => x.id === id);
   if(!h) return;
+  if (currentUser && h.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 종목만 수정할 수 있습니다!');
+    return;
+  }
   editId = id;
   closeOv('ov-det');
   setTimeout(() => {
@@ -1098,12 +1157,14 @@ function doSave() {
   closeOv('ov-add');
 }
 
+// 상세 모달
 function openDet(id) { buildDet(id); openOv('ov-det'); }
 function buildDet(id) {
   const h = H.find(x => x.id === id);
   if(!h) return;
   const p = calcPnl(h), cls = p ? (p.d>=0?'pos':'neg') : '', sgn = p ? (p.d>=0?'+':'') : '';
   const bl = esc((h.brokers||[h.broker]).join(', '));
+  const isOwner = currentUser && h.userId === currentUser.uid;
   document.getElementById('det-body').innerHTML = `
     <div class="m-sticky"><div class="m-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
@@ -1143,8 +1204,8 @@ function buildDet(id) {
     <div class="det-row"><span class="det-lbl">수익률</span><span class="det-val ${cls}" style="font-weight:700;">${sgn+p.pct.toFixed(2)}%</span></div>
     ${h.market==='US' ? `<div class="det-row"><span class="det-lbl">환율</span><span class="det-val">매수 ${h.buyFX ? parseFloat(h.buyFX).toFixed(0) : '—'} → 현재 ${fx ? fx.toFixed(0) : '미설정'}</span></div>` : ''}</div>` : ''}
     <div class="brow3">
-      <button class="btn btn-red" onclick="checkLoginAndDelete('${h.id}')">삭제</button>
-      <button class="btn btn-ghost" onclick="checkLoginAndOpenEdit('${h.id}')">전체수정</button>
+      <button class="btn btn-red" onclick="checkLoginAndDelete('${h.id}')" ${!isOwner ? 'disabled style="opacity:0.5;"' : ''}>삭제</button>
+      <button class="btn btn-ghost" onclick="checkLoginAndOpenEdit('${h.id}')" ${!isOwner ? 'disabled style="opacity:0.5;"' : ''}>전체수정</button>
       <button class="btn btn-ghost" onclick="closeOv('ov-det')">닫기</button>
     </div>`;
 }
@@ -1213,6 +1274,7 @@ function applyAdj(id) {
   toast('✅ '+h.ticker+' 조정 완료');
 }
 
+// 현재가 조회 관련
 const PROXIES = [
   u => 'https://corsproxy.io/?url='+encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
