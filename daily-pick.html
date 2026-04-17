@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -14,7 +15,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<!-- Firebase 초기화 -->
+<!-- Firebase 초기화 — auth.js보다 반드시 먼저 실행 -->
 <script>
   firebase.initializeApp({
     apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
@@ -25,543 +26,812 @@
     appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
   });
 </script>
-<script src="home-bar.js"></script>
+<script src="auth.js"></script>
 <style>
   :root {
-    --bg:      #080c14;
-    --sf:      #0e1422;
-    --sf2:     #131b2d;
-    --sf3:     #181f30;
-    --bd:      #1e2d45;
-    --bd2:     #263548;
-    --text:    #c8d6e8;
-    --text2:   #7a91a8;
-    --text3:   #4a5f74;
-    --accent:  #00d4ff;
-    --green:   #00e676;
-    --red:     #ff5252;
-    --yellow:  #ffca28;
-    --mono:    'JetBrains Mono', monospace;
-    --sans:    'Noto Sans KR', sans-serif;
+    --bg: #080c14; --surface: #0e1422; --surface2: #141b2d; --surface3: #1a2236;
+    --border: #1e2d45; --border2: #263548; --text: #c8d6e8; --text2: #7a91a8; --text3: #4a5f74;
+    --accent: #00d4ff; --green: #00e676; --red: #ff5252; --yellow: #ffca28;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Noto Sans KR', sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    padding-bottom: 80px;
-  }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
 
   header {
-    position: sticky; top: 36px; z-index: 50;
-    background: rgba(8,12,20,.92);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--bd);
-    padding: 0 16px;
-    height: 52px;
-    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 16px; height: 56px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
   }
-  .logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-  .logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
+  .logo { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--accent); }
+  .logo span { color: var(--text2); font-weight: 300; }
+  .btn-add {
+    background: var(--accent); color: #000; border: none; border-radius: 6px;
+    padding: 7px 14px; font-family: var(--sans); font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background .15s;
+  }
+  .btn-add:hover { background: #33ddff; }
+  .btn-add svg { width: 14px; height: 14px; }
 
   .filter-bar {
-    background: var(--sf); border-bottom: 1px solid var(--bd);
+    background: var(--surface); border-bottom: 1px solid var(--border);
     padding: 8px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   }
   .filter-input {
-    background: var(--sf3); border: 1px solid var(--bd2); color: var(--text);
+    background: var(--surface3); border: 1px solid var(--border2); color: var(--text);
     border-radius: 6px; padding: 6px 10px; font-size: 13px; font-family: var(--sans);
-    outline: none; width: 160px;
+    outline: none; width: 160px; transition: border-color .15s;
   }
   .filter-input:focus { border-color: var(--accent); }
+  .filter-input::placeholder { color: var(--text3); }
   .stat-chips { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
-  .chip { background: var(--sf3); border: 1px solid var(--bd2); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-family: var(--mono); color: var(--text2); }
+  .chip { background: var(--surface3); border: 1px solid var(--border2); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-family: var(--mono); color: var(--text2); white-space: nowrap; }
+  .chip .val { color: var(--accent); font-weight: 600; }
+
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1100px; }
+  thead tr { background: var(--surface2); }
+  th {
+    padding: 8px 10px; text-align: center; font-family: var(--mono); font-size: 10px;
+    font-weight: 600; letter-spacing: 0.8px; color: var(--text3); text-transform: uppercase;
+    white-space: nowrap; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border2);
+  }
+  th:last-child { border-right: none; }
+  th.left { text-align: left; }
+  th.pos-hdr { color: var(--accent); background: rgba(0,212,255,0.05); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--surface3); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 10px 10px; text-align: center; border-right: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+  td:last-child { border-right: none; }
+  td.left { text-align: left; }
+
+  .td-date { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+  .td-name { font-weight: 700; font-size: 13px; }
+
+  .sticky-1, .sticky-2 {
+    position: sticky;
+    z-index: 10;
+    background: var(--bg);
+  }
+  .sticky-1 { left: 0; }
+  .sticky-2 { left: 88px; box-shadow: 2px 0 8px rgba(0,0,0,.4); }
+
+  tbody tr:hover .sticky-1,
+  tbody tr:hover .sticky-2 { background: var(--surface3); }
+
+  thead .sticky-1,
+  thead .sticky-2 { background: var(--surface2); z-index: 20; }
+  .td-num { font-family: var(--mono); font-size: 12px; }
+  .td-avg { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .td-qty { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+  .td-ma { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+  .td-band { font-family: var(--mono); font-size: 11px; color: var(--yellow); font-weight: 500; }
+  .td-stop { font-family: var(--mono); font-size: 11px; color: var(--red); font-weight: 500; }
+  .td-target { font-family: var(--mono); font-size: 12px; color: var(--green); font-weight: 600; }
+  .td-note { font-size: 11px; color: var(--text2); text-align: left; white-space: nowrap; }
+
+  .trunc-wrap { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
+  .trunc-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .trunc-btn {
+    flex-shrink: 0; background: var(--surface3); border: 1px solid var(--border2);
+    color: var(--text3); border-radius: 3px; padding: 1px 6px; font-size: 10px;
+    font-family: var(--mono); cursor: pointer; transition: all .15s; white-space: nowrap;
+    line-height: 1.6; user-select: none;
+  }
+  .trunc-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.1); }
+
+  #globalPopover {
+    display: none; position: fixed; z-index: 9999;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.7);
+    min-width: 200px; max-width: 360px;
+    font-size: 12px; line-height: 1.7; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+    animation: popIn .15s ease;
+    pointer-events: none;
+  }
+  #globalPopover.open { display: block; }
+  .popover-label {
+    font-size: 9px; font-family: var(--mono); letter-spacing: .8px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .popover-label::after { content: ''; flex: 1; height: 1px; background: var(--border2); }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .score-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 700; }
+  .score-hi { background: rgba(0,230,118,.15); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
+  .score-md { background: rgba(255,202,40,.12); color: var(--yellow); border: 1px solid rgba(255,202,40,.3); }
+  .score-lo { background: rgba(255,82,82,.12); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
+
+  .pnl-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .pnl-pct { display: inline-flex; align-items: center; gap: 2px; padding: 2px 7px; border-radius: 3px; font-family: var(--mono); font-size: 11px; font-weight: 700; }
+  .pnl-pct.pos { background: rgba(0,230,118,.12); border: 1px solid rgba(0,230,118,.25); color: var(--green); }
+  .pnl-pct.neg { background: rgba(255,82,82,.12); border: 1px solid rgba(255,82,82,.25); color: var(--red); }
+  .pnl-pct.zero { background: var(--surface3); border: 1px solid var(--border2); color: var(--text2); }
+  .pnl-amt { font-family: var(--mono); font-size: 10px; }
+  .pnl-amt.pos { color: var(--green); opacity: .75; }
+  .pnl-amt.neg { color: var(--red); opacity: .75; }
+
+  .td-actions { display: flex; gap: 4px; justify-content: center; }
+  .btn-icon { background: transparent; border: 1px solid var(--border2); color: var(--text2); border-radius: 4px; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+  .btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+  .btn-icon.del:hover { border-color: var(--red); color: var(--red); background: rgba(255,82,82,.08); }
+  .btn-icon svg { width: 13px; height: 13px; }
+
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 16px; color: var(--text3); }
+  .empty-icon { font-size: 48px; opacity: .4; }
+  .empty-state p { font-size: 14px; }
+  .empty-state .hint { font-size: 12px; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,.6); transform: translateY(20px); transition: transform .2s; }
+  .overlay.open .modal { transform: translateY(0); }
+  .modal-header { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .modal-title .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+  .btn-close { background: transparent; border: none; color: var(--text2); cursor: pointer; font-size: 22px; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: color .15s; }
+  .btn-close:hover { color: var(--red); }
+  .modal-body { padding: 16px 20px 20px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 10px; font-weight: 600; letter-spacing: .7px; text-transform: uppercase; color: var(--text3); font-family: var(--mono); }
+  label .opt { font-weight: 300; color: var(--text3); text-transform: none; letter-spacing: 0; }
+  input, textarea { background: var(--surface3); border: 1px solid var(--border2); color: var(--text); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: var(--sans); outline: none; transition: border-color .15s; width: 100%; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+  textarea { resize: vertical; min-height: 56px; }
+  .form-section { margin-top: 14px; margin-bottom: 8px; font-size: 10px; font-family: var(--mono); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); border-top: 1px solid var(--border); padding-top: 12px; }
+  .ma-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .score-row { display: flex; align-items: center; gap: 8px; }
+  .score-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .score-display { font-family: var(--mono); font-size: 14px; font-weight: 700; min-width: 40px; text-align: right; }
+
+  .pnl-strip { display: none; grid-column: 1/-1; background: var(--surface3); border: 1px solid var(--border2); border-radius: 6px; padding: 9px 12px; font-family: var(--mono); font-size: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+  .pnl-strip.visible { display: flex; }
+  .pnl-strip-label { color: var(--text3); font-size: 10px; letter-spacing: .5px; }
+
+  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-cancel { background: transparent; border: 1px solid var(--border2); color: var(--text2); border-radius: 6px; padding: 8px 16px; font-size: 13px; font-family: var(--sans); cursor: pointer; transition: all .15s; }
+  .btn-cancel:hover { border-color: var(--text2); color: var(--text); }
+  .btn-save { background: var(--accent); border: none; color: #000; border-radius: 6px; padding: 8px 22px; font-size: 13px; font-weight: 700; font-family: var(--sans); cursor: pointer; transition: background .15s; }
+  .btn-save:hover { background: #33ddff; }
+
+  .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 300; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .detail-overlay.open { opacity: 1; pointer-events: all; }
+  .detail-panel { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px 16px 0 0; width: 100%; padding: 20px; transform: translateY(100%); transition: transform .25s cubic-bezier(.16,1,.3,1); max-height: 90vh; overflow-y: auto; }
+  .detail-overlay.open .detail-panel { transform: translateY(0); }
+  .detail-drag { width: 40px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 16px; }
+  .detail-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .detail-date { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+  .pnl-card { background: var(--surface3); border-radius: 10px; padding: 14px; margin-bottom: 14px; border: 1px solid var(--border2); }
+  .pnl-card-title { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+  .pnl-card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; }
+  .pnl-card-row:last-child { margin-bottom: 0; }
+  .pnl-card-lbl { color: var(--text2); }
+  .pnl-card-val { font-family: var(--mono); font-weight: 600; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .detail-item { background: var(--surface3); border-radius: 8px; padding: 10px 12px; }
+  .detail-label { font-size: 10px; font-family: var(--mono); color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .detail-val { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+  .detail-note { background: var(--surface3); border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.6; color: var(--text2); margin-bottom: 14px; }
+  .detail-actions { display: flex; gap: 8px; }
+  .btn-detail-edit { flex: 1; background: var(--accent); border: none; color: #000; border-radius: 8px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; font-family: var(--sans); }
+  .btn-detail-del { background: rgba(255,82,82,.1); border: 1px solid rgba(255,82,82,.3); color: var(--red); border-radius: 8px; padding: 12px 16px; font-size: 14px; cursor: pointer; font-family: var(--sans); font-weight: 600; }
+
+  ::-webkit-scrollbar { width: 8px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--surface2); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 5px; border: 2px solid var(--surface2); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+  ::-webkit-scrollbar-corner { background: var(--surface2); }
 
   .sync-badge {
     display: flex; align-items: center; gap: 5px;
     font-family: var(--mono); font-size: 10px; color: var(--text3);
-    background: var(--sf2); border: 1px solid var(--bd);
-    border-radius: 20px; padding: 3px 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px; white-space: nowrap;
   }
   .sync-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    flex-shrink: 0;
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0; transition: background .3s, box-shadow .3s;
   }
-  .sync-dot.live     { background: var(--green); box-shadow: 0 0 5px var(--green); animation: bl 3s infinite; }
-  .sync-dot.loading  { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); animation: bl .6s infinite; }
-  .sync-dot.offline  { background: var(--red); }
-  .sync-dot.saving   { background: var(--accent); box-shadow: 0 0 5px var(--accent); animation: bl .4s infinite; }
-  @keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
-
-  .user-badge {
-    display: flex; align-items: center; gap: 6px;
-    font-family: var(--mono); font-size: 10px;
-    color: var(--text2); background: var(--sf2);
-    border: 1px solid var(--bd); border-radius: 20px;
-    padding: 3px 10px;
-    cursor: pointer;
-  }
-  .user-badge:hover { border-color: var(--accent); color: var(--accent); }
-
-  .btn-add {
-    background: var(--accent); color: #000; border: none; border-radius: 6px;
-    padding: 7px 14px; font-family: var(--sans); font-size: 13px; font-weight: 700;
-    cursor: pointer; display: flex; align-items: center; gap: 5px;
-  }
-  .btn-add:hover { background: #33ddff; }
-
-  .table-wrap { overflow-x: auto; padding: 16px; }
-  .feed { display: flex; flex-direction: column; gap: 10px; }
-  .feed-item {
-    background: var(--sf);
-    border: 1px solid var(--bd);
-    border-radius: 14px;
-    padding: 16px;
-    position: relative;
-    transition: all .2s;
-  }
-  .feed-item::before {
-    content: '';
-    position: absolute; left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--accent), transparent);
-    border-radius: 3px 0 0 3px;
-  }
-  .feed-item:hover { border-color: var(--bd2); background: var(--sf2); }
-  .item-header {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
-  }
-  .item-name { font-size: 16px; font-weight: 700; }
-  .score-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-family: var(--mono); font-size: 11px; font-weight: 700;
-  }
-  .score-hi { background: rgba(0,230,118,.15); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
-  .score-md { background: rgba(255,202,40,.12); color: var(--yellow); border: 1px solid rgba(255,202,40,.3); }
-  .score-lo { background: rgba(255,82,82,.12); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
-  .item-actions { margin-left: auto; display: flex; gap: 6px; }
-  .btn-icon {
-    background: transparent; border: 1px solid var(--bd); color: var(--text3);
-    border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-icon.del:hover { border-color: var(--red); color: var(--red); }
-  .item-author {
-    font-family: var(--mono); font-size: 9px; color: var(--text3);
-    background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
-    padding: 2px 6px;
-  }
-  .row1-grid, .row2-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 8px 12px;
-    margin-bottom: 12px;
-    background: var(--sf3);
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-  .info-cell { display: flex; flex-direction: column; gap: 2px; }
-  .info-label { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; }
-  .info-value { font-family: var(--mono); font-size: 12px; font-weight: 500; }
-  .info-value.accent { color: var(--accent); }
-  .info-value.green { color: var(--green); }
-  .info-value.red { color: var(--red); }
-  .pnl-pct.pos { background: rgba(0,230,118,.12); color: var(--green); }
-  .pnl-pct.neg { background: rgba(255,82,82,.12); color: var(--red); }
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
-
-  .login-overlay {
-    position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,.85);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .2s;
-  }
-  .login-overlay.open { opacity: 1; pointer-events: all; }
-  .login-modal {
-    background: var(--sf);
-    border: 1px solid var(--bd2);
-    border-radius: 20px;
-    padding: 32px 24px;
-    text-align: center;
-    max-width: 320px;
-    width: 90%;
-  }
-  .login-modal .btn-login {
-    background: var(--accent); color: #000; border: none;
-    border-radius: 10px; padding: 12px 24px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    width: 100%;
-  }
-  .toast {
-    position: fixed; bottom: 24px; left: 50%;
-    transform: translateX(-50%) translateY(16px);
-    background: var(--sf2); border: 1px solid var(--bd2);
-    border-radius: 40px; padding: 8px 20px;
-    font-size: 12px; opacity: 0;
-    transition: all .2s; z-index: 9999;
-    white-space: nowrap; pointer-events: none;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .hidden { display: none; }
+  .sync-dot.live     { background: var(--green); box-shadow: 0 0 6px var(--green); animation: syncPulse 3s infinite; }
+  .sync-dot.loading  { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: syncPulse .8s infinite; }
+  .sync-dot.offline  { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .sync-dot.saving   { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: syncPulse .4s infinite; }
+  @keyframes syncPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .sync-txt.live    { color: var(--green); }
+  .sync-txt.loading { color: var(--yellow); }
+  .sync-txt.offline { color: var(--red); }
+  .sync-txt.saving  { color: var(--accent); }
 
   @media (max-width: 600px) {
-    .row1-grid, .row2-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .pnl-strip { grid-column: 1; }
+    .ma-grid { grid-template-columns: 1fr 1fr; }
+    .stat-chips { display: none; }
   }
 </style>
+<script src="home-bar.js"></script>
 </head>
 <body>
 
 <header>
-  <div class="logo"><div class="logo-dot"></div>픽노트 / PICK NOTE</div>
+  <div class="logo">픽노트<span> / PICK NOTE</span></div>
   <div style="display:flex;align-items:center;gap:10px;">
     <div class="sync-badge" id="syncBadge">
       <div class="sync-dot loading" id="syncDot"></div>
       <span class="sync-txt loading" id="syncTxt">연결 중...</span>
     </div>
-    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
-      <span>👤</span>
-      <span class="user-email" id="userEmail">로그인</span>
-    </div>
-    <button class="btn-add" id="addBtn" onclick="checkLoginAndOpenModal()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <button class="btn-add" onclick="openModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       새 픽 추가
     </button>
   </div>
 </header>
 
 <div class="filter-bar">
-  <input class="filter-input" type="date" id="filterDate" oninput="renderFeed()">
-  <input class="filter-input" type="text" id="filterName" oninput="renderFeed()" placeholder="종목 검색...">
+  <input class="filter-input" type="date" id="filterDate" oninput="renderTable()">
+  <input class="filter-input" type="text" id="filterName" oninput="renderTable()" placeholder="종목 검색...">
   <div class="stat-chips" id="statChips"></div>
 </div>
 
 <div class="table-wrap" id="tableWrap"></div>
 
-<!-- 로그인 모달 -->
-<div class="login-overlay" id="loginModal" onclick="if(event.target===this) closeLoginModal()">
-  <div class="login-modal">
-    <div class="icon" style="font-size:48px;margin-bottom:16px;">🔐</div>
-    <h3 style="margin-bottom:8px;">로그인이 필요합니다</h3>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:24px;">픽을 추가/수정/삭제하려면<br>Google 계정으로 로그인해주세요</p>
-    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
-    <button class="btn-cancel" onclick="closeLoginModal()" style="margin-top:12px;background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:10px;padding:10px 20px;width:100%;cursor:pointer;">취소</button>
-  </div>
+<!-- 전역 팝오버 -->
+<div id="globalPopover">
+  <div class="popover-label" id="popoverLabel"></div>
+  <span id="popoverContent"></span>
 </div>
 
-<!-- Add/Edit Modal (기존과 동일) -->
-<div class="overlay hidden" id="overlay" onclick="if(event.target===this) closeModal()">
-  <div class="modal" style="background:var(--sf);border:1px solid var(--bd2);border-radius:16px;max-width:680px;width:90%;margin:0 auto;max-height:90vh;overflow-y:auto;">
-    <div class="modal-header" style="padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;">
-      <div class="modal-title" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);"><span id="modalTitle">새 픽 추가</span></div>
-      <button class="btn-close" onclick="closeModal()" style="background:transparent;border:none;color:var(--text2);font-size:24px;cursor:pointer;">×</button>
+<!-- Add/Edit Modal -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><div class="dot"></div><span id="modalTitle">새 픽 추가</span></div>
+      <button class="btn-close" onclick="closeModal()">×</button>
     </div>
-    <div class="modal-body" style="padding:16px 20px;">
-      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group"><label style="font-family:var(--mono);font-size:10px;color:var(--text3);">날짜</label><input type="date" id="fDate" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>종목명</label><input type="text" id="fName" placeholder="예: 삼성전자, TSLA" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>현재가</label><input type="text" id="fPrice" placeholder="예: 166,700 / $359.76" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>점수 (0~100)</label><input type="range" id="fScore" min="0" max="100" value="75" style="width:100%;"></div>
+    <div class="modal-body">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>날짜</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="form-group">
+          <label>종목명</label>
+          <input type="text" id="fName" placeholder="예: 삼성전자, TSLA">
+        </div>
+        <div class="form-group">
+          <label>현재가</label>
+          <input type="text" id="fPrice" placeholder="예: 166,700 / $359.76" oninput="updatePnlStrip()">
+        </div>
+        <div class="form-group">
+          <label>점수 (0~100)</label>
+          <div class="score-row">
+            <input type="range" id="fScore" min="0" max="100" value="75" oninput="updateScoreDisplay()">
+            <span class="score-display" id="scoreDisplay">75</span>
+          </div>
+        </div>
       </div>
-      <div class="form-section" style="margin-top:14px;font-family:var(--mono);font-size:10px;color:var(--accent);">보유 포지션</div>
-      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group"><label>평단가</label><input type="text" id="fAvg" placeholder="예: 155,000" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>수량 (주)</label><input type="number" id="fQty" placeholder="예: 100" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+
+      <div class="form-section">보유 포지션</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>평단가 <span class="opt">(선택)</span></label>
+          <input type="text" id="fAvg" placeholder="예: 155,000 / $340.00" oninput="updatePnlStrip()">
+        </div>
+        <div class="form-group">
+          <label>수량 <span class="opt">(주)</span></label>
+          <input type="number" id="fQty" placeholder="예: 100" min="0" step="1" oninput="updatePnlStrip()">
+        </div>
+        <div class="pnl-strip" id="pnlStrip">
+          <span class="pnl-strip-label">수익 미리보기</span>
+          <span id="pnlStripVal"></span>
+        </div>
       </div>
+
       <div class="form-section">이동평균선 (MA)</div>
-      <div class="ma-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <div class="form-group"><label>5일</label><input type="text" id="fMa5" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>20일</label><input type="text" id="fMa20" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>60일</label><input type="text" id="fMa60" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>120일</label><input type="text" id="fMa120" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+      <div class="ma-grid">
+        <div class="form-group"><label>5일</label><input type="text" id="fMa5" placeholder="—"></div>
+        <div class="form-group"><label>20일</label><input type="text" id="fMa20" placeholder="—"></div>
+        <div class="form-group"><label>60일</label><input type="text" id="fMa60" placeholder="—"></div>
+        <div class="form-group"><label>120일</label><input type="text" id="fMa120" placeholder="—"></div>
       </div>
+
       <div class="form-section">매매 정보</div>
       <div class="form-grid">
-        <div class="form-group"><label>매수밴드</label><input type="text" id="fBand" placeholder="예: 172k~177k" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group"><label>손절라인</label><input type="text" id="fStop" placeholder="예: 158,000" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group full" style="grid-column:1/-1;"><label>목표가</label><input type="text" id="fTarget" placeholder="예: 225,000" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
-        <div class="form-group full" style="grid-column:1/-1;"><label>비고</label><textarea id="fNote" rows="2" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></textarea></div>
+        <div class="form-group">
+          <label>매수밴드</label>
+          <input type="text" id="fBand" placeholder="예: 172k~177k">
+        </div>
+        <div class="form-group">
+          <label>손절라인</label>
+          <input type="text" id="fStop" placeholder="예: 158,000">
+        </div>
+        <div class="form-group full">
+          <label>목표가</label>
+          <input type="text" id="fTarget" placeholder="예: 225,000">
+        </div>
+        <div class="form-group full">
+          <label>비고</label>
+          <textarea id="fNote" placeholder="분석 메모, 이슈, 근거 등..."></textarea>
+        </div>
       </div>
+
     </div>
-    <div class="modal-footer" style="padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;">
-      <button class="btn-cancel" onclick="closeModal()" style="background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:8px 16px;cursor:pointer;">취소</button>
-      <button class="btn-save" onclick="savePick()" style="background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:700;cursor:pointer;">저장</button>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="savePick()">저장</button>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- Detail Panel (mobile) -->
+<div class="detail-overlay" id="detailOverlay" onclick="handleDetailOverlayClick(event)">
+  <div class="detail-panel">
+    <div class="detail-drag"></div>
+    <div class="detail-name" id="dName"></div>
+    <div class="detail-date" id="dDate"></div>
+    <div id="dPnlCard"></div>
+    <div class="detail-grid" id="dGrid"></div>
+    <div class="detail-note" id="dNote"></div>
+    <div class="detail-actions">
+      <button class="btn-detail-edit" onclick="editFromDetail()">수정</button>
+      <button class="btn-detail-del" onclick="deleteFromDetail()">삭제</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const db = firebase.firestore();
+// ── firebase.initializeApp은 <head>에서 완료 ──
+const db  = firebase.firestore();
 const COL = 'picknote';
 
-let picks = [];
-let editId = null;
-let currentUser = null;
-let pendingAction = null;
-let pendingData = null;
+// ── 상태 ──────────────────────────────────────
+const LOCAL_KEY = 'picknote_v3';
+let picks    = [];
+let editId   = null;
+let detailId = null;
+let _sampleSeeded = false;
 
+// ══════════════════════════════════════════════
+//  동기화 상태 배지
+// ══════════════════════════════════════════════
 function setSyncStatus(state) {
   const dot = document.getElementById('syncDot');
   const txt = document.getElementById('syncTxt');
-  const map = { loading:'연결 중...', live:'● 실시간', saving:'저장 중...', offline:'오프라인' };
+  const map = {
+    connecting: { label: '연결 중...' },
+    live:       { label: '● Firebase 실시간' },
+    saving:     { label: '저장 중...' },
+    offline:    { label: '오프라인 (캐시)' },
+  };
   dot.className = `sync-dot ${state}`;
   txt.className = `sync-txt ${state}`;
-  txt.textContent = map[state] || '—';
+  txt.textContent = (map[state] || map.offline).label;
 }
 
+// ══════════════════════════════════════════════
+//  Firestore 실시간 리스너
+// ══════════════════════════════════════════════
 function initSync() {
-  setSyncStatus('loading');
-  db.collection(COL).orderBy('date', 'desc').onSnapshot(snap => {
-    picks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setSyncStatus('live');
-    renderFeed();
-  }, err => {
-    console.error(err);
-    setSyncStatus('offline');
-    renderFeed();
+  setSyncStatus('connecting');
+
+  db.collection(COL)
+    .orderBy('date', 'desc')
+    .onSnapshot(
+      snapshot => {
+        picks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        try { localStorage.setItem(LOCAL_KEY, JSON.stringify(picks)); } catch(_) {}
+        setSyncStatus('live');
+        if (picks.length === 0 && !_sampleSeeded) {
+          _sampleSeeded = true;
+          seedSampleData();
+          return;
+        }
+        renderTable();
+      },
+      err => {
+        console.error('[Firestore]', err);
+        setSyncStatus('offline');
+        try { picks = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch(_) { picks = []; }
+        picks = picks.map(p => ({ ...p, id: String(p.id) }));
+        renderTable();
+      }
+    );
+}
+
+async function seedSampleData() {
+  const samples = [
+    { date:'2026-03-31', name:'테슬라',   price:'$359.76',  avg:'$320.00',  qty:'10',
+      ma5:'$366.97', ma20:'$386.73', ma60:'$411.31', ma120:'$427.29',
+      band:'335~350', stop:'$310.00', target:'$440.00', score:68,
+      note:'4월 발표 될 차량 인도량, 매출 중 이익률 확인' },
+    { date:'2026-04-01', name:'삼성전자', price:'166,700',   avg:'175,000',  qty:'50',
+      ma5:'178,480', ma20:'187,295', ma60:'170,370', ma120:'136,035',
+      band:'172k~177k', stop:'158,000', target:'225,000', score:84,
+      note:'파운드리 2nm 수율 공시 및 대형 고객사(NVIDIA/Apple) 수주 확정 소식' },
+  ];
+  const batch = db.batch();
+  samples.forEach(s => {
+    const ref = db.collection(COL).doc(String(Date.now() + Math.random()));
+    batch.set(ref, s);
   });
+  await batch.commit();
 }
 
-function showLoginModal() {
-  document.getElementById('loginModal').classList.add('open');
-}
-function closeLoginModal() {
-  document.getElementById('loginModal').classList.remove('open');
-  pendingAction = null;
-  pendingData = null;
-}
-
-async function triggerLogin() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  try {
-    await firebase.auth().signInWithPopup(provider);
-    closeLoginModal();
-    if (pendingAction === 'add') {
-      openModal();
-    } else if (pendingAction === 'edit' && pendingData) {
-      openModal(pendingData.id);
-    } else if (pendingAction === 'delete' && pendingData) {
-      await deletePick(pendingData.id);
-    }
-    pendingAction = null;
-    pendingData = null;
-  } catch(e) {
-    toast('❌ 로그인 실패: ' + e.message);
-  }
-}
-
-function updateUIForUser(user) {
-  currentUser = user;
-  const userEmailSpan = document.getElementById('userEmail');
-  if (user) {
-    userEmailSpan.textContent = user.email.split('@')[0];
-    toast(`✅ ${user.email} 님 환영합니다!`);
-  } else {
-    userEmailSpan.textContent = '로그인';
-  }
-}
-
-function checkLoginAndOpenModal(id) {
-  if (!currentUser) {
-    pendingAction = id ? 'edit' : 'add';
-    if (id) pendingData = { id };
-    showLoginModal();
-    return;
-  }
-  openModal(id);
-}
-
-function checkLoginAndDelete(id) {
-  if (!currentUser) {
-    pendingAction = 'delete';
-    pendingData = { id };
-    showLoginModal();
-    return;
-  }
-  deletePick(id);
-}
-
+// ══════════════════════════════════════════════
+//  CRUD
+// ══════════════════════════════════════════════
 async function savePick() {
-  if (!currentUser) return;
   const date = document.getElementById('fDate').value;
   const name = document.getElementById('fName').value.trim();
-  if (!date || !name) { toast('날짜와 종목명은 필수입니다.'); return; }
+  if (!date || !name) { alert('날짜와 종목명은 필수입니다.'); return; }
+
   const entry = {
-    date, name,
-    price: document.getElementById('fPrice').value.trim(),
-    avg: document.getElementById('fAvg').value.trim(),
-    qty: document.getElementById('fQty').value.trim(),
-    ma5: document.getElementById('fMa5').value.trim(),
-    ma20: document.getElementById('fMa20').value.trim(),
-    ma60: document.getElementById('fMa60').value.trim(),
-    ma120: document.getElementById('fMa120').value.trim(),
-    band: document.getElementById('fBand').value.trim(),
-    stop: document.getElementById('fStop').value.trim(),
+    date,  name,
+    price:  document.getElementById('fPrice').value.trim(),
+    avg:    document.getElementById('fAvg').value.trim(),
+    qty:    document.getElementById('fQty').value.trim(),
+    ma5:    document.getElementById('fMa5').value.trim(),
+    ma20:   document.getElementById('fMa20').value.trim(),
+    ma60:   document.getElementById('fMa60').value.trim(),
+    ma120:  document.getElementById('fMa120').value.trim(),
+    band:   document.getElementById('fBand').value.trim(),
+    stop:   document.getElementById('fStop').value.trim(),
     target: document.getElementById('fTarget').value.trim(),
-    score: parseInt(document.getElementById('fScore').value) || 0,
-    note: document.getElementById('fNote').value.trim(),
-    userId: currentUser.uid,
-    userEmail: currentUser.email,
+    score:  parseInt(document.getElementById('fScore').value) || 0,
+    note:   document.getElementById('fNote').value.trim(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
+
   setSyncStatus('saving');
   try {
     const docId = editId || String(Date.now());
     await db.collection(COL).doc(docId).set(entry);
     closeModal();
-    toast('✅ 저장 완료!');
-  } catch(err) { toast('❌ 저장 실패: ' + err.message); setSyncStatus('offline'); }
-  finally { setSyncStatus('live'); }
+  } catch (err) {
+    console.error('savePick:', err);
+    alert('저장 실패: ' + err.message);
+    setSyncStatus('offline');
+  }
 }
 
 async function deletePick(id) {
-  if (!currentUser) return;
-  const pick = picks.find(p => p.id === id);
-  if (!pick || pick.userId !== currentUser.uid) {
-    toast('⚠️ 본인이 작성한 픽만 삭제할 수 있습니다!');
-    return;
-  }
   if (!confirm('이 픽을 삭제하시겠습니까?')) return;
-  try { await db.collection(COL).doc(id).delete(); toast('🗑️ 삭제 완료'); }
-  catch(err) { toast('❌ 삭제 실패: ' + err.message); }
+  try {
+    await db.collection(COL).doc(String(id)).delete();
+  } catch (err) {
+    alert('삭제 실패: ' + err.message);
+  }
 }
 
-function formatEmail(email) { return email ? email.split('@')[0] : '익명'; }
+async function deleteFromDetail() {
+  if (!confirm('삭제하시겠습니까?')) return;
+  const id = detailId;
+  closeDetail();
+  try {
+    await db.collection(COL).doc(String(id)).delete();
+  } catch (err) {
+    alert('삭제 실패: ' + err.message);
+  }
+}
+
+// ── Helpers ───────────────────────────────────────
 function fmtPrice(str) {
   if (!str) return '—';
-  if (str.includes('$')) return str;
-  let n = parseFloat(str.replace(/[$,원]/g,''));
-  return isNaN(n) ? str : Math.round(n).toLocaleString('ko-KR');
+  if (isDollar(str)) return str;
+  const n = parseNum(str);
+  if (n === null) return str;
+  return Math.round(n).toLocaleString('ko-KR');
 }
 function parseNum(str) {
-  if (!str) return null;
-  let n = parseFloat(str.replace(/[$,\s₩원]/g,''));
+  if (!str || !str.trim()) return null;
+  let s = str.replace(/[$,\s₩원]/g, '');
+  if (/^\d+\.?\d*k$/i.test(s)) return parseFloat(s) * 1000;
+  if (s.includes('~')) {
+    const p = s.split('~').map(x => parseFloat(x.replace(/k/i,'')) * (x.toLowerCase().endsWith('k') ? 1000 : 1));
+    if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) return (p[0]+p[1])/2;
+  }
+  const n = parseFloat(s);
   return isNaN(n) ? null : n;
+}
+function isDollar(s) { return !!(s && s.includes('$')); }
+function fmtMoney(val, dollar) {
+  if (val === null) return null;
+  const abs = Math.abs(val), sign = val >= 0 ? '+' : '-';
+  if (dollar) return sign + '$' + Math.round(abs).toLocaleString('en');
+  if (abs >= 1e8) return sign + (abs/1e8).toFixed(1) + '억';
+  return sign + Math.round(abs).toLocaleString('ko-KR');
 }
 function pnlPct(price, avg) {
   const p = parseNum(price), a = parseNum(avg);
-  if (!p || !a || a===0) return null;
+  if (!p || !a || a === 0) return null;
   return ((p-a)/a)*100;
 }
-function scoreClass(s) { return s>=80 ? 'score-hi' : s>=60 ? 'score-md' : 'score-lo'; }
+function pnlAmt(price, avg, qty) {
+  const p = parseNum(price), a = parseNum(avg), q = parseFloat(qty);
+  if (!p || !a || !q || isNaN(q)) return null;
+  return (p-a)*q;
+}
+function pnlBadge(pct, amt, dollar) {
+  if (pct === null) return '<span style="color:var(--text3);font-family:var(--mono)">—</span>';
+  const sign = pct >= 0 ? '+' : '', arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '—';
+  const cls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : 'zero';
+  const amtCls = amt >= 0 ? 'pos' : 'neg';
+  const amtStr = amt !== null ? fmtMoney(amt, dollar) : null;
+  return `<div class="pnl-wrap">
+    <span class="pnl-pct ${cls}">${arrow} ${sign}${pct.toFixed(2)}%</span>
+    ${amtStr ? `<span class="pnl-amt ${amtCls}">${amtStr}</span>` : ''}
+  </div>`;
+}
+function scoreClass(s) { return s >= 80 ? 'score-hi' : s >= 60 ? 'score-md' : 'score-lo'; }
+
+// ── Truncate + Global Popover ─────────────────────
+const TRUNC_TARGET = 18;
+const TRUNC_NOTE   = 24;
+
+function truncCell(text, type) {
+  if (!text) return '—';
+  const limit = type === 'target' ? TRUNC_TARGET : TRUNC_NOTE;
+  const color  = type === 'target' ? 'var(--green)'  : 'var(--text2)';
+  const fsize  = type === 'target' ? '12px' : '11px';
+  const fweight= type === 'target' ? '600'  : '400';
+  const ffam   = type === 'target' ? 'var(--mono)' : 'inherit';
+  const label  = type === 'target' ? '목표가' : '비고';
+  const style = `color:${color};font-family:${ffam};font-size:${fsize};font-weight:${fweight}`;
+  if (text.length <= limit) return `<span style="${style}">${text}</span>`;
+  const preview = text.substring(0, limit) + '…';
+  const safeText = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<span class="trunc-wrap">
+    <span class="trunc-text" style="${style}">${preview}</span>
+    <span class="trunc-btn"
+      data-full="${safeText}"
+      data-label="${label}"
+      data-color="${color}"
+      onclick="openGlobalPopover(event, this)">펼치기 ▾</span>
+  </span>`;
+}
+
+let _popBtn = null;
+function openGlobalPopover(e, btn) {
+  e.stopPropagation();
+  const pop = document.getElementById('globalPopover');
+  if (_popBtn === btn && pop.classList.contains('open')) {
+    pop.classList.remove('open'); _popBtn = null; return;
+  }
+  _popBtn = btn;
+  document.getElementById('popoverLabel').textContent = btn.dataset.label;
+  const contentEl = document.getElementById('popoverContent');
+  contentEl.textContent = btn.dataset.full;
+  contentEl.style.color = btn.dataset.color;
+  pop.classList.add('open');
+  const btnRect = btn.getBoundingClientRect();
+  const popW = pop.offsetWidth, popH = pop.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let left = btnRect.left;
+  if (left + popW > vw - 12) left = btnRect.right - popW;
+  if (left < 8) left = 8;
+  let top = btnRect.bottom + 6;
+  if (top + popH > vh - 12) top = btnRect.top - popH - 6;
+  pop.style.left = left + 'px';
+  pop.style.top  = top  + 'px';
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.trunc-btn')) {
+    document.getElementById('globalPopover').classList.remove('open');
+    _popBtn = null;
+  }
+});
 
 function getFiltered() {
   const dv = document.getElementById('filterDate').value;
   const nv = document.getElementById('filterName').value.trim().toLowerCase();
-  return picks.filter(p => (!dv || p.date===dv) && (!nv || p.name.toLowerCase().includes(nv)));
+  return picks
+    .filter(p => (!dv || p.date === dv) && (!nv || p.name.toLowerCase().includes(nv)))
+    .sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 }
 
-function renderFeed() {
-  const list = getFiltered();
-  const totalChip = document.getElementById('statChips');
-  totalChip.innerHTML = `<div class="chip">총 <span style="color:var(--accent);">${picks.length}</span>건</div>`;
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+  const data = getFiltered();
 
-  const feedDiv = document.getElementById('tableWrap');
-  if (picks.length === 0) {
-    feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon" style="font-size:48px;opacity:.4;">📊</div><p>등록된 픽이 없습니다</p></div>`;
-    return;
-  }
-  if (list.length === 0) {
-    feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
-    return;
+  if (picks.length > 0) {
+    const avg = (picks.reduce((s,p)=>s+p.score,0)/picks.length).toFixed(0);
+    document.getElementById('statChips').innerHTML =
+      `<div class="chip">총 <span class="val">${picks.length}</span>건</div>` +
+      `<div class="chip">평균점수 <span class="val">${avg}</span></div>`;
   }
 
-  const groups = {};
-  list.forEach(p => { if(!groups[p.date]) groups[p.date]=[]; groups[p.date].push(p); });
+  if (data.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 픽이 없습니다</p><p class="hint">새 픽 추가 버튼으로 시작하세요</p></div>';
+    return;
+  }
 
-  let html = '<div class="feed">';
-  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date => {
-    const dayItems = groups[date];
-    html += `<div style="display:flex;align-items:center;gap:10px;margin:10px 0 4px;"><span style="font-family:var(--mono);font-size:11px;color:var(--accent);">${date}</span><div style="flex:1;height:1px;background:rgba(0,212,255,.1);"></div><span style="font-family:var(--mono);font-size:10px;color:var(--text3);">${dayItems.length}건</span></div>`;
-    dayItems.forEach(p => {
-      const pct = pnlPct(p.price, p.avg);
-      const scClass = scoreClass(p.score);
-      const pnlHtml = pct !== null ? `<span class="pnl-pct ${pct>=0?'pos':'neg'}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:3px;font-family:var(--mono);font-size:11px;font-weight:700;">${pct>0?'▲':'▼'} ${pct>=0?'+':''}${pct.toFixed(2)}%</span>` : '<span>—</span>';
-      html += `
-        <div class="feed-item">
-          <div class="item-header">
-            <span class="item-name">${escapeHtml(p.name)}</span>
-            <span class="score-badge ${scClass}">${p.score}</span>
-            <span class="item-author">👤 ${formatEmail(p.userEmail)}</span>
-            <div class="item-actions">
-              <button class="btn-icon edit" onclick="checkLoginAndOpenModal('${p.id}')">✏️</button>
-              <button class="btn-icon del" onclick="checkLoginAndDelete('${p.id}')">🗑️</button>
-            </div>
-          </div>
-          <div class="row1-grid">
-            <div class="info-cell"><span class="info-label">현재가</span><span class="info-value">${fmtPrice(p.price)}</span></div>
-            <div class="info-cell"><span class="info-label">평단가</span><span class="info-value accent">${fmtPrice(p.avg)}</span></div>
-            <div class="info-cell"><span class="info-label">수량</span><span class="info-value">${p.qty ? p.qty+'주' : '—'}</span></div>
-            <div class="info-cell"><span class="info-label">5MA</span><span class="info-value">${fmtPrice(p.ma5)}</span></div>
-            <div class="info-cell"><span class="info-label">20MA</span><span class="info-value">${fmtPrice(p.ma20)}</span></div>
-            <div class="info-cell"><span class="info-label">60MA</span><span class="info-value">${fmtPrice(p.ma60)}</span></div>
-            <div class="info-cell"><span class="info-label">120MA</span><span class="info-value">${fmtPrice(p.ma120)}</span></div>
-          </div>
-          <div class="row2-grid">
-            <div class="info-cell"><span class="info-label">매수밴드</span><span class="info-value" style="color:var(--yellow);">${p.band||'—'}</span></div>
-            <div class="info-cell"><span class="info-label">손절라인</span><span class="info-value red">${fmtPrice(p.stop)}</span></div>
-            <div class="info-cell"><span class="info-label">목표가</span><span class="info-value green">${fmtPrice(p.target)}</span></div>
-            <div class="info-cell"><span class="info-label">수익률</span>${pnlHtml}</div>
-          </div>
-          ${p.note ? `<div style="margin-top:10px;padding:8px 10px;background:var(--sf3);border-radius:8px;font-size:11px;color:var(--text2);border-left:2px solid var(--accent);">📌 ${escapeHtml(p.note)}</div>` : ''}
-        </div>`;
-    });
-  });
-  html += '</div>';
-  feedDiv.innerHTML = html;
+  if (window.innerWidth < 700) { renderCards(data, wrap); return; }
+
+  let h = `<table><thead>
+    <tr>
+      <th rowspan="2" class="sticky-1">날짜</th>
+      <th rowspan="2" class="left sticky-2">종목</th>
+      <th rowspan="2">현재가</th>
+      <th colspan="3" class="pos-hdr" style="border-bottom:1px solid rgba(0,212,255,.2);">보유 포지션</th>
+      <th colspan="4" style="border-bottom:1px solid var(--border2);">이동평균</th>
+      <th rowspan="2">매수밴드</th>
+      <th rowspan="2">손절라인</th>
+      <th rowspan="2">목표가</th>
+      <th rowspan="2">점수</th>
+      <th rowspan="2" class="left">비고</th>
+      <th rowspan="2">관리</th>
+    </tr>
+    <tr>
+      <th class="pos-hdr">평단가</th>
+      <th class="pos-hdr">수량</th>
+      <th class="pos-hdr">수익률 / 평가손익</th>
+      <th>5MA</th><th>20MA</th><th>60MA</th><th>120MA</th>
+    </tr>
+  </thead><tbody>`;
+
+  for (const p of data) {
+    const sc = scoreClass(p.score);
+    const pct = pnlPct(p.price, p.avg);
+    const amt = pnlAmt(p.price, p.avg, p.qty);
+    const dol = isDollar(p.price || p.avg || '');
+    h += `<tr>
+      <td class="td-date sticky-1">${p.date}</td>
+      <td class="td-name left sticky-2">${p.name}</td>
+      <td class="td-num">${fmtPrice(p.price)}</td>
+      <td class="td-avg">${fmtPrice(p.avg)}</td>
+      <td class="td-qty">${p.qty ? p.qty+'주' : '—'}</td>
+      <td>${pnlBadge(pct, amt, dol)}</td>
+      <td class="td-ma">${fmtPrice(p.ma5)}</td>
+      <td class="td-ma">${fmtPrice(p.ma20)}</td>
+      <td class="td-ma">${fmtPrice(p.ma60)}</td>
+      <td class="td-ma">${fmtPrice(p.ma120)}</td>
+      <td class="td-band">${p.band||'—'}</td>
+      <td class="td-stop">${fmtPrice(p.stop)}</td>
+      <td class="td-target">${truncCell(fmtPrice(p.target), 'target')}</td>
+      <td><span class="score-badge ${sc}">${p.score}</span></td>
+      <td class="td-note">${truncCell(p.note, 'note')}</td>
+      <td><div class="td-actions">
+        <button class="btn-icon edit" title="수정" onclick="openModal('${p.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-icon del" title="삭제" onclick="deletePick('${p.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div></td>
+    </tr>`;
+  }
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
 }
 
-function escapeHtml(s) { return String(s||'').replace(/[<>&]/g, c=> ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]); }
+function renderCards(data, wrap) {
+  let h = '<div style="padding:10px;display:flex;flex-direction:column;gap:8px;">';
+  for (const p of data) {
+    const sc = scoreClass(p.score);
+    const pct = pnlPct(p.price, p.avg);
+    const amt = pnlAmt(p.price, p.avg, p.qty);
+    const dol = isDollar(p.price || p.avg || '');
+    const pctStr = pct !== null ? (pct >= 0 ? `+${pct.toFixed(2)}` : pct.toFixed(2)) : null;
+    const pctColor = pct === null ? '' : pct >= 0 ? 'var(--green)' : 'var(--red)';
+    const arrow = pct === null ? '' : pct > 0 ? '▲' : '▼';
+    const amtStr = amt !== null ? fmtMoney(amt, dol) : null;
+    h += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;" onclick="openDetail('${p.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div><div style="font-size:15px;font-weight:700;">${p.name}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:2px;">${p.date}</div></div>
+        <span class="score-badge ${sc}">${p.score}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div><div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px;">현재가</div><div style="font-family:var(--mono);font-size:12px;">${p.price||'—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px;">평단가</div><div style="font-family:var(--mono);font-size:12px;color:var(--accent);">${p.avg||'—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px;">수량</div><div style="font-family:var(--mono);font-size:12px;color:var(--text2);">${p.qty ? p.qty+'주' : '—'}</div></div>
+      </div>
+      ${pctStr ? `<div style="background:var(--surface3);border-radius:6px;padding:8px 10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:var(--text3);font-family:var(--mono);">수익률</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:${pctColor};">${arrow} ${pctStr}%</span>
+          ${amtStr ? `<span style="font-family:var(--mono);font-size:11px;color:${pctColor};opacity:.8;">${amtStr}</span>` : ''}
+        </div>
+      </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+        <div style="color:var(--red);">손절 ${p.stop||'—'}</div>
+        <div style="color:var(--green);">목표 ${p.target||'—'}</div>
+      </div>
+      ${p.band ? `<div style="margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--yellow);">▸ 매수밴드 ${p.band}</div>` : ''}
+      ${p.note ? `<div style="margin-top:8px;font-size:11px;color:var(--text2);line-height:1.5;">${p.note}</div>` : ''}
+    </div>`;
+  }
+  h += '</div>';
+  wrap.innerHTML = h;
+}
 
+// ── Modal ─────────────────────────────────────────
 function openModal(id) {
-  editId = id || null;
+  editId = (id !== undefined && id !== null) ? String(id) : null;
   document.getElementById('modalTitle').textContent = editId ? '픽 수정' : '새 픽 추가';
-  if (!editId) {
-    ['fName','fPrice','fAvg','fQty','fMa5','fMa20','fMa60','fMa120','fBand','fStop','fTarget','fNote'].forEach(i=>{ let el=document.getElementById(i); if(el) el.value=''; });
-    document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('fScore').value = 75;
-  } else {
-    const p = picks.find(x=>x.id===editId);
-    if(p && (currentUser?.uid === p.userId)) {
-      document.getElementById('fDate').value = p.date||'';
-      document.getElementById('fName').value = p.name||'';
-      document.getElementById('fPrice').value = p.price||'';
-      document.getElementById('fAvg').value = p.avg||'';
-      document.getElementById('fQty').value = p.qty||'';
-      document.getElementById('fMa5').value = p.ma5||'';
-      document.getElementById('fMa20').value = p.ma20||'';
-      document.getElementById('fMa60').value = p.ma60||'';
-      document.getElementById('fMa120').value = p.ma120||'';
-      document.getElementById('fBand').value = p.band||'';
-      document.getElementById('fStop').value = p.stop||'';
-      document.getElementById('fTarget').value = p.target||'';
-      document.getElementById('fScore').value = p.score??75;
-      document.getElementById('fNote').value = p.note||'';
-    }
+  const clear = ['fName','fPrice','fAvg','fQty','fMa5','fMa20','fMa60','fMa120','fBand','fStop','fTarget','fNote'];
+  clear.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fScore').value = 75;
+  if (editId) {
+    const p = picks.find(x => x.id === editId);
+    if (!p) { console.error('Pick not found:', editId); return; }
+    document.getElementById('fDate').value   = p.date   || '';
+    document.getElementById('fName').value   = p.name   || '';
+    document.getElementById('fPrice').value  = p.price  || '';
+    document.getElementById('fAvg').value    = p.avg    || '';
+    document.getElementById('fQty').value    = p.qty    || '';
+    document.getElementById('fMa5').value    = p.ma5    || '';
+    document.getElementById('fMa20').value   = p.ma20   || '';
+    document.getElementById('fMa60').value   = p.ma60   || '';
+    document.getElementById('fMa120').value  = p.ma120  || '';
+    document.getElementById('fBand').value   = p.band   || '';
+    document.getElementById('fStop').value   = p.stop   || '';
+    document.getElementById('fTarget').value = p.target || '';
+    document.getElementById('fScore').value  = p.score  ?? 75;
+    document.getElementById('fNote').value   = p.note   || '';
   }
-  document.getElementById('overlay').classList.remove('hidden');
-}
-function closeModal() { document.getElementById('overlay').classList.add('hidden'); editId=null; }
-
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  updateScoreDisplay();
+  updatePnlStrip();
+  document.getElementById('overlay').classList.add('open');
 }
 
-firebase.auth().onAuthStateChanged(user => { updateUIForUser(user); });
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+}
+function handleOverlayClick(e) {}
+
+function updateScoreDisplay() {
+  const v = parseInt(document.getElementById('fScore').value);
+  const el = document.getElementById('scoreDisplay');
+  el.textContent = v;
+  el.style.color = v >= 80 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
+}
+
+function updatePnlStrip() {
+  const price = document.getElementById('fPrice').value;
+  const avg   = document.getElementById('fAvg').value;
+  const qty   = document.getElementById('fQty').value;
+  const strip = document.getElementById('pnlStrip');
+  const valEl = document.getElementById('pnlStripVal');
+  const pct = pnlPct(price, avg);
+  if (pct === null) { strip.classList.remove('visible'); return; }
+  strip.classList.add('visible');
+  const amt = pnlAmt(price, avg, qty);
+  const dol = isDollar(price || avg || '');
+  const sign = pct >= 0 ? '+' : '', arrow = pct > 0 ? '▲' : '▼';
+  const color = pct >= 0 ? 'var(--green)' : 'var(--red)';
+  let html = `<span style="color:${color};font-weight:700;font-size:13px;">${arrow} ${sign}${pct.toFixed(2)}%</span>`;
+  if (amt !== null) html += `<span style="color:${color};opacity:.85;margin-left:12px;">${fmtMoney(amt, dol)}</span>`;
+  valEl.innerHTML = html;
+}
+
+// ── PWA ───────────────────────────────────────────
+const mfLink = document.createElement('link');
+mfLink.rel = 'manifest';
+mfLink.href = URL.createObjectURL(new Blob([JSON.stringify({
+  name:'픽노트', short_name:'픽노트', start_url:'.', display:'standalone',
+  background_color:'#080c14', theme_color:'#080c14'
+})], {type:'application/json'}));
+document.head.appendChild(mfLink);
+
+window.addEventListener('resize', renderTable);
+
+// ── 🔥 Firebase 실시간 동기화 시작 ─────────────────
 initSync();
 </script>
 </body>
