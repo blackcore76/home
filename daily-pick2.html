@@ -365,6 +365,21 @@ function updateUIForUser(user) {
   if (user) {
     userEmailSpan.textContent = user.email.split('@')[0];
     toast(`✅ ${user.email} 님 환영합니다!`);
+    
+    // ⭐ 로그인 전에 대기 중이던 작업 실행
+    if (pendingAction) {
+      setTimeout(() => {
+        if (pendingAction === 'add') {
+          openModal();
+        } else if (pendingAction === 'edit' && pendingData) {
+          openModal(pendingData.id);
+        } else if (pendingAction === 'delete' && pendingData) {
+          deletePick(pendingData.id);
+        }
+        pendingAction = null;
+        pendingData = null;
+      }, 300);
+    }
   } else {
     userEmailSpan.textContent = '로그인';
   }
