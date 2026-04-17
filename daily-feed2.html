@@ -79,8 +79,10 @@ header {
   color: var(--text2); background: var(--sf2);
   border: 1px solid var(--bd); border-radius: 20px;
   padding: 3px 10px;
+  cursor: pointer;
 }
 .user-badge .user-email { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-badge:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── INPUT AREA ── */
 .input-wrap {
@@ -253,22 +255,47 @@ textarea::placeholder { color: var(--text3); }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ── 로그인 알림 ── */
-.login-notice {
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  margin: 20px 16px;
+/* ── 로그인 모달 (간단) ── */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
 }
-.login-notice .icon { font-size: 32px; margin-bottom: 12px; }
-.login-notice p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
-.login-notice .btn-login {
+.login-overlay.open { opacity: 1; pointer-events: all; }
+.login-modal {
+  background: var(--sf);
+  border: 1px solid var(--bd2);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  transform: scale(.9);
+  transition: transform .2s;
+}
+.login-overlay.open .login-modal { transform: scale(1); }
+.login-modal .icon { font-size: 48px; margin-bottom: 16px; }
+.login-modal h3 { font-family: var(--mono); font-size: 16px; margin-bottom: 8px; }
+.login-modal p { font-size: 12px; color: var(--text3); margin-bottom: 24px; }
+.login-modal .btn-login {
   background: var(--accent); color: #000; border: none;
-  border-radius: 8px; padding: 10px 24px;
-  font-family: var(--sans); font-size: 13px; font-weight: 700;
-  cursor: pointer;
+  border-radius: 10px; padding: 12px 24px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  width: 100%;
+}
+.login-modal .btn-login:hover { background: #33ddff; }
+.login-modal .btn-cancel {
+  background: transparent; border: 1px solid var(--bd2);
+  color: var(--text2); border-radius: 10px;
+  padding: 10px 20px; font-size: 13px;
+  cursor: pointer; margin-top: 12px;
+  width: 100%;
 }
 </style>
 </head>
@@ -281,15 +308,15 @@ textarea::placeholder { color: var(--text3); }
       <div class="sdot load" id="sdot"></div>
       <span id="stxt">연결 중...</span>
     </div>
-    <div class="user-badge" id="userBadge" style="display: none;">
+    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
       <span>👤</span>
-      <span class="user-email" id="userEmail"></span>
+      <span class="user-email" id="userEmail">로그인</span>
     </div>
   </div>
 </header>
 
-<!-- 입력 영역 (로그인 필요) -->
-<div class="input-wrap" id="inputWrap" style="display: none;">
+<!-- 입력 영역 (항상 보임, 비로그인시 클릭하면 로그인 모달) -->
+<div class="input-wrap">
   <div class="input-box">
     <div class="input-date-row">
       <span class="date-label">날짜</span>
@@ -306,7 +333,7 @@ textarea::placeholder { color: var(--text3); }
     <textarea id="inText" placeholder="오늘의 생각을 기록하세요..." rows="4" oninput="updateChar()"></textarea>
     <div class="input-footer">
       <span class="char-count" id="charCount">0 / 3000</span>
-      <button class="btn-submit" id="btnSubmit" onclick="submitFeed()">
+      <button class="btn-submit" id="btnSubmit" onclick="checkLoginAndSubmit()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         게시
       </button>
@@ -314,25 +341,29 @@ textarea::placeholder { color: var(--text3); }
   </div>
 </div>
 
-<!-- 로그인 알림 (비로그인 시) -->
-<div class="login-notice" id="loginNotice">
-  <div class="icon">🔐</div>
-  <p>피드를 작성하려면 로그인이 필요합니다.<br>로그인하면 모든 피드를 읽을 수 있어요!</p>
-  <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
-</div>
-
-<!-- 필터 (로그인 없이도 보임) -->
+<!-- 필터 -->
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="renderFeed()" placeholder="날짜 필터">
   <input class="filter-input" type="text" id="filterText" oninput="renderFeed()" placeholder="내용 검색...">
   <div class="count-chip" id="countChip">총 <span>0</span>건</div>
 </div>
 
-<!-- 피드 (로그인 없이도 보임) -->
+<!-- 피드 -->
 <div class="feed" id="feedList"></div>
 
 <!-- 토스트 -->
 <div class="toast" id="toast"></div>
+
+<!-- 로그인 모달 -->
+<div class="login-overlay" id="loginModal" onclick="if(event.target===this) closeLoginModal()">
+  <div class="login-modal">
+    <div class="icon">🔐</div>
+    <h3>로그인이 필요합니다</h3>
+    <p>글을 작성하거나 수정/삭제하려면<br>Google 계정으로 로그인해주세요</p>
+    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
+    <button class="btn-cancel" onclick="closeLoginModal()">취소</button>
+  </div>
+</div>
 
 <script>
 /* ── firebase.initializeApp은 <head>에서 완료 ── */
@@ -343,6 +374,8 @@ const COL = 'dailyfeed';
 let feeds   = [];
 let selMood = '';
 let currentUser = null;
+let pendingAction = null;  // 로그인 후 실행할 작업 저장
+let pendingData = null;
 
 /* ── 날짜 초기화 ── */
 document.getElementById('inDate').value = todayStr();
@@ -414,41 +447,86 @@ function initSync() {
     });
 }
 
+/* ── 로그인 모달 ── */
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('open');
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+  pendingAction = null;
+  pendingData = null;
+}
+
 /* ── 로그인 트리거 ── */
-function triggerLogin() {
+async function triggerLogin() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider).catch(e => {
+  try {
+    await firebase.auth().signInWithPopup(provider);
+    closeLoginModal();
+    // 저장된 pending 작업이 있으면 실행
+    if (pendingAction) {
+      if (pendingAction === 'submit') {
+        await submitFeed();
+      } else if (pendingAction === 'edit' && pendingData) {
+        await saveEdit(pendingData.id);
+      } else if (pendingAction === 'delete' && pendingData) {
+        await deleteFeed(pendingData.id);
+      }
+      pendingAction = null;
+      pendingData = null;
+    }
+  } catch(e) {
     toast('❌ 로그인 실패: ' + e.message);
-  });
+  }
 }
 
 /* ── UI 업데이트 (로그인 상태에 따라) ── */
 function updateUIForUser(user) {
   currentUser = user;
-  const inputWrap = document.getElementById('inputWrap');
-  const loginNotice = document.getElementById('loginNotice');
-  const userBadge = document.getElementById('userBadge');
   const userEmailSpan = document.getElementById('userEmail');
-
+  
   if (user) {
-    // 로그인됨
-    inputWrap.style.display = 'block';
-    loginNotice.style.display = 'none';
-    userBadge.style.display = 'flex';
     userEmailSpan.textContent = formatEmail(user.email);
     toast(`✅ ${user.email} 님 환영합니다!`);
   } else {
-    // 로그아웃
-    inputWrap.style.display = 'none';
-    loginNotice.style.display = 'block';
-    userBadge.style.display = 'none';
+    userEmailSpan.textContent = '로그인';
   }
+}
+
+/* ── 로그인 체크 후 실행 ── */
+function checkLoginAndSubmit() {
+  if (!currentUser) {
+    pendingAction = 'submit';
+    showLoginModal();
+    return;
+  }
+  submitFeed();
+}
+
+function checkLoginAndEdit(id) {
+  if (!currentUser) {
+    pendingAction = 'edit';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  startEdit(id);
+}
+
+function checkLoginAndDelete(id) {
+  if (!currentUser) {
+    pendingAction = 'delete';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  deleteFeed(id);
 }
 
 /* ── 게시 (로그인 필요) ── */
 async function submitFeed() {
   if (!currentUser) {
-    toast('⚠️ 글을 작성하려면 로그인이 필요합니다!');
+    // 이론상 여기 올 일 없음 (위에서 체크함)
     return;
   }
 
@@ -481,10 +559,7 @@ async function submitFeed() {
 
 /* ── 삭제 (작성자 본인만 가능) ── */
 async function deleteFeed(id) {
-  if (!currentUser) {
-    toast('⚠️ 삭제하려면 로그인이 필요합니다!');
-    return;
-  }
+  if (!currentUser) return;
 
   const feed = feeds.find(f => f.id === id);
   if (!feed) return;
@@ -504,10 +579,7 @@ async function deleteFeed(id) {
 
 /* ── 편집 모드 (작성자 본인만 가능) ── */
 function startEdit(id) {
-  if (!currentUser) {
-    toast('⚠️ 수정하려면 로그인이 필요합니다!');
-    return;
-  }
+  if (!currentUser) return;
 
   const feed = feeds.find(f => f.id === id);
   if (!feed) return;
@@ -532,10 +604,7 @@ function cancelEdit(id) {
 }
 
 async function saveEdit(id) {
-  if (!currentUser) {
-    toast('⚠️ 수정하려면 로그인이 필요합니다!');
-    return;
-  }
+  if (!currentUser) return;
 
   const feed = feeds.find(f => f.id === id);
   if (!feed) return;
@@ -580,7 +649,7 @@ function renderFeed() {
       <div class="empty">
         <div class="empty-icon">🗒️</div>
         <p>아직 기록이 없습니다</p>
-        <p class="hint">로그인하고 첫 번째 생각을 남겨보세요</p>
+        <p class="hint">첫 번째 생각을 남겨보세요</p>
       </div>`;
     return;
   }
@@ -610,8 +679,8 @@ function renderFeed() {
             <span class="feed-author">👤 ${formatEmail(f.userEmail || '익명')}</span>
             <span class="feed-time">${fmtTime(f.createdAt)}${f.updatedAt ? ' · 수정됨' : ''}</span>
             <div class="feed-actions">
-              <button class="btn-icon edit" title="수정" onclick="startEdit('${f.id}')">✏️</button>
-              <button class="btn-icon del" title="삭제" onclick="deleteFeed('${f.id}')">🗑️</button>
+              <button class="btn-icon edit" title="수정" onclick="checkLoginAndEdit('${f.id}')">✏️</button>
+              <button class="btn-icon del" title="삭제" onclick="checkLoginAndDelete('${f.id}')">🗑️</button>
             </div>
           </div>
           <div class="feed-content">${escHtml(f.text)}</div>
@@ -648,11 +717,11 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-/* ── Enter로 게시 ── */
+/* ── Enter로 게시 (로그인 체크 포함) ── */
 document.getElementById('inText').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    submitFeed();
+    checkLoginAndSubmit();
   }
 });
 
