@@ -16,6 +16,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="auth.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
 /* ── LOADING OVERLAY ── */
 #loading-overlay{position:fixed;inset:0;background:rgba(18,38,63,.82);z-index:9000;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
@@ -59,7 +60,6 @@
 .user-menu-email{font-size:12px;color:var(--hint);margin-bottom:14px;word-break:break-all}
 .logout-btn{width:100%;padding:10px;background:#FEE2E2;color:var(--red);border:none;
   border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
 :root{
   --navy:#12263F;--navy2:#1D3D60;--navy3:#2D5F8A;
   --red:#C62828;--red-lt:#FFEBEE;
@@ -80,7 +80,8 @@
 html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
 
 /* ── HEADER ── */
-.hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:var(--navy);
+/* home-bar.js 가 fixed 36px 바를 top:0 에 삽입하므로, 헤더는 그 아래부터 시작 */
+.hdr{position:fixed;top:36px;left:0;right:0;z-index:200;background:var(--navy);
   box-shadow:0 3px 16px rgba(0,0,0,.3);padding:0 20px}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;height:56px}
 .hdr-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
@@ -103,7 +104,7 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
 .tab-badge.show{display:inline-block}
 
 /* ── CONTENT ── */
-.content{margin-top:106px;padding:16px;min-height:calc(100vh - 106px)}
+.content{margin-top:0;padding:16px;min-height:100vh}
 .page{display:none}.page.on{display:block}
 
 /* ── CARD ── */
@@ -317,6 +318,22 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
 <script src="home-bar.js"></script>
 </head>
 <body>
+<script>
+// home-bar.js 가 body에 padding-top:36px 을 추가하고,
+// .hdr 는 top:36px 에 fixed 되므로 실제 content 시작점 = 36 + hdr높이
+function adjustContentTop(){
+  const hdr = document.querySelector('.hdr');
+  const content = document.querySelector('.content');
+  if(hdr && content){
+    const hdrH = hdr.getBoundingClientRect().height;
+    // home-bar 36px + hdr 높이 + 여유 8px
+    content.style.paddingTop = (36 + hdrH + 8) + 'px';
+  }
+}
+document.addEventListener('DOMContentLoaded', adjustContentTop);
+window.addEventListener('resize', adjustContentTop);
+document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop, 300));
+</script>
 
 <!-- HEADER -->
 <div class="hdr">
