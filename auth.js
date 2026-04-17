@@ -74,8 +74,8 @@
       if (overlay) overlay.remove();
       createLogoutBtn(user);
       console.log('[Auth] 로그인 완료:', user.email);
-	  // auth.js 수정 버전 (daily-feed 전용)
-    if (window.location.pathname.includes('daily-feed2.html')) {
+  // auth.js 수정 버전 (daily-feed 전용)
+    if (window.location.pathname.includes('daily-feed2.html'))
   // 오버레이 띄우지 않음
     } else {
       if (!overlay) createOverlay();
