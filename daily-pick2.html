@@ -25,7 +25,7 @@
     appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
   });
 </script>
-<script src="auth.js"></script>
+<script src="home-bar.js"></script>
 <style>
   :root {
     --bg:      #080c14;
@@ -38,7 +38,6 @@
     --text2:   #7a91a8;
     --text3:   #4a5f74;
     --accent:  #00d4ff;
-    --accent2: #0099cc;
     --green:   #00e676;
     --red:     #ff5252;
     --yellow:  #ffca28;
@@ -54,7 +53,6 @@
     padding-bottom: 80px;
   }
 
-  /* ── HEADER (피드 스타일) ── */
   header {
     position: sticky; top: 36px; z-index: 50;
     background: rgba(8,12,20,.92);
@@ -67,11 +65,24 @@
   .logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
   .logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
-  
+
+  .filter-bar {
+    background: var(--sf); border-bottom: 1px solid var(--bd);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .filter-input {
+    background: var(--sf3); border: 1px solid var(--bd2); color: var(--text);
+    border-radius: 6px; padding: 6px 10px; font-size: 13px; font-family: var(--sans);
+    outline: none; width: 160px;
+  }
+  .filter-input:focus { border-color: var(--accent); }
+  .stat-chips { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  .chip { background: var(--sf3); border: 1px solid var(--bd2); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-family: var(--mono); color: var(--text2); }
+
   .sync-badge {
     display: flex; align-items: center; gap: 5px;
     font-family: var(--mono); font-size: 10px; color: var(--text3);
-    background: var(--sf); border: 1px solid var(--bd);
+    background: var(--sf2); border: 1px solid var(--bd);
     border-radius: 20px; padding: 3px 10px;
   }
   .sync-dot {
@@ -83,70 +94,34 @@
   .sync-dot.offline  { background: var(--red); }
   .sync-dot.saving   { background: var(--accent); box-shadow: 0 0 5px var(--accent); animation: bl .4s infinite; }
   @keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
-  .sync-txt.live    { color: var(--green); }
-  .sync-txt.loading { color: var(--yellow); }
-  .sync-txt.offline { color: var(--red); }
-  .sync-txt.saving  { color: var(--accent); }
 
-  /* ── 필터바 ── */
-  .filter-bar {
-    padding: 10px 16px;
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    border-bottom: 1px solid var(--bd);
-  }
-  .filter-input {
-    background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
-    border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--sans);
-    outline: none; width: 150px;
-    color-scheme: dark;
-  }
-  .filter-input:focus { border-color: var(--accent); }
-  .filter-input::placeholder { color: var(--text3); }
-  .count-chip {
-    margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3);
-    background: var(--sf2); border: 1px solid var(--bd); border-radius: 20px;
+  .user-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text2); background: var(--sf2);
+    border: 1px solid var(--bd); border-radius: 20px;
     padding: 3px 10px;
+    cursor: pointer;
   }
-  .count-chip span { color: var(--accent); font-weight: 600; }
+  .user-badge:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* ── 메인 버튼 ── */
   .btn-add {
-    background: var(--accent); color: #000; border: none; border-radius: 8px;
-    padding: 6px 14px; font-family: var(--sans); font-size: 12px; font-weight: 700;
-    cursor: pointer; display: flex; align-items: center; gap: 6px;
-    transition: background .15s;
+    background: var(--accent); color: #000; border: none; border-radius: 6px;
+    padding: 7px 14px; font-family: var(--sans); font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
   }
   .btn-add:hover { background: #33ddff; }
 
-  /* ── 피드 스타일 카드 리스트 ── */
-  .feed { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
-
-  /* 날짜 그룹 헤더 */
-  .date-group {
-    display: flex; align-items: center; gap: 10px; margin: 6px 0 2px;
-  }
-  .date-group .date-label {
-    font-family: var(--mono); font-size: 11px; color: var(--accent); white-space: nowrap;
-  }
-  .date-group .line {
-    flex: 1; height: 1px; background: rgba(0,212,255,.1);
-  }
-  .date-group .count-badge {
-    font-family: var(--mono); font-size: 10px; color: var(--text3);
-  }
-
-  /* 카드 */
+  .table-wrap { overflow-x: auto; padding: 16px; }
+  .feed { display: flex; flex-direction: column; gap: 10px; }
   .feed-item {
     background: var(--sf);
     border: 1px solid var(--bd);
     border-radius: 14px;
     padding: 16px;
     position: relative;
-    overflow: hidden;
-    transition: border-color .2s, background .2s;
-    animation: fadeIn .3s ease both;
+    transition: all .2s;
   }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
   .feed-item::before {
     content: '';
     position: absolute; left: 0; top: 0; bottom: 0;
@@ -155,14 +130,10 @@
     border-radius: 3px 0 0 3px;
   }
   .feed-item:hover { border-color: var(--bd2); background: var(--sf2); }
-
-  /* 카드 내부 헤더 (종목명 + 점수 + 버튼) */
   .item-header {
     display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
   }
-  .item-name {
-    font-size: 16px; font-weight: 700; color: var(--text);
-  }
+  .item-name { font-size: 16px; font-weight: 700; }
   .score-badge {
     display: inline-block; padding: 2px 8px; border-radius: 4px;
     font-family: var(--mono); font-size: 11px; font-weight: 700;
@@ -170,158 +141,96 @@
   .score-hi { background: rgba(0,230,118,.15); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
   .score-md { background: rgba(255,202,40,.12); color: var(--yellow); border: 1px solid rgba(255,202,40,.3); }
   .score-lo { background: rgba(255,82,82,.12); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
-  
-  .item-actions {
-    margin-left: auto; display: flex; gap: 6px;
-  }
+  .item-actions { margin-left: auto; display: flex; gap: 6px; }
   .btn-icon {
     background: transparent; border: 1px solid var(--bd); color: var(--text3);
     border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; transition: all .15s;
   }
-  .btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
-  .btn-icon.del:hover  { border-color: var(--red); color: var(--red); background: rgba(255,82,82,.08); }
-
-  /* 그리드: 1행 (날짜 ~ 120MA) */
-  .row1-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px 12px;
-    margin-bottom: 14px;
-    background: var(--sf3);
-    border-radius: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--bd2);
+  .btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-icon.del:hover { border-color: var(--red); color: var(--red); }
+  .item-author {
+    font-family: var(--mono); font-size: 9px; color: var(--text3);
+    background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
+    padding: 2px 6px;
   }
-  .info-cell {
-    display: flex; flex-direction: column; gap: 2px;
-  }
-  .info-label {
-    font-size: 9px; font-family: var(--mono); letter-spacing: .6px;
-    text-transform: uppercase; color: var(--text3);
-  }
-  .info-value {
-    font-family: var(--mono); font-size: 12px; font-weight: 500;
-    color: var(--text);
-  }
-  .info-value.small { font-size: 11px; color: var(--text2); }
-  .info-value.accent { color: var(--accent); }
-  .info-value.green  { color: var(--green); }
-  .info-value.red    { color: var(--red); }
-  .info-value.yellow { color: var(--yellow); }
-
-  /* 2행 그리드 (매수밴드 ~ 관리) */
-  .row2-grid {
+  .row1-grid, .row2-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 8px 12px;
-    margin-bottom: 10px;
-  }
-  .pnl-wrap {
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .pnl-pct {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 7px; border-radius: 3px;
-    font-family: var(--mono); font-size: 11px; font-weight: 700;
-  }
-  .pnl-pct.pos { background: rgba(0,230,118,.12); border: 1px solid rgba(0,230,118,.25); color: var(--green); }
-  .pnl-pct.neg { background: rgba(255,82,82,.12); border: 1px solid rgba(255,82,82,.25); color: var(--red); }
-  .pnl-pct.zero { background: var(--surface3); border: 1px solid var(--bd2); color: var(--text2); }
-  .pnl-amt { font-family: var(--mono); font-size: 10px; }
-  .pnl-amt.pos { color: var(--green); opacity: .8; }
-  .pnl-amt.neg { color: var(--red); opacity: .8; }
-
-  /* 비고 영역 */
-  .note-area {
-    margin-top: 10px;
-    padding: 8px 10px;
+    margin-bottom: 12px;
     background: var(--sf3);
-    border-radius: 8px;
-    font-size: 11px;
-    line-height: 1.6;
-    color: var(--text2);
-    border-left: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 10px 12px;
   }
-  .note-placeholder {
-    color: var(--text3);
-    font-style: italic;
+  .info-cell { display: flex; flex-direction: column; gap: 2px; }
+  .info-label { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; }
+  .info-value { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .info-value.accent { color: var(--accent); }
+  .info-value.green { color: var(--green); }
+  .info-value.red { color: var(--red); }
+  .pnl-pct.pos { background: rgba(0,230,118,.12); color: var(--green); }
+  .pnl-pct.neg { background: rgba(255,82,82,.12); color: var(--red); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+
+  .login-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
   }
-
-  /* 모달, 오버레이, 팝오버 등 기존 스타일 유지 (일부 조정) */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .2s; }
-  .overlay.open { opacity: 1; pointer-events: all; }
-  .modal { background: var(--sf); border: 1px solid var(--bd2); border-radius: 16px; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,.6); transform: translateY(20px); transition: transform .2s; }
-  .overlay.open .modal { transform: translateY(0); }
-  .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; }
-  .modal-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-family: var(--mono); }
-  .modal-title .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
-  .btn-close { background: transparent; border: none; color: var(--text2); cursor: pointer; font-size: 24px; padding: 0 6px; }
-  .btn-close:hover { color: var(--red); }
-  .modal-body { padding: 16px 20px; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group.full { grid-column: 1 / -1; }
-  label { font-size: 10px; font-weight: 600; letter-spacing: .7px; text-transform: uppercase; color: var(--text3); font-family: var(--mono); }
-  input, textarea { background: var(--sf3); border: 1px solid var(--bd2); color: var(--text); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: var(--sans); outline: none; width: 100%; }
-  input:focus, textarea:focus { border-color: var(--accent); }
-  .form-section { margin-top: 14px; margin-bottom: 8px; font-size: 10px; font-family: var(--mono); font-weight: 700; letter-spacing: 1px; color: var(--accent); border-top: 1px solid var(--bd); padding-top: 12px; }
-  .ma-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-  .score-row { display: flex; align-items: center; gap: 8px; }
-  .score-row input[type=range] { flex: 1; accent-color: var(--accent); }
-  .score-display { font-family: var(--mono); font-size: 14px; font-weight: 700; min-width: 40px; text-align: right; }
-  .pnl-strip { display: none; background: var(--sf3); border: 1px solid var(--bd2); border-radius: 6px; padding: 8px 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
-  .pnl-strip.visible { display: flex; }
-  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--bd); display: flex; gap: 8px; justify-content: flex-end; }
-  .btn-cancel { background: transparent; border: 1px solid var(--bd2); color: var(--text2); border-radius: 6px; padding: 8px 16px; cursor: pointer; }
-  .btn-cancel:hover { border-color: var(--text2); color: var(--text); }
-  .btn-save { background: var(--accent); border: none; color: #000; border-radius: 6px; padding: 8px 22px; font-weight: 700; cursor: pointer; }
-
-  /* 전역 팝오버 */
-  #globalPopover {
-    display: none; position: fixed; z-index: 9999;
-    background: var(--sf); border: 1px solid var(--bd2); border-radius: 8px;
-    padding: 10px 14px; box-shadow: 0 8px 32px rgba(0,0,0,.7);
-    min-width: 180px; max-width: 320px; font-size: 12px; line-height: 1.6;
-    white-space: pre-wrap; pointer-events: none;
+  .login-overlay.open { opacity: 1; pointer-events: all; }
+  .login-modal {
+    background: var(--sf);
+    border: 1px solid var(--bd2);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
   }
-  #globalPopover.open { display: block; }
-  .popover-label { font-size: 9px; font-family: var(--mono); color: var(--accent); margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
-  
-  .trunc-wrap { display: inline-flex; align-items: center; gap: 5px; }
-  .trunc-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .trunc-btn {
-    background: var(--sf3); border: 1px solid var(--bd2); border-radius: 3px;
-    padding: 1px 6px; font-size: 9px; font-family: var(--mono); cursor: pointer;
+  .login-modal .btn-login {
+    background: var(--accent); color: #000; border: none;
+    border-radius: 10px; padding: 12px 24px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    width: 100%;
   }
-  .trunc-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .empty-state { text-align: center; padding: 80px 20px; color: var(--text3); }
-  .empty-icon { font-size: 48px; opacity: .4; margin-bottom: 12px; }
-
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--sf2); }
-  ::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 4px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--sf2); border: 1px solid var(--bd2);
+    border-radius: 40px; padding: 8px 20px;
+    font-size: 12px; opacity: 0;
+    transition: all .2s; z-index: 9999;
+    white-space: nowrap; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .hidden { display: none; }
 
   @media (max-width: 600px) {
     .row1-grid, .row2-grid { grid-template-columns: 1fr 1fr; }
-    .form-grid { grid-template-columns: 1fr; }
-    .ma-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
-<script src="home-bar.js"></script>
 </head>
 <body>
 
 <header>
   <div class="logo"><div class="logo-dot"></div>픽노트 / PICK NOTE</div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div class="sync-badge">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="sync-badge" id="syncBadge">
       <div class="sync-dot loading" id="syncDot"></div>
       <span class="sync-txt loading" id="syncTxt">연결 중...</span>
     </div>
-    <button class="btn-add" onclick="openModal()">
+    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
+      <span>👤</span>
+      <span class="user-email" id="userEmail">로그인</span>
+    </div>
+    <button class="btn-add" id="addBtn" onclick="checkLoginAndOpenModal()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       새 픽 추가
     </button>
@@ -331,68 +240,75 @@
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="renderFeed()">
   <input class="filter-input" type="text" id="filterName" oninput="renderFeed()" placeholder="종목 검색...">
-  <div class="count-chip" id="statChips">총 <span>0</span>건</div>
+  <div class="stat-chips" id="statChips"></div>
 </div>
 
-<div class="feed" id="feedList"></div>
+<div class="table-wrap" id="tableWrap"></div>
 
-<!-- 전역 팝오버 -->
-<div id="globalPopover">
-  <div class="popover-label" id="popoverLabel"></div>
-  <span id="popoverContent"></span>
+<!-- 로그인 모달 -->
+<div class="login-overlay" id="loginModal" onclick="if(event.target===this) closeLoginModal()">
+  <div class="login-modal">
+    <div class="icon" style="font-size:48px;margin-bottom:16px;">🔐</div>
+    <h3 style="margin-bottom:8px;">로그인이 필요합니다</h3>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:24px;">픽을 추가/수정/삭제하려면<br>Google 계정으로 로그인해주세요</p>
+    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
+    <button class="btn-cancel" onclick="closeLoginModal()" style="margin-top:12px;background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:10px;padding:10px 20px;width:100%;cursor:pointer;">취소</button>
+  </div>
 </div>
 
-<!-- Add/Edit Modal -->
-<div class="overlay" id="overlay" onclick="if(event.target===this) closeModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title"><div class="dot"></div><span id="modalTitle">새 픽 추가</span></div>
-      <button class="btn-close" onclick="closeModal()">×</button>
+<!-- Add/Edit Modal (기존과 동일) -->
+<div class="overlay hidden" id="overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal" style="background:var(--sf);border:1px solid var(--bd2);border-radius:16px;max-width:680px;width:90%;margin:0 auto;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header" style="padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;">
+      <div class="modal-title" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);"><span id="modalTitle">새 픽 추가</span></div>
+      <button class="btn-close" onclick="closeModal()" style="background:transparent;border:none;color:var(--text2);font-size:24px;cursor:pointer;">×</button>
     </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>날짜</label><input type="date" id="fDate"></div>
-        <div class="form-group"><label>종목명</label><input type="text" id="fName" placeholder="예: 삼성전자, TSLA"></div>
-        <div class="form-group"><label>현재가</label><input type="text" id="fPrice" placeholder="예: 166,700 / $359.76" oninput="updatePnlStrip()"></div>
-        <div class="form-group"><label>점수 (0~100)</label><div class="score-row"><input type="range" id="fScore" min="0" max="100" value="75" oninput="updateScoreDisplay()"><span class="score-display" id="scoreDisplay">75</span></div></div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group"><label style="font-family:var(--mono);font-size:10px;color:var(--text3);">날짜</label><input type="date" id="fDate" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>종목명</label><input type="text" id="fName" placeholder="예: 삼성전자, TSLA" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>현재가</label><input type="text" id="fPrice" placeholder="예: 166,700 / $359.76" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>점수 (0~100)</label><input type="range" id="fScore" min="0" max="100" value="75" style="width:100%;"></div>
       </div>
-      <div class="form-section">보유 포지션</div>
-      <div class="form-grid">
-        <div class="form-group"><label>평단가</label><input type="text" id="fAvg" placeholder="예: 155,000" oninput="updatePnlStrip()"></div>
-        <div class="form-group"><label>수량 (주)</label><input type="number" id="fQty" placeholder="예: 100" min="0" step="1" oninput="updatePnlStrip()"></div>
-        <div class="pnl-strip" id="pnlStrip"><span class="pnl-strip-label">수익 미리보기</span><span id="pnlStripVal"></span></div>
+      <div class="form-section" style="margin-top:14px;font-family:var(--mono);font-size:10px;color:var(--accent);">보유 포지션</div>
+      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group"><label>평단가</label><input type="text" id="fAvg" placeholder="예: 155,000" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>수량 (주)</label><input type="number" id="fQty" placeholder="예: 100" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
       </div>
       <div class="form-section">이동평균선 (MA)</div>
-      <div class="ma-grid">
-        <div class="form-group"><label>5일</label><input type="text" id="fMa5"></div>
-        <div class="form-group"><label>20일</label><input type="text" id="fMa20"></div>
-        <div class="form-group"><label>60일</label><input type="text" id="fMa60"></div>
-        <div class="form-group"><label>120일</label><input type="text" id="fMa120"></div>
+      <div class="ma-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div class="form-group"><label>5일</label><input type="text" id="fMa5" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>20일</label><input type="text" id="fMa20" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>60일</label><input type="text" id="fMa60" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>120일</label><input type="text" id="fMa120" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
       </div>
       <div class="form-section">매매 정보</div>
       <div class="form-grid">
-        <div class="form-group"><label>매수밴드</label><input type="text" id="fBand" placeholder="예: 172k~177k"></div>
-        <div class="form-group"><label>손절라인</label><input type="text" id="fStop" placeholder="예: 158,000"></div>
-        <div class="form-group"><label>목표가</label><input type="text" id="fTarget" placeholder="예: 225,000"></div>
-        <div class="form-group full"><label>비고</label><textarea id="fNote" rows="2" placeholder="분석 메모..."></textarea></div>
+        <div class="form-group"><label>매수밴드</label><input type="text" id="fBand" placeholder="예: 172k~177k" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group"><label>손절라인</label><input type="text" id="fStop" placeholder="예: 158,000" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group full" style="grid-column:1/-1;"><label>목표가</label><input type="text" id="fTarget" placeholder="예: 225,000" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></div>
+        <div class="form-group full" style="grid-column:1/-1;"><label>비고</label><textarea id="fNote" rows="2" style="background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px;width:100%;"></textarea></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" onclick="savePick()">저장</button>
+    <div class="modal-footer" style="padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-cancel" onclick="closeModal()" style="background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:8px 16px;cursor:pointer;">취소</button>
+      <button class="btn-save" onclick="savePick()" style="background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:700;cursor:pointer;">저장</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-// Firebase 및 Firestore
 const db = firebase.firestore();
 const COL = 'picknote';
 
 let picks = [];
 let editId = null;
+let currentUser = null;
+let pendingAction = null;
+let pendingData = null;
 
-// 동기화 배지
 function setSyncStatus(state) {
   const dot = document.getElementById('syncDot');
   const txt = document.getElementById('syncTxt');
@@ -402,7 +318,6 @@ function setSyncStatus(state) {
   txt.textContent = map[state] || '—';
 }
 
-// Firestore 실시간
 function initSync() {
   setSyncStatus('loading');
   db.collection(COL).orderBy('date', 'desc').onSnapshot(snap => {
@@ -416,11 +331,70 @@ function initSync() {
   });
 }
 
-// CRUD
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('open');
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+  pendingAction = null;
+  pendingData = null;
+}
+
+async function triggerLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await firebase.auth().signInWithPopup(provider);
+    closeLoginModal();
+    if (pendingAction === 'add') {
+      openModal();
+    } else if (pendingAction === 'edit' && pendingData) {
+      openModal(pendingData.id);
+    } else if (pendingAction === 'delete' && pendingData) {
+      await deletePick(pendingData.id);
+    }
+    pendingAction = null;
+    pendingData = null;
+  } catch(e) {
+    toast('❌ 로그인 실패: ' + e.message);
+  }
+}
+
+function updateUIForUser(user) {
+  currentUser = user;
+  const userEmailSpan = document.getElementById('userEmail');
+  if (user) {
+    userEmailSpan.textContent = user.email.split('@')[0];
+    toast(`✅ ${user.email} 님 환영합니다!`);
+  } else {
+    userEmailSpan.textContent = '로그인';
+  }
+}
+
+function checkLoginAndOpenModal(id) {
+  if (!currentUser) {
+    pendingAction = id ? 'edit' : 'add';
+    if (id) pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  openModal(id);
+}
+
+function checkLoginAndDelete(id) {
+  if (!currentUser) {
+    pendingAction = 'delete';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  deletePick(id);
+}
+
 async function savePick() {
+  if (!currentUser) return;
   const date = document.getElementById('fDate').value;
   const name = document.getElementById('fName').value.trim();
-  if (!date || !name) { alert('날짜와 종목명은 필수입니다.'); return; }
+  if (!date || !name) { toast('날짜와 종목명은 필수입니다.'); return; }
   const entry = {
     date, name,
     price: document.getElementById('fPrice').value.trim(),
@@ -435,6 +409,8 @@ async function savePick() {
     target: document.getElementById('fTarget').value.trim(),
     score: parseInt(document.getElementById('fScore').value) || 0,
     note: document.getElementById('fNote').value.trim(),
+    userId: currentUser.uid,
+    userEmail: currentUser.email,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
   setSyncStatus('saving');
@@ -442,49 +418,42 @@ async function savePick() {
     const docId = editId || String(Date.now());
     await db.collection(COL).doc(docId).set(entry);
     closeModal();
-  } catch (err) { alert('저장 실패: ' + err.message); setSyncStatus('offline'); }
+    toast('✅ 저장 완료!');
+  } catch(err) { toast('❌ 저장 실패: ' + err.message); setSyncStatus('offline'); }
+  finally { setSyncStatus('live'); }
 }
 
 async function deletePick(id) {
+  if (!currentUser) return;
+  const pick = picks.find(p => p.id === id);
+  if (!pick || pick.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 픽만 삭제할 수 있습니다!');
+    return;
+  }
   if (!confirm('이 픽을 삭제하시겠습니까?')) return;
-  try { await db.collection(COL).doc(String(id)).delete(); } 
-  catch (err) { alert('삭제 실패: ' + err.message); }
+  try { await db.collection(COL).doc(id).delete(); toast('🗑️ 삭제 완료'); }
+  catch(err) { toast('❌ 삭제 실패: ' + err.message); }
 }
 
-// 유틸
+function formatEmail(email) { return email ? email.split('@')[0] : '익명'; }
 function fmtPrice(str) {
   if (!str) return '—';
   if (str.includes('$')) return str;
   let n = parseFloat(str.replace(/[$,원]/g,''));
-  if (isNaN(n)) return str;
-  return Math.round(n).toLocaleString('ko-KR');
+  return isNaN(n) ? str : Math.round(n).toLocaleString('ko-KR');
 }
 function parseNum(str) {
   if (!str) return null;
-  let s = str.replace(/[$,\s₩원]/g,'');
-  let n = parseFloat(s);
+  let n = parseFloat(str.replace(/[$,\s₩원]/g,''));
   return isNaN(n) ? null : n;
 }
-function isDollar(s) { return !!(s && s.includes('$')); }
 function pnlPct(price, avg) {
   const p = parseNum(price), a = parseNum(avg);
   if (!p || !a || a===0) return null;
   return ((p-a)/a)*100;
 }
-function pnlAmt(price, avg, qty) {
-  const p = parseNum(price), a = parseNum(avg), q = parseFloat(qty);
-  if (!p || !a || !q || isNaN(q)) return null;
-  return (p-a)*q;
-}
-function fmtMoney(val, dollar) {
-  if (val===null) return null;
-  const abs = Math.abs(val), sign = val>=0?'+':'-';
-  if (dollar) return sign+'$'+Math.round(abs).toLocaleString('en');
-  return sign+Math.round(abs).toLocaleString('ko-KR');
-}
-function scoreClass(s) { return s>=80?'score-hi':s>=60?'score-md':'score-lo'; }
+function scoreClass(s) { return s>=80 ? 'score-hi' : s>=60 ? 'score-md' : 'score-lo'; }
 
-// 렌더링 (feed 스타일 카드 + 그룹)
 function getFiltered() {
   const dv = document.getElementById('filterDate').value;
   const nv = document.getElementById('filterName').value.trim().toLowerCase();
@@ -494,14 +463,14 @@ function getFiltered() {
 function renderFeed() {
   const list = getFiltered();
   const totalChip = document.getElementById('statChips');
-  totalChip.innerHTML = `총 <span>${picks.length}</span>건`;
+  totalChip.innerHTML = `<div class="chip">총 <span style="color:var(--accent);">${picks.length}</span>건</div>`;
 
-  const feedDiv = document.getElementById('feedList');
-  if (picks.length===0) {
-    feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 픽이 없습니다</p><p class="hint">새 픽 추가 버튼으로 시작하세요</p></div>`;
+  const feedDiv = document.getElementById('tableWrap');
+  if (picks.length === 0) {
+    feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon" style="font-size:48px;opacity:.4;">📊</div><p>등록된 픽이 없습니다</p></div>`;
     return;
   }
-  if (list.length===0) {
+  if (list.length === 0) {
     feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
     return;
   }
@@ -509,101 +478,60 @@ function renderFeed() {
   const groups = {};
   list.forEach(p => { if(!groups[p.date]) groups[p.date]=[]; groups[p.date].push(p); });
 
-  let html = '';
+  let html = '<div class="feed">';
   Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date => {
     const dayItems = groups[date];
-    html += `<div class="date-group"><span class="date-label">${date}</span><div class="line"></div><span class="count-badge">${dayItems.length}건</span></div>`;
+    html += `<div style="display:flex;align-items:center;gap:10px;margin:10px 0 4px;"><span style="font-family:var(--mono);font-size:11px;color:var(--accent);">${date}</span><div style="flex:1;height:1px;background:rgba(0,212,255,.1);"></div><span style="font-family:var(--mono);font-size:10px;color:var(--text3);">${dayItems.length}건</span></div>`;
     dayItems.forEach(p => {
       const pct = pnlPct(p.price, p.avg);
-      const amt = pnlAmt(p.price, p.avg, p.qty);
-      const dol = isDollar(p.price || p.avg || '');
-      const pnlHtml = (pct!==null) ? 
-        `<div class="pnl-wrap">
-          <span class="pnl-pct ${pct>=0?'pos':'neg'}">${pct>0?'▲':'▼'} ${pct>=0?'+':''}${pct.toFixed(2)}%</span>
-          ${amt!==null ? `<span class="pnl-amt ${amt>=0?'pos':'neg'}">${fmtMoney(amt, dol)}</span>` : ''}
-        </div>` : '<span class="info-value small">—</span>';
-
       const scClass = scoreClass(p.score);
-      const noteShort = (p.note && p.note.length>50) ? p.note.substring(0,50)+'…' : p.note;
-      const hasNote = p.note && p.note.trim().length>0;
-
+      const pnlHtml = pct !== null ? `<span class="pnl-pct ${pct>=0?'pos':'neg'}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:3px;font-family:var(--mono);font-size:11px;font-weight:700;">${pct>0?'▲':'▼'} ${pct>=0?'+':''}${pct.toFixed(2)}%</span>` : '<span>—</span>';
       html += `
-        <div class="feed-item" id="item-${p.id}">
+        <div class="feed-item">
           <div class="item-header">
             <span class="item-name">${escapeHtml(p.name)}</span>
             <span class="score-badge ${scClass}">${p.score}</span>
+            <span class="item-author">👤 ${formatEmail(p.userEmail)}</span>
             <div class="item-actions">
-              <button class="btn-icon edit" title="수정" onclick="openModal('${p.id}')">✏️</button>
-              <button class="btn-icon del" title="삭제" onclick="deletePick('${p.id}')">🗑️</button>
+              <button class="btn-icon edit" onclick="checkLoginAndOpenModal('${p.id}')">✏️</button>
+              <button class="btn-icon del" onclick="checkLoginAndDelete('${p.id}')">🗑️</button>
             </div>
           </div>
-          <!-- 1행: 날짜 ~ 120MA -->
           <div class="row1-grid">
-            <div class="info-cell"><span class="info-label">날짜</span><span class="info-value">${p.date}</span></div>
             <div class="info-cell"><span class="info-label">현재가</span><span class="info-value">${fmtPrice(p.price)}</span></div>
             <div class="info-cell"><span class="info-label">평단가</span><span class="info-value accent">${fmtPrice(p.avg)}</span></div>
-            <div class="info-cell"><span class="info-label">수량</span><span class="info-value small">${p.qty ? p.qty+'주' : '—'}</span></div>
-            <div class="info-cell"><span class="info-label">5MA</span><span class="info-value small">${fmtPrice(p.ma5)}</span></div>
-            <div class="info-cell"><span class="info-label">20MA</span><span class="info-value small">${fmtPrice(p.ma20)}</span></div>
-            <div class="info-cell"><span class="info-label">60MA</span><span class="info-value small">${fmtPrice(p.ma60)}</span></div>
-            <div class="info-cell"><span class="info-label">120MA</span><span class="info-value small">${fmtPrice(p.ma120)}</span></div>
+            <div class="info-cell"><span class="info-label">수량</span><span class="info-value">${p.qty ? p.qty+'주' : '—'}</span></div>
+            <div class="info-cell"><span class="info-label">5MA</span><span class="info-value">${fmtPrice(p.ma5)}</span></div>
+            <div class="info-cell"><span class="info-label">20MA</span><span class="info-value">${fmtPrice(p.ma20)}</span></div>
+            <div class="info-cell"><span class="info-label">60MA</span><span class="info-value">${fmtPrice(p.ma60)}</span></div>
+            <div class="info-cell"><span class="info-label">120MA</span><span class="info-value">${fmtPrice(p.ma120)}</span></div>
           </div>
-          <!-- 2행: 매수밴드 ~ 관리 -->
           <div class="row2-grid">
-            <div class="info-cell"><span class="info-label">매수밴드</span><span class="info-value yellow">${p.band||'—'}</span></div>
+            <div class="info-cell"><span class="info-label">매수밴드</span><span class="info-value" style="color:var(--yellow);">${p.band||'—'}</span></div>
             <div class="info-cell"><span class="info-label">손절라인</span><span class="info-value red">${fmtPrice(p.stop)}</span></div>
-            <div class="info-cell"><span class="info-label">목표가</span><span class="info-value green">${truncCell(fmtPrice(p.target),'target')}</span></div>
+            <div class="info-cell"><span class="info-label">목표가</span><span class="info-value green">${fmtPrice(p.target)}</span></div>
             <div class="info-cell"><span class="info-label">수익률</span>${pnlHtml}</div>
           </div>
-          ${hasNote ? `<div class="note-area">📌 ${escapeHtml(noteShort)}${p.note.length>50 ? truncCell(p.note,'note') : ''}</div>` : '<div class="note-area note-placeholder">📝 비고 없음</div>'}
-        </div>
-      `;
+          ${p.note ? `<div style="margin-top:10px;padding:8px 10px;background:var(--sf3);border-radius:8px;font-size:11px;color:var(--text2);border-left:2px solid var(--accent);">📌 ${escapeHtml(p.note)}</div>` : ''}
+        </div>`;
     });
   });
+  html += '</div>';
   feedDiv.innerHTML = html;
 }
 
-function truncCell(text, type) {
-  if(!text) return '—';
-  const limit = 20;
-  if(text.length<=limit) return `<span>${escapeHtml(text)}</span>`;
-  const preview = escapeHtml(text.substring(0,limit))+'…';
-  const full = escapeHtml(text);
-  const label = type==='target'?'목표가':'비고';
-  return `<span class="trunc-wrap"><span class="trunc-text">${preview}</span><span class="trunc-btn" data-full="${full}" data-label="${label}" onclick="openGlobalPopover(event,this)">펼치기 ▾</span></span>`;
-}
 function escapeHtml(s) { return String(s||'').replace(/[<>&]/g, c=> ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]); }
 
-let _popBtn = null;
-function openGlobalPopover(e, btn) {
-  e.stopPropagation();
-  const pop = document.getElementById('globalPopover');
-  if(_popBtn===btn && pop.classList.contains('open')) { pop.classList.remove('open'); _popBtn=null; return; }
-  _popBtn=btn;
-  document.getElementById('popoverLabel').textContent = btn.dataset.label;
-  document.getElementById('popoverContent').textContent = btn.dataset.full;
-  pop.classList.add('open');
-  const rect = btn.getBoundingClientRect();
-  let left = rect.left, top = rect.bottom+6;
-  if(left+pop.offsetWidth > window.innerWidth-12) left = rect.right - pop.offsetWidth;
-  if(top+pop.offsetHeight > window.innerHeight-12) top = rect.top - pop.offsetHeight -6;
-  pop.style.left = left+'px'; pop.style.top = top+'px';
-}
-document.addEventListener('click', (e) => { if(!e.target.closest('.trunc-btn')) { document.getElementById('globalPopover').classList.remove('open'); _popBtn=null; } });
-
-// 모달
 function openModal(id) {
   editId = id || null;
   document.getElementById('modalTitle').textContent = editId ? '픽 수정' : '새 픽 추가';
-  if(!editId) {
+  if (!editId) {
     ['fName','fPrice','fAvg','fQty','fMa5','fMa20','fMa60','fMa120','fBand','fStop','fTarget','fNote'].forEach(i=>{ let el=document.getElementById(i); if(el) el.value=''; });
     document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('fScore').value = 75;
-    updateScoreDisplay();
-    updatePnlStrip();
   } else {
     const p = picks.find(x=>x.id===editId);
-    if(p) {
+    if(p && (currentUser?.uid === p.userId)) {
       document.getElementById('fDate').value = p.date||'';
       document.getElementById('fName').value = p.name||'';
       document.getElementById('fPrice').value = p.price||'';
@@ -618,27 +546,22 @@ function openModal(id) {
       document.getElementById('fTarget').value = p.target||'';
       document.getElementById('fScore').value = p.score??75;
       document.getElementById('fNote').value = p.note||'';
-      updateScoreDisplay();
-      updatePnlStrip();
     }
   }
-  document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay').classList.remove('hidden');
 }
-function closeModal() { document.getElementById('overlay').classList.remove('open'); editId=null; }
-function updateScoreDisplay() { const v=parseInt(document.getElementById('fScore').value); const el=document.getElementById('scoreDisplay'); el.textContent=v; el.style.color=v>=80?'var(--green)':v>=60?'var(--yellow)':'var(--red)'; }
-function updatePnlStrip() {
-  const price=document.getElementById('fPrice').value, avg=document.getElementById('fAvg').value, qty=document.getElementById('fQty').value;
-  const pct=pnlPct(price,avg), strip=document.getElementById('pnlStrip'), valEl=document.getElementById('pnlStripVal');
-  if(pct===null) { strip.classList.remove('visible'); return; }
-  strip.classList.add('visible');
-  const amt=pnlAmt(price,avg,qty), dol=isDollar(price||avg||'');
-  const arrow=pct>0?'▲':'▼', sign=pct>=0?'+':'', color=pct>=0?'var(--green)':'var(--red)';
-  let html=`<span style="color:${color};font-weight:700;">${arrow} ${sign}${pct.toFixed(2)}%</span>`;
-  if(amt!==null) html+=`<span style="color:${color};opacity:.85;margin-left:10px;">${fmtMoney(amt,dol)}</span>`;
-  valEl.innerHTML=html;
+function closeModal() { document.getElementById('overlay').classList.add('hidden'); editId=null; }
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
-window.addEventListener('resize', ()=>{ if(document.getElementById('globalPopover').classList.contains('open')) document.getElementById('globalPopover').classList.remove('open'); });
+firebase.auth().onAuthStateChanged(user => { updateUIForUser(user); });
 initSync();
 </script>
 </body>
