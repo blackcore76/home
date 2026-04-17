@@ -610,6 +610,15 @@ function fmtPrice(str) {
   if (str.includes('$')) return str;
   let n = parseFloat(str.replace(/[$,원]/g,''));
   if (isNaN(n)) return str;
+
+// 소수점이 있는 숫자면 (예: 359.76)
+if (str.includes('.') && n % 1 !== 0) {
+  return n.toLocaleString('ko-KR', { 
+    minimumFractionDigits: 2,  // 최소 2자리
+    maximumFractionDigits: 2   // 최대 2자리
+  });
+}
+  
   return Math.round(n).toLocaleString('ko-KR');
 }
 function parseNum(str) {
