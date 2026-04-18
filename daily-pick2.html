@@ -679,4 +679,269 @@ function isDollar(s) { return !!(s && s.includes('$')); }
 function pnlPct(price, avg) {
   const p = parseNum(price), a = parseNum(avg);
   if (!p || !a || a===0) return null;
-  return ((p
+  return ((p-a)/a)*100;
+}
+function pnlAmt(price, avg, qty) {
+  const p = parseNum(price), a = parseNum(avg), q = parseFloat(qty);
+  if (!p || !a || !q || isNaN(q)) return null;
+  return (p-a)*q;
+}
+function fmtMoney(val, dollar) {
+  if (val===null) return null;
+  const abs = Math.abs(val), sign = val>=0?'+':'-';
+  if (dollar) return sign+'$'+Math.round(abs).toLocaleString('en');
+  return sign+Math.round(abs).toLocaleString('ko-KR');
+}
+function scoreClass(s) { return s>=80?'score-hi':s>=60?'score-md':'score-lo'; }
+function escapeHtml(s) { return String(s||'').replace(/[<>&]/g, c=> ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]); }
+
+// 필터 및 페이지네이션
+function getFiltered() {
+  const dv = document.getElementById('filterDate').value;
+  const nv = document.getElementById('filterName').value.trim().toLowerCase();
+  return picks.filter(p => (!dv || p.date===dv) && (!nv || p.name.toLowerCase().includes(nv)));
+}
+
+function resetToFirstPageAndRender() {
+  currentPage = 1;
+  renderFeedWithPagination();
+}
+
+function renderFeedWithPagination() {
+  const filtered = getFiltered();
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pageItems = filtered.slice(startIdx, endIdx);
+  
+  document.getElementById('statChips').innerHTML = `총 <span>${picks.length}</span>건`;
+  
+  const feedDiv = document.getElementById('feedList');
+  if (picks.length === 0) {
+    feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 픽이 없습니다</p><p class="hint">새 픽 추가 버튼으로 시작하세요</p></div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
+    return;
+  }
+  if (filtered.length === 0) {
+    feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
+    return;
+  }
+  
+  // 날짜별 그룹화
+  const groups = {};
+  pageItems.forEach(p => { if(!groups[p.date]) groups[p.date]=[]; groups[p.date].push(p); });
+  
+  let html = '';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date => {
+    const dayItems = groups[date];
+    html += `<div class="date-group"><span class="date-label">${date}</span><div class="line"></div><span class="count-badge">${dayItems.length}건</span></div>`;
+    dayItems.forEach(p => {
+      const pct = pnlPct(p.price, p.avg);
+      const amt = pnlAmt(p.price, p.avg, p.qty);
+      const dol = isDollar(p.price || p.avg || '');
+      const pnlHtml = (pct!==null) ? 
+        `<span class="pnl-pct ${pct>=0?'pos':'neg'}">${pct>0?'▲':'▼'} ${pct>=0?'+':''}${pct.toFixed(2)}%</span>` : '<span>—</span>';
+      const scClass = scoreClass(p.score);
+      const hasNote = p.note && p.note.trim().length>0;
+
+      html += `
+        <div class="feed-item" id="item-${p.id}">
+          <div class="item-header">
+            <span class="item-name">${escapeHtml(p.name)}</span>
+            <span class="score-badge ${scClass}">${p.score}</span>
+            <span class="item-author">👤 ${formatEmail(p.userEmail)}</span>
+            <div class="item-actions">
+              <button class="btn-icon edit" title="수정" onclick="checkLoginAndOpenModal('${p.id}')">✏️</button>
+              <button class="btn-icon del" title="삭제" onclick="checkLoginAndDelete('${p.id}')">🗑️</button>
+            </div>
+          </div>
+          <div class="row1-grid">
+            <div class="info-cell"><span class="info-label">날짜</span><span class="info-value">${p.date}</span></div>
+            <div class="info-cell"><span class="info-label">현재가</span><span class="info-value">${fmtPrice(p.price)}</span></div>
+            <div class="info-cell"><span class="info-label">평단가</span><span class="info-value accent">${fmtPrice(p.avg)}</span></div>
+            <div class="info-cell"><span class="info-label">수량</span><span class="info-value">${p.qty ? p.qty+'주' : '—'}</span></div>
+            <div class="info-cell"><span class="info-label">5MA</span><span class="info-value">${fmtPrice(p.ma5)}</span></div>
+            <div class="info-cell"><span class="info-label">20MA</span><span class="info-value">${fmtPrice(p.ma20)}</span></div>
+            <div class="info-cell"><span class="info-label">60MA</span><span class="info-value">${fmtPrice(p.ma60)}</span></div>
+            <div class="info-cell"><span class="info-label">120MA</span><span class="info-value">${fmtPrice(p.ma120)}</span></div>
+          </div>
+          <div class="row2-grid">
+            <div class="info-cell"><span class="info-label">매수밴드</span><span class="info-value yellow">${p.band||'—'}</span></div>
+            <div class="info-cell"><span class="info-label">손절라인</span><span class="info-value red">${fmtPrice(p.stop)}</span></div>
+            <div class="info-cell"><span class="info-label">목표가</span><span class="info-value green">${fmtPrice(p.target)}</span></div>
+            <div class="info-cell"><span class="info-label">수익률</span>${pnlHtml}</div>
+          </div>
+          ${hasNote ? `<div class="note-area">📌 ${escapeHtml(p.note.length>50 ? p.note.substring(0,50)+'…' : p.note)}</div>` : '<div class="note-area note-placeholder">📝 비고 없음</div>'}
+        </div>
+      `;
+    });
+  });
+  feedDiv.innerHTML = html;
+  
+  // 페이지네이션 바 생성
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const container = document.getElementById('paginationContainer');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let pagesHTML = '';
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+  
+  if (startPage > 1) {
+    pagesHTML += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) pagesHTML += `<span class="page-ellipsis">...</span>`;
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pagesHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pagesHTML += `<span class="page-ellipsis">...</span>`;
+    pagesHTML += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+  }
+  
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  
+  container.innerHTML = pagesHTML;
+}
+
+function goToPage(page) {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderFeedWithPagination();
+}
+
+function truncCell(text, type) {
+  if(!text) return '—';
+  const limit = 20;
+  if(text.length<=limit) return `<span>${escapeHtml(text)}</span>`;
+  const preview = escapeHtml(text.substring(0,limit))+'…';
+  const full = text.replace(/"/g, '&quot;');
+  const label = type==='target'?'목표가':'비고';
+  return `<span class="trunc-wrap"><span class="trunc-text">${preview}</span><span class="trunc-btn" data-full="${full}" data-label="${label}" onclick="openGlobalPopover(event,this)">펼치기 ▾</span></span>`;
+}
+
+let _popBtn = null;
+function openGlobalPopover(e, btn) {
+  e.stopPropagation();
+  const pop = document.getElementById('globalPopover');
+  if(_popBtn===btn && pop.classList.contains('open')) { pop.classList.remove('open'); _popBtn=null; return; }
+  _popBtn=btn;
+  document.getElementById('popoverLabel').textContent = btn.dataset.label;
+  document.getElementById('popoverContent').textContent = btn.dataset.full;
+  pop.classList.add('open');
+  const rect = btn.getBoundingClientRect();
+  let left = rect.left, top = rect.bottom+6;
+  if(left+pop.offsetWidth > window.innerWidth-12) left = rect.right - pop.offsetWidth;
+  if(top+pop.offsetHeight > window.innerHeight-12) top = rect.top - pop.offsetHeight -6;
+  pop.style.left = left+'px'; pop.style.top = top+'px';
+}
+document.addEventListener('click', (e) => { if(!e.target.closest('.trunc-btn')) { document.getElementById('globalPopover').classList.remove('open'); _popBtn=null; } });
+
+// 모달 함수
+function openModal(id) {
+  editId = id || null;
+  document.getElementById('modalTitle').textContent = editId ? '픽 수정' : '새 픽 추가';
+  if(!editId) {
+    ['fName','fPrice','fAvg','fQty','fMa5','fMa20','fMa60','fMa120','fBand','fStop','fTarget','fNote'].forEach(i=>{ let el=document.getElementById(i); if(el) el.value=''; });
+    document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fScore').value = 75;
+    updateScoreDisplay();
+    updatePnlStrip();
+  } else {
+    const p = picks.find(x=>x.id===editId);
+    if(p && (!currentUser || currentUser.uid === p.userId)) {
+      document.getElementById('fDate').value = p.date||'';
+      document.getElementById('fName').value = p.name||'';
+      document.getElementById('fPrice').value = p.price||'';
+      document.getElementById('fAvg').value = p.avg||'';
+      document.getElementById('fQty').value = p.qty||'';
+      document.getElementById('fMa5').value = p.ma5||'';
+      document.getElementById('fMa20').value = p.ma20||'';
+      document.getElementById('fMa60').value = p.ma60||'';
+      document.getElementById('fMa120').value = p.ma120||'';
+      document.getElementById('fBand').value = p.band||'';
+      document.getElementById('fStop').value = p.stop||'';
+      document.getElementById('fTarget').value = p.target||'';
+      document.getElementById('fScore').value = p.score??75;
+      document.getElementById('fNote').value = p.note||'';
+      updateScoreDisplay();
+      updatePnlStrip();
+    }
+  }
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+}
+
+function updateScoreDisplay() {
+  const v = parseInt(document.getElementById('fScore').value);
+  const el = document.getElementById('scoreDisplay');
+  el.textContent = v;
+  el.style.color = v>=80 ? 'var(--green)' : v>=60 ? 'var(--yellow)' : 'var(--red)';
+}
+
+function updatePnlStrip() {
+  const price = document.getElementById('fPrice').value;
+  const avg = document.getElementById('fAvg').value;
+  const qty = document.getElementById('fQty').value;
+  const pct = pnlPct(price, avg);
+  const strip = document.getElementById('pnlStrip');
+  const valEl = document.getElementById('pnlStripVal');
+  if(pct === null) { strip.classList.remove('visible'); return; }
+  strip.classList.add('visible');
+  const amt = pnlAmt(price, avg, qty);
+  const dol = isDollar(price || avg || '');
+  const arrow = pct>0?'▲':'▼';
+  const sign = pct>=0?'+':'';
+  const color = pct>=0?'var(--green)':'var(--red)';
+  let html = `<span style="color:${color};font-weight:700;">${arrow} ${sign}${pct.toFixed(2)}%</span>`;
+  if(amt !== null) html += `<span style="color:${color};opacity:.85;margin-left:10px;">${fmtMoney(amt, dol)}</span>`;
+  valEl.innerHTML = html;
+}
+
+let toastTimer;
+function toast(msg, dur) {
+  dur = dur || 3000;
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// 인증 상태 감시
+firebase.auth().onAuthStateChanged(user => {
+  updateUIForUser(user);
+});
+
+// 초기화
+document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+initSync();
+</script>
+</body>
+</html>
