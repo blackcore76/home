@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="데일리 피드">
+<title>데일리 피드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+  });
+</script>
+<script src="auth.js"></script>
+<script src="home-bar.js"></script>
+<style>
+:root {
+  --bg:      #080c14;
+  --sf:      #0e1422;
+  --sf2:     #131b2d;
+  --sf3:     #181f30;
+  --bd:      #1e2d45;
+  --bd2:     #263548;
+  --text:    #c8d6e8;
+  --text2:   #7a91a8;
+  --text3:   #4a5f74;
+  --accent:  #00d4ff;
+  --accent2: #0099cc;
+  --green:   #00e676;
+  --red:     #ff5252;
+  --yellow:  #ffca28;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Noto Sans KR', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+header {
+  position: sticky; top: 36px; z-index: 50;
+  background: rgba(8,12,20,.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--bd);
+  padding: 0 16px;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
+.sync-badge { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--text3); background: var(--sf); border: 1px solid var(--bd); border-radius: 20px; padding: 3px 10px; }
+.sdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.sdot.live { background: var(--green); box-shadow: 0 0 5px var(--green); animation: bl 3s infinite; }
+.sdot.load { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); animation: bl .6s infinite; }
+.sdot.err  { background: var(--red); }
+@keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
+.user-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text2); background: var(--sf2);
+  border: 1px solid var(--bd); border-radius: 20px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.user-badge .user-email { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-badge:hover { border-color: var(--accent); color: var(--accent); }
+
+.input-wrap {
+  padding: 16px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--bd);
+}
+.input-box {
+  background: var(--sf2);
+  border: 1px solid var(--bd2);
+  border-radius: 12px;
+  padding: 14px;
+  transition: border-color .2s;
+}
+.input-box:focus-within { border-color: var(--accent); }
+.input-date-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.date-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; }
+.date-input {
+  background: var(--sf3); border: 1px solid var(--bd2); color: var(--text);
+  border-radius: 6px; padding: 5px 10px; font-family: var(--mono); font-size: 12px;
+  outline: none; cursor: pointer;
+  color-scheme: dark;
+}
+.date-input:focus { border-color: var(--accent); }
+.mood-row {
+  display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.mood-btn {
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 20px;
+  padding: 4px 11px; font-size: 12px; cursor: pointer; color: var(--text2);
+  transition: all .15s; font-family: var(--sans);
+}
+.mood-btn:hover { border-color: var(--bd2); color: var(--text); }
+.mood-btn.on { border-color: var(--accent); background: rgba(0,212,255,.1); color: var(--accent); }
+textarea {
+  width: 100%; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--sans); font-size: 14px;
+  line-height: 1.7; resize: none; min-height: 80px;
+}
+textarea::placeholder { color: var(--text3); }
+.input-footer {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
+}
+.char-count { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.btn-submit {
+  background: var(--accent); color: #000; border: none; border-radius: 8px;
+  padding: 8px 20px; font-family: var(--sans); font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+}
+.btn-submit:hover { background: #33ddff; }
+.btn-submit:disabled { opacity: .4; pointer-events: none; }
+
+.filter-bar {
+  padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  border-bottom: 1px solid var(--bd);
+}
+.filter-input {
+  background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--sans);
+  outline: none; transition: border-color .15s; width: 150px;
+  color-scheme: dark;
+}
+.filter-input:focus { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--text3); }
+.count-chip {
+  margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3);
+  background: var(--sf2); border: 1px solid var(--bd); border-radius: 20px;
+  padding: 3px 10px;
+}
+.count-chip span { color: var(--accent); font-weight: 600; }
+
+.feed { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.feed-item {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s, background .2s;
+  animation: fadeIn .3s ease both;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.feed-item::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  border-radius: 3px 0 0 3px;
+}
+.feed-item:hover { border-color: var(--bd2); background: var(--sf2); }
+
+.feed-item-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.feed-date {
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
+  padding: 2px 8px;
+}
+.feed-mood { font-size: 14px; }
+.feed-author {
+  font-family: var(--mono); font-size: 9px; color: var(--text3);
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
+  padding: 2px 6px;
+}
+.feed-time {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  margin-left: auto;
+}
+.feed-actions { display: flex; gap: 5px; }
+.btn-icon {
+  background: transparent; border: 1px solid var(--bd); color: var(--text3);
+  border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: all .15s; flex-shrink: 0;
+}
+.btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+.btn-icon.del:hover  { border-color: var(--red); color: var(--red); background: rgba(255,82,82,.08); }
+
+.feed-content {
+  font-size: 14px; line-height: 1.8; color: var(--text);
+  white-space: pre-wrap; word-break: break-word;
+}
+.feed-content.editing { display: none; }
+
+.edit-area { display: none; }
+.edit-area.active { display: block; }
+.edit-textarea {
+  width: 100%; background: var(--sf3); border: 1px solid var(--accent);
+  color: var(--text); border-radius: 8px; padding: 10px 12px;
+  font-family: var(--sans); font-size: 14px; line-height: 1.7;
+  resize: none; outline: none; min-height: 80px;
+}
+.edit-footer { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+.btn-edit-cancel {
+  background: transparent; border: 1px solid var(--bd2); color: var(--text2);
+  border-radius: 6px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+  font-family: var(--sans);
+}
+.btn-edit-cancel:hover { color: var(--text); border-color: var(--text2); }
+.btn-edit-save {
+  background: var(--accent); border: none; color: #000;
+  border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: var(--sans);
+}
+
+/* 페이지네이션 스타일 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 16px 40px;
+  flex-wrap: wrap;
+}
+.page-btn {
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 36px;
+  text-align: center;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,.05);
+}
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.page-ellipsis {
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+.empty {
+  text-align: center; padding: 80px 20px; color: var(--text3);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.empty-icon { font-size: 48px; opacity: .4; }
+.empty p { font-size: 14px; }
+.empty .hint { font-size: 12px; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
+  border-radius: 10px; padding: 10px 18px; font-size: 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5); z-index: 9999;
+  opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.login-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.login-overlay.open { opacity: 1; pointer-events: all; }
+.login-modal {
+  background: var(--sf);
+  border: 1px solid var(--bd2);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  transform: scale(.9);
+  transition: transform .2s;
+}
+.login-overlay.open .login-modal { transform: scale(1); }
+.login-modal .icon { font-size: 48px; margin-bottom: 16px; }
+.login-modal h3 { font-family: var(--mono); font-size: 16px; margin-bottom: 8px; }
+.login-modal p { font-size: 12px; color: var(--text3); margin-bottom: 24px; }
+.login-modal .btn-login {
+  background: var(--accent); color: #000; border: none;
+  border-radius: 10px; padding: 12px 24px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  width: 100%;
+}
+.login-modal .btn-login:hover { background: #33ddff; }
+.login-modal .btn-cancel {
+  background: transparent; border: 1px solid var(--bd2);
+  color: var(--text2); border-radius: 10px;
+  padding: 10px 20px; font-size: 13px;
+  cursor: pointer; margin-top: 12px;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>데일리 피드</div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <div class="sync-badge">
+      <div class="sdot load" id="sdot"></div>
+      <span id="stxt">연결 중...</span>
+    </div>
+    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
+      <span>👤</span>
+      <span class="user-email" id="userEmail">로그인</span>
+    </div>
+  </div>
+</header>
+
+<div class="input-wrap">
+  <div class="input-box">
+    <div class="input-date-row">
+      <span class="date-label">날짜</span>
+      <input class="date-input" type="date" id="inDate">
+    </div>
+    <div class="mood-row" id="moodRow">
+      <button class="mood-btn" data-mood="💭">💭 생각</button>
+      <button class="mood-btn" data-mood="📈">📈 시장</button>
+      <button class="mood-btn" data-mood="💡">💡 아이디어</button>
+      <button class="mood-btn" data-mood="😤">😤 답답</button>
+      <button class="mood-btn" data-mood="😊">😊 좋음</button>
+      <button class="mood-btn" data-mood="📝">📝 메모</button>
+    </div>
+    <textarea id="inText" placeholder="오늘의 생각을 기록하세요..." rows="4" oninput="updateChar()"></textarea>
+    <div class="input-footer">
+      <span class="char-count" id="charCount">0 / 3000</span>
+      <button class="btn-submit" id="btnSubmit" onclick="checkLoginAndSubmit()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        게시
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <input class="filter-input" type="date" id="filterDate" oninput="resetToFirstPageAndRender()" placeholder="날짜 필터">
+  <input class="filter-input" type="text" id="filterText" oninput="resetToFirstPageAndRender()" placeholder="내용 검색...">
+  <div class="count-chip" id="countChip">총 <span>0</span>건</div>
+</div>
+
+<div class="feed" id="feedList"></div>
+
+<!-- 페이지네이션 컨테이너 -->
+<div id="paginationContainer" class="pagination"></div>
+
+<div class="toast" id="toast"></div>
+
+<div class="login-overlay" id="loginModal" onclick="if(event.target===this) closeLoginModal()">
+  <div class="login-modal">
+    <div class="icon">🔐</div>
+    <h3>로그인이 필요합니다</h3>
+    <p>글을 작성하거나 수정/삭제하려면<br>Google 계정으로 로그인해주세요</p>
+    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
+    <button class="btn-cancel" onclick="closeLoginModal()">취소</button>
+  </div>
+</div>
+
+<script>
+const db  = firebase.firestore();
+const COL = 'dailyfeed';
+
+let feeds   = [];
+let selMood = '';
+let currentUser = null;
+let pendingAction = null;
+let pendingData = null;
+
+// 페이지네이션 변수
+let currentPage = 1;
+const itemsPerPage = 10;
+
+document.getElementById('inDate').value = todayStr();
+
+document.querySelectorAll('.mood-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const m = btn.dataset.mood;
+    if (selMood === m) {
+      selMood = '';
+      btn.classList.remove('on');
+    } else {
+      selMood = m;
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    }
+  });
+});
+
+function updateChar() {
+  const len = document.getElementById('inText').value.length;
+  document.getElementById('charCount').textContent = len + ' / 3000';
+  document.getElementById('btnSubmit').disabled = len === 0;
+}
+updateChar();
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+function fmtDate(str) {
+  if (!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  const days = ['일','월','화','수','목','금','토'];
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
+}
+function fmtTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+function formatEmail(email) {
+  if (!email) return '익명';
+  return email.split('@')[0];
+}
+
+function setSS(state) {
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  const map = { live:'● 실시간', load:'연결 중...', err:'오프라인' };
+  dot.className = 'sdot ' + state;
+  txt.textContent = map[state] || '—';
+}
+
+function initSync() {
+  setSS('load');
+  db.collection(COL)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(snap => {
+      feeds = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSS('live');
+      resetToFirstPageAndRender();  // 새 데이터가 오면 1페이지로 리셋
+    }, err => {
+      console.error(err);
+      setSS('err');
+      toast('⚠️ Firebase 연결 실패: ' + err.message);
+    });
+}
+
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('open');
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+  pendingAction = null;
+  pendingData = null;
+}
+
+async function triggerLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await firebase.auth().signInWithPopup(provider);
+    closeLoginModal();
+    if (pendingAction) {
+      if (pendingAction === 'submit') {
+        await submitFeed();
+      } else if (pendingAction === 'edit' && pendingData) {
+        await saveEdit(pendingData.id);
+      } else if (pendingAction === 'delete' && pendingData) {
+        await deleteFeed(pendingData.id);
+      }
+      pendingAction = null;
+      pendingData = null;
+    }
+  } catch(e) {
+    toast('❌ 로그인 실패: ' + e.message);
+  }
+}
+
+function updateUIForUser(user) {
+  currentUser = user;
+  const userEmailSpan = document.getElementById('userEmail');
+  if (user) {
+    userEmailSpan.textContent = formatEmail(user.email);
+    toast(`✅ ${user.email} 님 환영합니다!`);
+  } else {
+    userEmailSpan.textContent = '로그인';
+  }
+}
+
+function checkLoginAndSubmit() {
+  if (!currentUser) {
+    pendingAction = 'submit';
+    showLoginModal();
+    return;
+  }
+  submitFeed();
+}
+
+function checkLoginAndEdit(id) {
+  if (!currentUser) {
+    pendingAction = 'edit';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  startEdit(id);
+}
+
+function checkLoginAndDelete(id) {
+  if (!currentUser) {
+    pendingAction = 'delete';
+    pendingData = { id };
+    showLoginModal();
+    return;
+  }
+  deleteFeed(id);
+}
+
+async function submitFeed() {
+  if (!currentUser) return;
+
+  const text = document.getElementById('inText').value.trim();
+  const date = document.getElementById('inDate').value;
+  if (!text) return;
+  if (!date) { toast('날짜를 선택해주세요'); return; }
+
+  document.getElementById('btnSubmit').disabled = true;
+  try {
+    await db.collection(COL).add({
+      date,
+      mood:      selMood || '',
+      text,
+      userId:    currentUser.uid,
+      userEmail: currentUser.email,
+      createdAt: new Date().toISOString(),
+    });
+    document.getElementById('inText').value = '';
+    selMood = '';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('on'));
+    updateChar();
+    toast('✅ 게시 완료!');
+  } catch(e) {
+    toast('❌ 저장 실패: ' + e.message);
+  } finally {
+    document.getElementById('btnSubmit').disabled = false;
+  }
+}
+
+async function deleteFeed(id) {
+  if (!currentUser) return;
+
+  const feed = feeds.find(f => f.id === id);
+  if (!feed) return;
+  if (feed.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 글만 삭제할 수 있습니다!');
+    return;
+  }
+
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  try {
+    await db.collection(COL).doc(id).delete();
+    toast('🗑️ 삭제되었습니다');
+  } catch(e) {
+    toast('❌ 삭제 실패');
+  }
+}
+
+function startEdit(id) {
+  if (!currentUser) return;
+
+  const feed = feeds.find(f => f.id === id);
+  if (!feed) return;
+  if (feed.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 글만 수정할 수 있습니다!');
+    return;
+  }
+
+  const item = document.getElementById('item-' + id);
+  if (!item) return;
+  item.querySelector('.feed-content').classList.add('editing');
+  const ea = item.querySelector('.edit-area');
+  ea.classList.add('active');
+  ea.querySelector('textarea').focus();
+}
+
+function cancelEdit(id) {
+  const item = document.getElementById('item-' + id);
+  if (!item) return;
+  item.querySelector('.feed-content').classList.remove('editing');
+  item.querySelector('.edit-area').classList.remove('active');
+}
+
+async function saveEdit(id) {
+  if (!currentUser) return;
+
+  const feed = feeds.find(f => f.id === id);
+  if (!feed) return;
+  if (feed.userId !== currentUser.uid) {
+    toast('⚠️ 본인이 작성한 글만 수정할 수 있습니다!');
+    return;
+  }
+
+  const item = document.getElementById('item-' + id);
+  if (!item) return;
+  const newText = item.querySelector('.edit-area textarea').value.trim();
+  if (!newText) { toast('내용을 입력해주세요'); return; }
+  try {
+    await db.collection(COL).doc(id).update({
+      text: newText,
+      updatedAt: new Date().toISOString(),
+    });
+    toast('✅ 수정되었습니다');
+  } catch(e) {
+    toast('❌ 수정 실패');
+  }
+}
+
+function getFiltered() {
+  const fd = document.getElementById('filterDate').value;
+  const ft = document.getElementById('filterText').value.trim().toLowerCase();
+  return feeds.filter(f =>
+    (!fd || f.date === fd) &&
+    (!ft || f.text.toLowerCase().includes(ft))
+  );
+}
+
+// 필터 변경 시 1페이지로 리셋하고 렌더링
+function resetToFirstPageAndRender() {
+  currentPage = 1;
+  renderFeedWithPagination();
+}
+
+// 페이지네이션 + 렌더링 메인 함수
+function renderFeedWithPagination() {
+  const filtered = getFiltered();
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  // 현재 페이지가 유효 범위를 벗어나면 조정
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pageItems = filtered.slice(startIdx, endIdx);
+  
+  // 총 개수 표시 (필터링된 전체 개수)
+  document.getElementById('countChip').innerHTML = `총 <span>${totalItems}</span>건`;
+  
+  if (totalItems === 0) {
+    document.getElementById('feedList').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🗒️</div>
+        <p>아직 기록이 없습니다</p>
+        <p class="hint">첫 번째 생각을 남겨보세요</p>
+      </div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
+    return;
+  }
+  
+  // 날짜별로 그룹화하여 HTML 생성
+  const groups = {};
+  pageItems.forEach(f => {
+    if (!groups[f.date]) groups[f.date] = [];
+    groups[f.date].push(f);
+  });
+  
+  const feedHTML = Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map(date => {
+      const dayFeeds = groups[date];
+      const items = dayFeeds.map(f => `
+        <div class="feed-item" id="item-${f.id}">
+          <div class="feed-item-header">
+            ${f.mood ? `<span class="feed-mood">${f.mood}</span>` : ''}
+            <span class="feed-author">👤 ${formatEmail(f.userEmail || '익명')}</span>
+            <span class="feed-time">${fmtTime(f.createdAt)}${f.updatedAt ? ' · 수정됨' : ''}</span>
+            <div class="feed-actions">
+              <button class="btn-icon edit" title="수정" onclick="checkLoginAndEdit('${f.id}')">✏️</button>
+              <button class="btn-icon del" title="삭제" onclick="checkLoginAndDelete('${f.id}')">🗑️</button>
+            </div>
+          </div>
+          <div class="feed-content">${escHtml(f.text)}</div>
+          <div class="edit-area">
+            <textarea class="edit-textarea" rows="4">${escHtml(f.text)}</textarea>
+            <div class="edit-footer">
+              <button class="btn-edit-cancel" onclick="cancelEdit('${f.id}')">취소</button>
+              <button class="btn-edit-save" onclick="saveEdit('${f.id}')">저장</button>
+            </div>
+          </div>
+        </div>`).join('');
+      
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0 2px;">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;">${fmtDate(date)}</span>
+          <div style="flex:1;height:1px;background:rgba(0,212,255,.1);"></div>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">${dayFeeds.length}건</span>
+        </div>
+        ${items}`;
+    }).join('');
+  
+  document.getElementById('feedList').innerHTML = feedHTML;
+  
+  // 페이지네이션 바 생성
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const container = document.getElementById('paginationContainer');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let pagesHTML = '';
+  
+  // 이전 버튼
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  
+  // 페이지 번호 표시 (최대 5개 정도, 중간에 ...)
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+  
+  if (startPage > 1) {
+    pagesHTML += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) pagesHTML += `<span class="page-ellipsis">...</span>`;
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pagesHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pagesHTML += `<span class="page-ellipsis">...</span>`;
+    pagesHTML += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+  }
+  
+  // 다음 버튼
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  
+  container.innerHTML = pagesHTML;
+}
+
+function goToPage(page) {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderFeedWithPagination();
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/[<>&"]/g, c =>
+    ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' })[c]);
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+document.getElementById('inText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    checkLoginAndSubmit();
+  }
+});
+
+firebase.auth().onAuthStateChanged(user => {
+  updateUIForUser(user);
+});
+
+initSync();
+</script>
+</body>
+</html>
