@@ -351,6 +351,50 @@ header {
 .s-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-bottom: 3px; }
 .s-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
 
+/* 페이지네이션 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 16px 40px;
+  flex-wrap: wrap;
+}
+.page-btn {
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 36px;
+  text-align: center;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,.05);
+}
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.page-ellipsis {
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
 /* FAB 버튼 */
 .fab {
   position: fixed;
@@ -726,6 +770,9 @@ header {
   </div>
 
   <div id="list"></div>
+  
+  <!-- 페이지네이션 -->
+  <div id="paginationContainer" class="pagination"></div>
 </div>
 
 <button class="fab" id="fabBtn" onclick="checkLoginAndOpenAdd()">＋</button>
@@ -811,6 +858,10 @@ let currentUser = null;
 let pendingAction = null;
 let pendingData = null;
 
+// 페이지네이션 변수
+let currentPage = 1;
+const itemsPerPage = 10;
+
 // 동기화 배지
 function setSyncStatus(state) {
   const dot = document.getElementById('syncDot');
@@ -829,13 +880,13 @@ function initSync() {
     H = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     try{ localStorage.setItem('sl-h', JSON.stringify(H)); }catch(e){}
     setSyncStatus('live');
-    renderAll();
+    resetToFirstPageAndRender();
     if(fx) showFX(fx, fxT);
   }, err => {
     console.error('[Firestore]', err);
     setSyncStatus('offline');
     try{ H = JSON.parse(localStorage.getItem('sl-h')||'[]'); }catch(e){ H=[]; }
-    renderAll();
+    resetToFirstPageAndRender();
   });
 }
 
@@ -989,8 +1040,8 @@ function updateSummary() {
   document.getElementById('total-sub').innerHTML = (up?'▲ 수익 ':'▼ 손실 ')+Math.abs(pct).toFixed(2)+'% · 매수금액 '+fKRW(tB);
 }
 
-// 리스트 렌더링
-function renderList() {
+// 필터 및 페이지네이션
+function getFiltered() {
   let list = H.filter(h => tab==='all' || h.market===tab);
   list = list.slice().sort((a,b) => {
     if(sortM==='name') return a.name.localeCompare(b.name,'ko');
@@ -999,13 +1050,37 @@ function renderList() {
     const pa = calcPnl(a), pb = calcPnl(b);
     return (pb?pb.pct:-9999) - (pa?pa.pct:-9999);
   });
-  document.getElementById('list-count').textContent = '종목 '+list.length+'개';
+  return list;
+}
+
+function resetToFirstPageAndRender() {
+  currentPage = 1;
+  renderListWithPagination();
+}
+
+function renderListWithPagination() {
+  const filtered = getFiltered();
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pageItems = filtered.slice(startIdx, endIdx);
+  
+  document.getElementById('list-count').textContent = '종목 '+filtered.length+'개';
+  
   const el = document.getElementById('list');
-  if(!list.length) {
+  if(!filtered.length) {
     el.innerHTML = '<div class="empty"><div class="empty-ico">📊</div><div class="empty-t">보유 종목이 없습니다</div><div class="empty-d">아래 ＋ 버튼으로 첫 번째 종목을 추가해보세요</div></div>';
+    document.getElementById('paginationContainer').innerHTML = '';
+    updateSummary();
     return;
   }
-  el.innerHTML = list.map((h,i) => {
+  
+  el.innerHTML = pageItems.map((h,i) => {
     const p = calcPnl(h), cls = p ? (p.d>=0?'pos':'neg') : '', sgn = p ? (p.d>=0?'+':'') : '';
     const bw = p ? Math.min(Math.abs(p.pct),50)*2 : 0, bc = p ? (p.d>=0?'var(--green)':'var(--red)') : 'var(--bd2)';
     const bl = esc((h.brokers||[h.broker]).join(' · '));
@@ -1033,12 +1108,68 @@ function renderList() {
       </div>
     </div>`;
   }).join('');
+  
+  updateSummary();
+  renderPagination(totalPages);
 }
-function renderAll() { updateSummary(); renderList(); }
 
-// 탭/정렬
-function setTab(t, el) { tab=t; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); el.classList.add('on'); renderList(); }
-function cycleSort() { const m=['pnl','value','name','broker'], l={pnl:'수익률순',value:'평가액순',name:'이름순',broker:'증권사순'}; sortM=m[(m.indexOf(sortM)+1)%m.length]; document.getElementById('sort-lbl').textContent=l[sortM]; renderList(); }
+function renderPagination(totalPages) {
+  const container = document.getElementById('paginationContainer');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let pagesHTML = '';
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+  
+  if (startPage > 1) {
+    pagesHTML += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) pagesHTML += `<span class="page-ellipsis">...</span>`;
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pagesHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pagesHTML += `<span class="page-ellipsis">...</span>`;
+    pagesHTML += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+  }
+  
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  
+  container.innerHTML = pagesHTML;
+}
+
+function goToPage(page) {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderListWithPagination();
+}
+
+function setTab(t, el) { 
+  tab=t; 
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); 
+  el.classList.add('on'); 
+  resetToFirstPageAndRender(); 
+}
+
+function cycleSort() { 
+  const m=['pnl','value','name','broker'], l={pnl:'수익률순',value:'평가액순',name:'이름순',broker:'증권사순'}; 
+  sortM=m[(m.indexOf(sortM)+1)%m.length]; 
+  document.getElementById('sort-lbl').textContent=l[sortM]; 
+  resetToFirstPageAndRender(); 
+}
 
 // 모달 관련
 function openOv(id) { 
@@ -1153,7 +1284,7 @@ function doSave() {
     }
   }
   persist();
-  renderAll();
+  resetToFirstPageAndRender();
   closeOv('ov-add');
 }
 
@@ -1220,7 +1351,7 @@ function doDelete(id) {
   cfmShow('🗑️', '['+esc(h.ticker)+'] '+esc(h.name)+'\n을(를) 삭제하시겠습니까?', '삭제', 'btn-red', () => {
     H = H.filter(x => x.id !== id);
     persistDelete(id);
-    renderAll();
+    resetToFirstPageAndRender();
     closeOv('ov-det');
     toast('🗑️ 삭제되었습니다');
   });
@@ -1234,7 +1365,7 @@ function applyManual(id) {
   H[idx].curPrice = v;
   H[idx].lastUpd = new Date().toISOString();
   persist();
-  renderAll();
+  resetToFirstPageAndRender();
   buildDet(id);
   toast('✅ 현재가 업데이트 완료');
 }
@@ -1259,7 +1390,7 @@ function applyAdj(id) {
     cfmShow('📤', h.ticker+' 전량 정리하시겠습니까?\n(종목이 삭제됩니다)', '삭제', 'btn-red', () => {
       H.splice(idx,1);
       persistDelete(id);
-      renderAll();
+      resetToFirstPageAndRender();
       closeOv('ov-det');
       toast('🗑️ '+h.ticker+' 전량 정리 완료');
     });
@@ -1269,7 +1400,7 @@ function applyAdj(id) {
   H[idx].buyPrice = h.market==='US' ? parseFloat(newPrice.toFixed(4)) : Math.round(newPrice);
   if(h.market==='US') H[idx].buyFX = parseFloat(newFX.toFixed(2));
   persist();
-  renderAll();
+  resetToFirstPageAndRender();
   buildDet(id);
   toast('✅ '+h.ticker+' 조정 완료');
 }
@@ -1348,7 +1479,7 @@ async function doFetchPrice(id) {
     H[idx].lastUpd = new Date().toISOString();
     if(h.exchange) H[idx].exchange = h.exchange;
     persist();
-    renderAll();
+    resetToFirstPageAndRender();
     buildDet(id);
     toast('✅ '+h.ticker+' : '+fP(h, price));
   } else {
@@ -1378,7 +1509,7 @@ async function refreshAll() {
     } else { fails.push(h.ticker); }
   }
   persist();
-  renderAll();
+  resetToFirstPageAndRender();
   icon.textContent = '↻';
   btn.disabled = false;
   if(fails.length) { toast('✅ '+ok+'개 완료 · ⚠️ 실패: '+fails.join(', '), 5000); }
@@ -1405,7 +1536,7 @@ function saveFX(rate, src) {
   localStorage.setItem('sl-fx', rate);
   localStorage.setItem('sl-fxt', fxT);
   showFX(rate, fxT);
-  renderAll();
+  resetToFirstPageAndRender();
   document.getElementById('fx-btn').classList.remove('busy');
   document.getElementById('fx-icon').textContent = '↺';
   toast('✅ USD/KRW '+rate.toLocaleString('ko-KR',{maximumFractionDigits:2})+'원');
