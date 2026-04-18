@@ -231,7 +231,51 @@ header {
 .empty-state { text-align: center; padding: 80px 20px; color: var(--text3); }
 .empty-icon { font-size: 48px; opacity: .4; margin-bottom: 12px; }
 
-/* 모달 (화면 중앙 고정) */
+/* 페이지네이션 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 16px 40px;
+  flex-wrap: wrap;
+}
+.page-btn {
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 36px;
+  text-align: center;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,.05);
+}
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.page-ellipsis {
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+/* 모달 */
 .overlay {
   position: fixed;
   inset: 0;
@@ -391,12 +435,15 @@ input:focus, textarea:focus { border-color: var(--accent); }
 </header>
 
 <div class="filter-bar">
-  <input class="filter-input" type="date" id="filterDate" oninput="renderFeed()">
-  <input class="filter-input" type="text" id="filterName" oninput="renderFeed()" placeholder="종목 검색...">
+  <input class="filter-input" type="date" id="filterDate" oninput="resetToFirstPageAndRender()">
+  <input class="filter-input" type="text" id="filterName" oninput="resetToFirstPageAndRender()" placeholder="종목 검색...">
   <div class="count-chip" id="statChips">총 <span>0</span>건</div>
 </div>
 
 <div class="feed" id="feedList"></div>
+
+<!-- 페이지네이션 -->
+<div id="paginationContainer" class="pagination"></div>
 
 <!-- Add/Edit Modal -->
 <div class="overlay" id="overlay" onclick="if(event.target===this) closeModal()">
@@ -452,6 +499,10 @@ input:focus, textarea:focus { border-color: var(--accent); }
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="globalPopover">
+  <div style="font-size:10px;opacity:.5;margin-bottom:4px;font-family:var(--mono)" id="popoverLabel"></div>
+  <div id="popoverContent"></div>
+</div>
 
 <script>
 const db = firebase.firestore();
@@ -462,6 +513,10 @@ let editId = null;
 let currentUser = null;
 let pendingAction = null;
 let pendingData = null;
+
+// 페이지네이션 변수
+let currentPage = 1;
+const itemsPerPage = 10;
 
 // 동기화 배지
 function setSyncStatus(state) {
@@ -479,11 +534,11 @@ function initSync() {
   db.collection(COL).orderBy('date', 'desc').onSnapshot(snap => {
     picks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setSyncStatus('live');
-    renderFeed();
+    resetToFirstPageAndRender();
   }, err => {
     console.error(err);
     setSyncStatus('offline');
-    renderFeed();
+    resetToFirstPageAndRender();
   });
 }
 
@@ -518,7 +573,6 @@ function updateUIForUser(user) {
     userEmailSpan.textContent = formatEmail(user.email);
     toast(`✅ ${user.email} 님 환영합니다!`);
     
-    // 로그인 후 대기 중인 작업 실행
     if (pendingAction) {
       setTimeout(() => {
         if (pendingAction === 'add') {
@@ -610,15 +664,9 @@ function fmtPrice(str) {
   if (str.includes('$')) return str;
   let n = parseFloat(str.replace(/[$,원]/g,''));
   if (isNaN(n)) return str;
-
-// 소수점이 있는 숫자면 (예: 359.76)
-if (str.includes('.') && n % 1 !== 0) {
-  return n.toLocaleString('ko-KR', { 
-    minimumFractionDigits: 2,  // 최소 2자리
-    maximumFractionDigits: 2   // 최대 2자리
-  });
-}
-  
+  if (str.includes('.') && n % 1 !== 0) {
+    return n.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   return Math.round(n).toLocaleString('ko-KR');
 }
 function parseNum(str) {
@@ -647,58 +695,48 @@ function fmtMoney(val, dollar) {
 function scoreClass(s) { return s>=80?'score-hi':s>=60?'score-md':'score-lo'; }
 function escapeHtml(s) { return String(s||'').replace(/[<>&]/g, c=> ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]); }
 
-// 렌더링
+// 필터 및 페이지네이션
 function getFiltered() {
   const dv = document.getElementById('filterDate').value;
   const nv = document.getElementById('filterName').value.trim().toLowerCase();
   return picks.filter(p => (!dv || p.date===dv) && (!nv || p.name.toLowerCase().includes(nv)));
 }
 
-function truncCell(text, type) {
-  if(!text) return '—';
-  const limit = 20;
-  if(text.length<=limit) return `<span>${escapeHtml(text)}</span>`;
-  const preview = escapeHtml(text.substring(0,limit))+'…';
-  const full = text.replace(/"/g, '&quot;');
-  const label = type==='target'?'목표가':'비고';
-  return `<span class="trunc-wrap"><span class="trunc-text">${preview}</span><span class="trunc-btn" data-full="${full}" data-label="${label}" onclick="openGlobalPopover(event,this)">펼치기 ▾</span></span>`;
+function resetToFirstPageAndRender() {
+  currentPage = 1;
+  renderFeedWithPagination();
 }
 
-let _popBtn = null;
-function openGlobalPopover(e, btn) {
-  e.stopPropagation();
-  const pop = document.getElementById('globalPopover');
-  if(_popBtn===btn && pop.classList.contains('open')) { pop.classList.remove('open'); _popBtn=null; return; }
-  _popBtn=btn;
-  document.getElementById('popoverLabel').textContent = btn.dataset.label;
-  document.getElementById('popoverContent').textContent = btn.dataset.full;
-  pop.classList.add('open');
-  const rect = btn.getBoundingClientRect();
-  let left = rect.left, top = rect.bottom+6;
-  if(left+pop.offsetWidth > window.innerWidth-12) left = rect.right - pop.offsetWidth;
-  if(top+pop.offsetHeight > window.innerHeight-12) top = rect.top - pop.offsetHeight -6;
-  pop.style.left = left+'px'; pop.style.top = top+'px';
-}
-document.addEventListener('click', (e) => { if(!e.target.closest('.trunc-btn')) { document.getElementById('globalPopover').classList.remove('open'); _popBtn=null; } });
-
-function renderFeed() {
-  const list = getFiltered();
-  const totalChip = document.getElementById('statChips');
-  totalChip.innerHTML = `총 <span>${picks.length}</span>건`;
-
+function renderFeedWithPagination() {
+  const filtered = getFiltered();
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pageItems = filtered.slice(startIdx, endIdx);
+  
+  document.getElementById('statChips').innerHTML = `총 <span>${picks.length}</span>건`;
+  
   const feedDiv = document.getElementById('feedList');
-  if (picks.length===0) {
+  if (picks.length === 0) {
     feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 픽이 없습니다</p><p class="hint">새 픽 추가 버튼으로 시작하세요</p></div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
     return;
   }
-  if (list.length===0) {
+  if (filtered.length === 0) {
     feedDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
     return;
   }
-
+  
+  // 날짜별 그룹화
   const groups = {};
-  list.forEach(p => { if(!groups[p.date]) groups[p.date]=[]; groups[p.date].push(p); });
-
+  pageItems.forEach(p => { if(!groups[p.date]) groups[p.date]=[]; groups[p.date].push(p); });
+  
   let html = '';
   Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date => {
     const dayItems = groups[date];
@@ -736,16 +774,90 @@ function renderFeed() {
           <div class="row2-grid">
             <div class="info-cell"><span class="info-label">매수밴드</span><span class="info-value yellow">${p.band||'—'}</span></div>
             <div class="info-cell"><span class="info-label">손절라인</span><span class="info-value red">${fmtPrice(p.stop)}</span></div>
-            <div class="info-cell"><span class="info-label">목표가</span><span class="info-value green">${truncCell(fmtPrice(p.target),'target')}</span></div>
+            <div class="info-cell"><span class="info-label">목표가</span><span class="info-value green">${fmtPrice(p.target)}</span></div>
             <div class="info-cell"><span class="info-label">수익률</span>${pnlHtml}</div>
           </div>
-          ${hasNote ? `<div class="note-area">📌 ${escapeHtml(p.note.length>50 ? p.note.substring(0,50)+'…' : p.note)}${p.note.length>50 ? truncCell(p.note,'note') : ''}</div>` : '<div class="note-area note-placeholder">📝 비고 없음</div>'}
+          ${hasNote ? `<div class="note-area">📌 ${escapeHtml(p.note.length>50 ? p.note.substring(0,50)+'…' : p.note)}</div>` : '<div class="note-area note-placeholder">📝 비고 없음</div>'}
         </div>
       `;
     });
   });
   feedDiv.innerHTML = html;
+  
+  // 페이지네이션 바 생성
+  renderPagination(totalPages);
 }
+
+function renderPagination(totalPages) {
+  const container = document.getElementById('paginationContainer');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let pagesHTML = '';
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+  
+  if (startPage > 1) {
+    pagesHTML += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) pagesHTML += `<span class="page-ellipsis">...</span>`;
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pagesHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pagesHTML += `<span class="page-ellipsis">...</span>`;
+    pagesHTML += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+  }
+  
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  
+  container.innerHTML = pagesHTML;
+}
+
+function goToPage(page) {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderFeedWithPagination();
+}
+
+function truncCell(text, type) {
+  if(!text) return '—';
+  const limit = 20;
+  if(text.length<=limit) return `<span>${escapeHtml(text)}</span>`;
+  const preview = escapeHtml(text.substring(0,limit))+'…';
+  const full = text.replace(/"/g, '&quot;');
+  const label = type==='target'?'목표가':'비고';
+  return `<span class="trunc-wrap"><span class="trunc-text">${preview}</span><span class="trunc-btn" data-full="${full}" data-label="${label}" onclick="openGlobalPopover(event,this)">펼치기 ▾</span></span>`;
+}
+
+let _popBtn = null;
+function openGlobalPopover(e, btn) {
+  e.stopPropagation();
+  const pop = document.getElementById('globalPopover');
+  if(_popBtn===btn && pop.classList.contains('open')) { pop.classList.remove('open'); _popBtn=null; return; }
+  _popBtn=btn;
+  document.getElementById('popoverLabel').textContent = btn.dataset.label;
+  document.getElementById('popoverContent').textContent = btn.dataset.full;
+  pop.classList.add('open');
+  const rect = btn.getBoundingClientRect();
+  let left = rect.left, top = rect.bottom+6;
+  if(left+pop.offsetWidth > window.innerWidth-12) left = rect.right - pop.offsetWidth;
+  if(top+pop.offsetHeight > window.innerHeight-12) top = rect.top - pop.offsetHeight -6;
+  pop.style.left = left+'px'; pop.style.top = top+'px';
+}
+document.addEventListener('click', (e) => { if(!e.target.closest('.trunc-btn')) { document.getElementById('globalPopover').classList.remove('open'); _popBtn=null; } });
 
 // 모달 함수
 function openModal(id) {
@@ -813,12 +925,13 @@ function updatePnlStrip() {
 }
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, dur) {
+  dur = dur || 3000;
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
 }
 
 // 인증 상태 감시
@@ -827,13 +940,8 @@ firebase.auth().onAuthStateChanged(user => {
 });
 
 // 초기화
+document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
 initSync();
 </script>
-
-<!-- 비고/목표가 펼치기 팝오버 -->
-<div id="globalPopover">
-  <div style="font-size:10px;opacity:.5;margin-bottom:4px;font-family:var(--mono)" id="popoverLabel"></div>
-  <div id="popoverContent"></div>
-</div>
 </body>
 </html>
