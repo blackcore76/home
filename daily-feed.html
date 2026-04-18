@@ -13,7 +13,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<!-- Firebase 초기화 -->
 <script>
   firebase.initializeApp({
     apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
@@ -54,7 +53,6 @@ body {
   padding-bottom: 80px;
 }
 
-/* ── HEADER ── */
 header {
   position: sticky; top: 36px; z-index: 50;
   background: rgba(8,12,20,.92);
@@ -84,7 +82,6 @@ header {
 .user-badge .user-email { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-badge:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ── INPUT AREA ── */
 .input-wrap {
   padding: 16px;
   background: var(--sf);
@@ -138,7 +135,6 @@ textarea::placeholder { color: var(--text3); }
 .btn-submit:hover { background: #33ddff; }
 .btn-submit:disabled { opacity: .4; pointer-events: none; }
 
-/* ── FILTER ── */
 .filter-bar {
   padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   border-bottom: 1px solid var(--bd);
@@ -158,7 +154,6 @@ textarea::placeholder { color: var(--text3); }
 }
 .count-chip span { color: var(--accent); font-weight: 600; }
 
-/* ── FEED ── */
 .feed { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
 
 .feed-item {
@@ -236,7 +231,50 @@ textarea::placeholder { color: var(--text3); }
   cursor: pointer; font-family: var(--sans);
 }
 
-/* ── EMPTY ── */
+/* 페이지네이션 스타일 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 16px 40px;
+  flex-wrap: wrap;
+}
+.page-btn {
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 36px;
+  text-align: center;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,.05);
+}
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.page-ellipsis {
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
 .empty {
   text-align: center; padding: 80px 20px; color: var(--text3);
   display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -245,7 +283,6 @@ textarea::placeholder { color: var(--text3); }
 .empty p { font-size: 14px; }
 .empty .hint { font-size: 12px; }
 
-/* ── TOAST ── */
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
   background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
@@ -255,7 +292,6 @@ textarea::placeholder { color: var(--text3); }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ── 로그인 모달 (간단) ── */
 .login-overlay {
   position: fixed; inset: 0; z-index: 1000;
   background: rgba(0,0,0,.85);
@@ -315,7 +351,6 @@ textarea::placeholder { color: var(--text3); }
   </div>
 </header>
 
-<!-- 입력 영역 (항상 보임, 비로그인시 클릭하면 로그인 모달) -->
 <div class="input-wrap">
   <div class="input-box">
     <div class="input-date-row">
@@ -341,20 +376,19 @@ textarea::placeholder { color: var(--text3); }
   </div>
 </div>
 
-<!-- 필터 -->
 <div class="filter-bar">
-  <input class="filter-input" type="date" id="filterDate" oninput="renderFeed()" placeholder="날짜 필터">
-  <input class="filter-input" type="text" id="filterText" oninput="renderFeed()" placeholder="내용 검색...">
+  <input class="filter-input" type="date" id="filterDate" oninput="resetToFirstPageAndRender()" placeholder="날짜 필터">
+  <input class="filter-input" type="text" id="filterText" oninput="resetToFirstPageAndRender()" placeholder="내용 검색...">
   <div class="count-chip" id="countChip">총 <span>0</span>건</div>
 </div>
 
-<!-- 피드 -->
 <div class="feed" id="feedList"></div>
 
-<!-- 토스트 -->
+<!-- 페이지네이션 컨테이너 -->
+<div id="paginationContainer" class="pagination"></div>
+
 <div class="toast" id="toast"></div>
 
-<!-- 로그인 모달 -->
 <div class="login-overlay" id="loginModal" onclick="if(event.target===this) closeLoginModal()">
   <div class="login-modal">
     <div class="icon">🔐</div>
@@ -366,21 +400,21 @@ textarea::placeholder { color: var(--text3); }
 </div>
 
 <script>
-/* ── firebase.initializeApp은 <head>에서 완료 ── */
 const db  = firebase.firestore();
 const COL = 'dailyfeed';
 
-/* ── 상태 ── */
 let feeds   = [];
 let selMood = '';
 let currentUser = null;
-let pendingAction = null;  // 로그인 후 실행할 작업 저장
+let pendingAction = null;
 let pendingData = null;
 
-/* ── 날짜 초기화 ── */
+// 페이지네이션 변수
+let currentPage = 1;
+const itemsPerPage = 10;
+
 document.getElementById('inDate').value = todayStr();
 
-/* ── 무드 선택 ── */
 document.querySelectorAll('.mood-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const m = btn.dataset.mood;
@@ -395,7 +429,6 @@ document.querySelectorAll('.mood-btn').forEach(btn => {
   });
 });
 
-/* ── 글자 수 ── */
 function updateChar() {
   const len = document.getElementById('inText').value.length;
   document.getElementById('charCount').textContent = len + ' / 3000';
@@ -403,7 +436,6 @@ function updateChar() {
 }
 updateChar();
 
-/* ── 날짜 헬퍼 ── */
 function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
@@ -422,7 +454,6 @@ function formatEmail(email) {
   return email.split('@')[0];
 }
 
-/* ── 동기화 상태 ── */
 function setSS(state) {
   const dot = document.getElementById('sdot');
   const txt = document.getElementById('stxt');
@@ -431,7 +462,6 @@ function setSS(state) {
   txt.textContent = map[state] || '—';
 }
 
-/* ── Firestore 실시간 리스너 (읽기는 누구나) ── */
 function initSync() {
   setSS('load');
   db.collection(COL)
@@ -439,7 +469,7 @@ function initSync() {
     .onSnapshot(snap => {
       feeds = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSS('live');
-      renderFeed();
+      resetToFirstPageAndRender();  // 새 데이터가 오면 1페이지로 리셋
     }, err => {
       console.error(err);
       setSS('err');
@@ -447,7 +477,6 @@ function initSync() {
     });
 }
 
-/* ── 로그인 모달 ── */
 function showLoginModal() {
   document.getElementById('loginModal').classList.add('open');
 }
@@ -457,13 +486,11 @@ function closeLoginModal() {
   pendingData = null;
 }
 
-/* ── 로그인 트리거 ── */
 async function triggerLogin() {
   const provider = new firebase.auth.GoogleAuthProvider();
   try {
     await firebase.auth().signInWithPopup(provider);
     closeLoginModal();
-    // 저장된 pending 작업이 있으면 실행
     if (pendingAction) {
       if (pendingAction === 'submit') {
         await submitFeed();
@@ -480,11 +507,9 @@ async function triggerLogin() {
   }
 }
 
-/* ── UI 업데이트 (로그인 상태에 따라) ── */
 function updateUIForUser(user) {
   currentUser = user;
   const userEmailSpan = document.getElementById('userEmail');
-  
   if (user) {
     userEmailSpan.textContent = formatEmail(user.email);
     toast(`✅ ${user.email} 님 환영합니다!`);
@@ -493,7 +518,6 @@ function updateUIForUser(user) {
   }
 }
 
-/* ── 로그인 체크 후 실행 ── */
 function checkLoginAndSubmit() {
   if (!currentUser) {
     pendingAction = 'submit';
@@ -523,12 +547,8 @@ function checkLoginAndDelete(id) {
   deleteFeed(id);
 }
 
-/* ── 게시 (로그인 필요) ── */
 async function submitFeed() {
-  if (!currentUser) {
-    // 이론상 여기 올 일 없음 (위에서 체크함)
-    return;
-  }
+  if (!currentUser) return;
 
   const text = document.getElementById('inText').value.trim();
   const date = document.getElementById('inDate').value;
@@ -557,7 +577,6 @@ async function submitFeed() {
   }
 }
 
-/* ── 삭제 (작성자 본인만 가능) ── */
 async function deleteFeed(id) {
   if (!currentUser) return;
 
@@ -577,7 +596,6 @@ async function deleteFeed(id) {
   }
 }
 
-/* ── 편집 모드 (작성자 본인만 가능) ── */
 function startEdit(id) {
   if (!currentUser) return;
 
@@ -628,7 +646,6 @@ async function saveEdit(id) {
   }
 }
 
-/* ── 렌더링 (작성자 표시 포함) ── */
 function getFiltered() {
   const fd = document.getElementById('filterDate').value;
   const ft = document.getElementById('filterText').value.trim().toLowerCase();
@@ -638,37 +655,48 @@ function getFiltered() {
   );
 }
 
-function renderFeed() {
-  const list = getFiltered();
-  const el   = document.getElementById('feedList');
-  const chip = document.getElementById('countChip');
-  chip.innerHTML = `총 <span>${feeds.length}</span>건`;
+// 필터 변경 시 1페이지로 리셋하고 렌더링
+function resetToFirstPageAndRender() {
+  currentPage = 1;
+  renderFeedWithPagination();
+}
 
-  if (feeds.length === 0) {
-    el.innerHTML = `
+// 페이지네이션 + 렌더링 메인 함수
+function renderFeedWithPagination() {
+  const filtered = getFiltered();
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  // 현재 페이지가 유효 범위를 벗어나면 조정
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  const pageItems = filtered.slice(startIdx, endIdx);
+  
+  // 총 개수 표시 (필터링된 전체 개수)
+  document.getElementById('countChip').innerHTML = `총 <span>${totalItems}</span>건`;
+  
+  if (totalItems === 0) {
+    document.getElementById('feedList').innerHTML = `
       <div class="empty">
         <div class="empty-icon">🗒️</div>
         <p>아직 기록이 없습니다</p>
         <p class="hint">첫 번째 생각을 남겨보세요</p>
       </div>`;
+    document.getElementById('paginationContainer').innerHTML = '';
     return;
   }
-  if (list.length === 0) {
-    el.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🔍</div>
-        <p>검색 결과가 없습니다</p>
-      </div>`;
-    return;
-  }
-
+  
+  // 날짜별로 그룹화하여 HTML 생성
   const groups = {};
-  list.forEach(f => {
+  pageItems.forEach(f => {
     if (!groups[f.date]) groups[f.date] = [];
     groups[f.date].push(f);
   });
-
-  el.innerHTML = Object.keys(groups)
+  
+  const feedHTML = Object.keys(groups)
     .sort((a, b) => b.localeCompare(a))
     .map(date => {
       const dayFeeds = groups[date];
@@ -692,7 +720,7 @@ function renderFeed() {
             </div>
           </div>
         </div>`).join('');
-
+      
       return `
         <div style="display:flex;align-items:center;gap:10px;margin:6px 0 2px;">
           <span style="font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;">${fmtDate(date)}</span>
@@ -701,13 +729,66 @@ function renderFeed() {
         </div>
         ${items}`;
     }).join('');
+  
+  document.getElementById('feedList').innerHTML = feedHTML;
+  
+  // 페이지네이션 바 생성
+  renderPagination(totalPages);
 }
 
-/* ── 유틸 ── */
+function renderPagination(totalPages) {
+  const container = document.getElementById('paginationContainer');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let pagesHTML = '';
+  
+  // 이전 버튼
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  
+  // 페이지 번호 표시 (최대 5개 정도, 중간에 ...)
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+  
+  if (startPage > 1) {
+    pagesHTML += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) pagesHTML += `<span class="page-ellipsis">...</span>`;
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pagesHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pagesHTML += `<span class="page-ellipsis">...</span>`;
+    pagesHTML += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+  }
+  
+  // 다음 버튼
+  pagesHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  
+  container.innerHTML = pagesHTML;
+}
+
+function goToPage(page) {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderFeedWithPagination();
+}
+
 function escHtml(s) {
   return String(s || '').replace(/[<>&"]/g, c =>
     ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' })[c]);
 }
+
 let toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -717,7 +798,6 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-/* ── Enter로 게시 (로그인 체크 포함) ── */
 document.getElementById('inText').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -725,12 +805,10 @@ document.getElementById('inText').addEventListener('keydown', e => {
   }
 });
 
-/* ── 인증 상태 감시 ── */
 firebase.auth().onAuthStateChanged(user => {
   updateUIForUser(user);
 });
 
-/* ── 부팅 ── */
 initSync();
 </script>
 </body>
