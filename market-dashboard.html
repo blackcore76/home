@@ -500,7 +500,6 @@ async function requestNotifPermission() {
   }
 }
 
-// ── 알림 권한 상태 초기 확인
 function checkNotifPermission() {
   const btn = document.getElementById('alert-perm-btn');
   const txt = document.getElementById('alert-perm-txt');
@@ -515,6 +514,8 @@ function checkNotifPermission() {
     txt.textContent = '✅ 알림 활성화됨';
     btn.disabled = true;
     dot.classList.add('on');
+    // 이미 허용된 경우 자동으로 서비스워커 등록
+    requestNotifPermission();
   } else if (Notification.permission === 'denied') {
     txt.textContent = '❌ 알림 차단됨 (브라우저 설정 확인)';
     btn.disabled = true;
