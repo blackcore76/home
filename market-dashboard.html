@@ -262,11 +262,11 @@ const PX=[
   u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-  u=>`https://proxy.cors.sh/${u}`,
-  u=>`https://thingproxy.freeboard.io/fetch/${u}`,
   u=>`https://cors.eu.org/${u}`,
+  u=>`https://thingproxy.freeboard.io/fetch/${u}`,
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}&cachebust=${Date.now()}`,
   u=>`https://cors-anywhere.herokuapp.com/${u}`,
-  u=>`https://crossorigin.me/${u}`,
+  u=>`https://proxy.cors.sh/${u}`,
 ];
 const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
 
@@ -464,7 +464,12 @@ function fngSpark(pts){
 function setCmpBox(id, lblId, score){
   const el=document.getElementById(id);
   const lbl=document.getElementById(lblId);
-  if(!el||score==null){return;}
+  if(!el) return;
+  if(score==null){
+    el.textContent='—'; el.style.color='var(--muted2)';
+    if(lbl){lbl.textContent=''; lbl.style.color='';}
+    return;
+  }
   const color=fngColor(score);
   el.textContent=score;
   el.style.color=color;
@@ -535,24 +540,27 @@ function renderFng(score, history, raw){
   // 반원 게이지
   updateGauge(score);
 
-  // 존 체류일 + 오늘 변화
-  const zoneEl=document.getElementById('fng-zone-day');
+  // 오늘 변화량 (어제 대비)
   const deltaEl=document.getElementById('fng-delta');
-  if(history.length>=2 && zoneEl){
-    const prev=history[history.length-2]?.score;
+  if(history.length>=2 && deltaEl){
+    const prev=history[history.length-2]?.score ?? score;
     const diff=score-prev;
     const sign=diff>0?'+':'';
-    const dcolor=diff>0?fngColor(score):'#ff3b5c';
-    if(deltaEl){
-      deltaEl.textContent=`${sign}${diff} today`;
-      deltaEl.style.color=dcolor;
-    }
+    // 상승=탐욕방향(녹색계열), 하락=공포방향(빨강)
+    const dcolor=diff>0?'#a3e635':diff<0?'#ff3b5c':'var(--muted2)';
+    deltaEl.textContent=`${sign}${diff} today`;
+    deltaEl.style.color=dcolor;
   }
 
-  // 비교 박스 (어제=index -2, 5일전=-6, 1달전≈-22)
-  if(history.length>1)  setCmpBox('cmp-1d','cmp-1d-lbl', history[history.length-2]?.score);
-  if(history.length>5)  setCmpBox('cmp-5d','cmp-5d-lbl', history[history.length-6]?.score);
-  if(history.length>21) setCmpBox('cmp-1m','cmp-1m-lbl', history[history.length-22]?.score);
+  // 비교 박스: history는 오름차순(오래된→최신) 정렬됨
+  // 어제=-2번째, 5일전=-6번째, 1달전(약 22 거래일)=-22번째
+  const h=history;
+  if(h.length>1)  setCmpBox('cmp-1d','cmp-1d-lbl', h[h.length-2]?.score);
+  else            setCmpBox('cmp-1d','cmp-1d-lbl', null);
+  if(h.length>5)  setCmpBox('cmp-5d','cmp-5d-lbl', h[h.length-6]?.score);
+  else            setCmpBox('cmp-5d','cmp-5d-lbl', null);
+  if(h.length>21) setCmpBox('cmp-1m','cmp-1m-lbl', h[h.length-22]?.score);
+  else            setCmpBox('cmp-1m','cmp-1m-lbl', null);
 
   // 구성요소
   const components = raw?.score?.components;
@@ -573,23 +581,25 @@ async function updateFng(){
   }
 
   const score=data?.score?.score;
-  const rawHistory=data?.history; // [{date:'YYYY-MM-DD', score:N}, ...]
+  // API 공식 문서: 히스토리 필드명은 'recent' [{date, score}, ...]
+  const rawHistory = data?.recent ?? data?.history ?? [];
 
-  if(score==null){
-    dlog('F&G score 없음');
-    return;
-  }
+  if(score==null){ dlog('F&G score 없음'); return; }
 
-  // 히스토리 정렬 (오래된 것 → 최근)
-  if(rawHistory&&Array.isArray(rawHistory)){
-    fngHistory=[...rawHistory].sort((a,b)=>a.date.localeCompare(b.date));
-    // 현재 점수가 히스토리에 없으면 오늘 날짜로 추가
-    const today=new Date().toISOString().slice(0,10);
+  dlog('F&G raw history length: ' + rawHistory.length);
+
+  if(Array.isArray(rawHistory) && rawHistory.length > 0){
+    // 오래된 날짜 → 최신 날짜 오름차순 정렬
+    fngHistory = [...rawHistory].sort((a,b)=>a.date.localeCompare(b.date));
+    // 오늘 항목 없으면 현재 점수 추가
+    const today = new Date().toISOString().slice(0,10);
     if(!fngHistory.find(h=>h.date===today)){
-      fngHistory.push({date:today,score});
+      fngHistory.push({date:today, score});
     }
+    dlog('F&G 히스토리: ' + fngHistory.length + '개, ' + fngHistory[0]?.date + ' ~ ' + fngHistory[fngHistory.length-1]?.date);
   } else {
-    fngHistory=[{date:new Date().toISOString().slice(0,10),score}];
+    fngHistory = [{date: new Date().toISOString().slice(0,10), score}];
+    dlog('F&G history 없음 — 오늘 점수만 사용');
   }
 
   renderFng(score, fngHistory, data);
