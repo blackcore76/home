@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -49,12 +48,55 @@
   @keyframes fkd{0%{background:rgba(68,138,255,.13)}100%{background:var(--card)}}
   .flu{animation:fu .7s ease-out}.fld{animation:fd .7s ease-out}
   .flku{animation:fku .7s ease-out}.flkd{animation:fkd .7s ease-out}
+
+  /* ── 공포·탐욕 카드 ── */
+  .fng-card{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:16px 18px 14px;position:relative;overflow:hidden;
+    transition:border-color .3s,background .3s;margin-top:14px;
+  }
+  .fng-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(61,139,255,.04) 0%,transparent 60%);pointer-events:none}
+  .fng-card:hover{border-color:var(--bord2);background:var(--cardh)}
+  .fng-inner{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+  /* 왼쪽: 점수 + 게이지 */
+  .fng-left{min-width:180px}
+  .fng-header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+  .fng-title{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted2);text-transform:uppercase}
+  .fng-src{font-size:8px;color:var(--muted);letter-spacing:.05em}
+  .fng-score-row{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .fng-score{font-size:36px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .fng-label{font-size:11px;font-weight:600;letter-spacing:.08em}
+  /* 게이지 바 */
+  .fng-gauge{position:relative;height:6px;border-radius:3px;overflow:hidden;
+    background:linear-gradient(to right,#ff3b5c 0%,#ff8c42 22%,#f59e0b 42%,#a3e635 65%,#00e676 100%);
+    margin-bottom:4px}
+  .fng-gauge-track{position:absolute;right:0;top:0;bottom:0;background:rgba(6,9,13,.65);border-radius:3px 0 0 3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+  .fng-gauge-needle{position:absolute;top:50%;transform:translate(-50%,-50%);width:3px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 6px rgba(255,255,255,.6);transition:left .8s cubic-bezier(.4,0,.2,1)}
+  .fng-gauge-labels{display:flex;justify-content:space-between;font-size:7px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
+  /* 오른쪽: 히스토리 차트 */
+  .fng-right{min-width:0}
+  .fng-chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .fng-chart-label{font-size:9px;color:var(--muted2);letter-spacing:.08em}
+  .fng-chart-range{display:flex;gap:4px}
+  .fng-rbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:8px;padding:1px 6px;border-radius:3px;cursor:pointer;transition:all .2s}
+  .fng-rbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(61,139,255,.08)}
+  .fng-rbtn:hover{border-color:var(--bord2);color:var(--muted2)}
+  .fng-chart{height:52px}
+  .fng-chart svg{width:100%;height:100%;display:block}
+  .fng-skel{height:52px;background:linear-gradient(90deg,var(--border) 25%,rgba(61,139,255,.06) 50%,var(--border) 75%);background-size:200% 100%;animation:sh 1.5s linear infinite;border-radius:3px}
+
   #dbg{display:none;background:#0a0f18;border:1px solid var(--bord2);border-radius:8px;padding:12px;margin-top:14px;font-size:9px;color:var(--muted2);line-height:1.8;max-height:150px;overflow-y:auto}
   #dbg.show{display:block}
   .dbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:9px;padding:2px 8px;border-radius:3px;cursor:pointer;margin-top:12px;display:block;margin:12px auto 0}
   footer{margin-top:18px;font-size:9px;color:var(--muted);text-align:center;padding-top:12px;border-top:1px solid var(--border);letter-spacing:.05em;line-height:1.9}
   @media(max-width:920px){.grid{grid-template-columns:repeat(3,1fr)}}
-  @media(max-width:600px){body{padding:12px 10px 20px}.grid{grid-template-columns:repeat(2,1fr);gap:8px}.cp{font-size:14px}}
+  @media(max-width:600px){
+    body{padding:12px 10px 20px}
+    .grid{grid-template-columns:repeat(2,1fr);gap:8px}.cp{font-size:14px}
+    .fng-inner{grid-template-columns:1fr;gap:12px}
+    .fng-left{min-width:0}
+    .fng-score{font-size:28px}
+  }
 </style>
 <script src="home-bar.js"></script>
 </head>
@@ -71,12 +113,55 @@
 
 <div class="grid" id="main-grid"></div>
 
+<!-- 공포·탐욕 인덱스 카드 -->
+<div class="fng-card" id="fng-card">
+  <div class="fng-inner">
+    <!-- 왼쪽: 점수 + 게이지 -->
+    <div class="fng-left">
+      <div class="fng-header">
+        <span class="fng-title">공포·탐욕 인덱스</span>
+        <span class="fng-src">feargreedchart.com</span>
+      </div>
+      <div class="fng-score-row">
+        <span class="fng-score nt" id="fng-score">—</span>
+        <span class="fng-label nt" id="fng-label">로딩 중...</span>
+      </div>
+      <div class="fng-gauge">
+        <div class="fng-gauge-track" id="fng-track" style="width:100%"></div>
+        <div class="fng-gauge-needle" id="fng-needle" style="left:0%"></div>
+      </div>
+      <div class="fng-gauge-labels">
+        <span>극단적 공포</span>
+        <span>공포</span>
+        <span>중립</span>
+        <span>탐욕</span>
+        <span>극단적 탐욕</span>
+      </div>
+    </div>
+    <!-- 오른쪽: 히스토리 차트 -->
+    <div class="fng-right">
+      <div class="fng-chart-hdr">
+        <span class="fng-chart-label" id="fng-chart-label">히스토리</span>
+        <div class="fng-chart-range">
+          <button class="fng-rbtn active" id="rng-14"  onclick="setFngRange(14)">14일</button>
+          <button class="fng-rbtn"        id="rng-30"  onclick="setFngRange(30)">30일</button>
+          <button class="fng-rbtn"        id="rng-90"  onclick="setFngRange(90)">90일</button>
+        </div>
+      </div>
+      <div class="fng-chart" id="fng-chart">
+        <div class="fng-skel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <button class="dbtn" onclick="toggleDbg()">🔧 디버그 로그</button>
 <div id="dbg"></div>
 
 <footer>
   데이터: Yahoo Finance &nbsp;|&nbsp; 지연 ~15분 &nbsp;|&nbsp; 금·WTI 선물 기준<br>
-  KOSPI·KOSDAQ 09:00–15:30 KST &nbsp;|&nbsp; 미국장 22:30–05:00 KST
+  KOSPI·KOSDAQ 09:00–15:30 KST &nbsp;|&nbsp; 미국장 22:30–05:00 KST<br>
+  공포·탐욕: feargreedchart.com (5분 캐시, S&P 500 기반)
 </footer>
 
 <script>
@@ -94,7 +179,6 @@ const INSTR=[
   {id:'wti',    name:'WTI 원유', sym:'CL=F',  market:'us', sec:'us', fmt:'d2',  pre:'$'},
 ];
 
-// 8개 CORS 프록시 — 다양한 공급자
 const PX=[
   u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
@@ -108,6 +192,10 @@ const PX=[
 const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
 
 let crumb=null, winPx=null, dbgLines=[];
+
+// ── 공포·탐욕 상태
+let fngHistory=[]; // {date, score}[]
+let fngRange=14;
 
 // ── 디버그
 function dlog(m){
@@ -126,12 +214,10 @@ function toggleDbg(){
 // ── DOM 초기화
 function initCards(){
   const g = document.getElementById('main-grid');
-
-  INSTR.slice(0, 9).forEach(inst => { // ← 9개만 사용
+  INSTR.slice(0, 9).forEach(inst => {
     const d = document.createElement('div');
     d.className = 'card';
     d.id = `card-${inst.id}`;
-
     d.innerHTML = `
       <div class="cn">${inst.name}</div>
       <div class="cp nt" id="p-${inst.id}">—</div>
@@ -140,12 +226,11 @@ function initCards(){
         <div class="skel"></div>
       </div>
     `;
-
     g.appendChild(d);
   });
 }
 
-// ── fetch 헬퍼 (타임아웃 포함)
+// ── fetch 헬퍼
 function ctrl(ms){const c=new AbortController();setTimeout(()=>c.abort(),ms);return c;}
 
 async function tryOne(pfn, url){
@@ -174,14 +259,10 @@ async function getCrumb(){
 
 // ── Yahoo Finance 데이터 fetch
 async function fetchYF(sym){
-  // 이미 성공했던 프록시 우선 배치
   const order = winPx!==null ? [PX[winPx],...PX.filter((_,i)=>i!==winPx)] : PX;
-
   for(const host of YF_HOSTS){
     let url=`https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=false&corsDomain=finance.yahoo.com`;
     if(crumb) url+=`&crumb=${encodeURIComponent(crumb)}`;
-
-    // 상위 4개 병렬 레이스 (Promise.any — 첫 성공 채택)
     try{
       const data=await Promise.any(
         order.slice(0,4).map((pfn)=>
@@ -195,8 +276,6 @@ async function fetchYF(sym){
       dlog(`✅ ${sym} (${host})`);
       return data;
     }catch(_){}
-
-    // 나머지 순차 fallback
     for(let i=4;i<order.length;i++){
       try{
         const data=await tryOne(order[i],url);
@@ -209,6 +288,159 @@ async function fetchYF(sym){
   }
   dlog(`❌ ${sym} 전체 실패`);
   return null;
+}
+
+// ── 공포·탐욕 API fetch (feargreedchart.com — 키 없음, CORS 허용)
+async function fetchFng(){
+  const url='https://feargreedchart.com/api/?action=all';
+  dlog('F&G 인덱스 로딩...');
+  try{
+    const res=await fetch(url,{signal:ctrl(10000).signal,headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    dlog(`✅ F&G: ${data?.score?.score}`);
+    return data;
+  }catch(e){
+    dlog(`❌ F&G 실패: ${e.message}`);
+    return null;
+  }
+}
+
+// ── 공포·탐욕 색상
+function fngColor(score){
+  if(score<=20) return '#ff3b5c';   // 극단적 공포
+  if(score<=40) return '#ff8c42';   // 공포
+  if(score<=60) return '#f59e0b';   // 중립
+  if(score<=80) return '#a3e635';   // 탐욕
+  return '#00e676';                  // 극단적 탐욕
+}
+
+// ── 공포·탐욕 레이블 (한글)
+function fngLabelKo(score){
+  if(score<=20) return '극단적 공포';
+  if(score<=40) return '공포';
+  if(score<=60) return '중립';
+  if(score<=80) return '탐욕';
+  return '극단적 탐욕';
+}
+
+// ── 히스토리 미니 차트 SVG (점수 기반 컬러 그라디언트)
+function fngSpark(pts){
+  if(!pts||pts.length<2) return '<div class="fng-skel"></div>';
+  const W=600,H=52;
+  const scores=pts.map(p=>p.score);
+  const mn=Math.min(...scores),mx=Math.max(...scores),rng=mx-mn||1;
+  const last=scores[scores.length-1];
+  const color=fngColor(last);
+
+  const coords=scores.map((s,i)=>{
+    const x=((i/(scores.length-1))*W).toFixed(1);
+    const y=(H-4-((s-mn)/rng)*(H-10)).toFixed(1);
+    return`${x},${y}`;
+  });
+
+  // 수평 참조선 (50 = 중립)
+  const neutralY=(H-4-((50-mn)/rng)*(H-10));
+  const showNeutral=mn<50&&mx>50;
+
+  const gid=`fg${Date.now()}`;
+  const ap=`M${coords[0]} L${coords.join(' L')} L${W},${H} L0,${H} Z`;
+
+  // 툴팁용 데이터 포인트 (마지막 값)
+  const lastCoord=coords[coords.length-1].split(',');
+
+  return`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${showNeutral?`<line x1="0" y1="${neutralY.toFixed(1)}" x2="${W}" y2="${neutralY.toFixed(1)}" stroke="rgba(107,132,160,.25)" stroke-width="1" stroke-dasharray="4,4"/>`:``}
+    <path d="${ap}" fill="url(#${gid})"/>
+    <polyline points="${coords.join(' ')}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastCoord[0]}" cy="${lastCoord[1]}" r="3" fill="${color}" opacity="0.9"/>
+  </svg>`;
+}
+
+// ── 공포·탐욕 카드 렌더링
+function renderFng(score, history){
+  const scoreEl=document.getElementById('fng-score');
+  const labelEl=document.getElementById('fng-label');
+  const trackEl=document.getElementById('fng-track');
+  const needleEl=document.getElementById('fng-needle');
+
+  const color=fngColor(score);
+  const label=fngLabelKo(score);
+
+  scoreEl.textContent=score;
+  scoreEl.style.color=color;
+  labelEl.textContent=label;
+  labelEl.style.color=color;
+
+  // 게이지: track은 오른쪽 마스크 영역
+  const pct=score; // 0~100
+  trackEl.style.width=`${100-pct}%`;
+  needleEl.style.left=`${pct}%`;
+
+  // 히스토리 차트 업데이트
+  renderFngChart(history);
+}
+
+function renderFngChart(history){
+  const pts = history.slice(-fngRange);
+  const chartEl=document.getElementById('fng-chart');
+  const hdrEl=document.getElementById('fng-chart-label');
+
+  if(pts.length>0){
+    const first=pts[0].date, last=pts[pts.length-1].date;
+    hdrEl.textContent=`${first} ~ ${last}`;
+  }
+
+  chartEl.innerHTML = fngSpark(pts);
+}
+
+// ── 범위 버튼 전환
+function setFngRange(days){
+  fngRange=days;
+  ['14','30','90'].forEach(d=>{
+    const btn=document.getElementById(`rng-${d}`);
+    btn.classList.toggle('active', d==days);
+  });
+  renderFngChart(fngHistory);
+}
+
+// ── 공포·탐욕 업데이트 메인
+async function updateFng(){
+  const data=await fetchFng();
+  if(!data){
+    document.getElementById('fng-score').textContent='ERR';
+    document.getElementById('fng-label').textContent='로딩 실패';
+    document.getElementById('fng-chart').innerHTML='<div class="fng-skel" style="opacity:.3"></div>';
+    return;
+  }
+
+  const score=data?.score?.score;
+  const rawHistory=data?.history; // [{date:'YYYY-MM-DD', score:N}, ...]
+
+  if(score==null){
+    dlog('F&G score 없음');
+    return;
+  }
+
+  // 히스토리 정렬 (오래된 것 → 최근)
+  if(rawHistory&&Array.isArray(rawHistory)){
+    fngHistory=[...rawHistory].sort((a,b)=>a.date.localeCompare(b.date));
+    // 현재 점수가 히스토리에 없으면 오늘 날짜로 추가
+    const today=new Date().toISOString().slice(0,10);
+    if(!fngHistory.find(h=>h.date===today)){
+      fngHistory.push({date:today,score});
+    }
+  } else {
+    fngHistory=[{date:new Date().toISOString().slice(0,10),score}];
+  }
+
+  renderFng(score, fngHistory);
 }
 
 // ── 포맷
@@ -224,7 +456,6 @@ function spark(closes,isUp,market){
   const pts=closes.filter(p=>p!=null&&!isNaN(p));
   if(pts.length<3)return'';
   const W=200,H=34,mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||.001;
-  // KR: 상승=빨간(--down), 하락=파란(--kr-down) / VIX: 상승=빨간(공포↑), 하락=초록(안정) / US: 기본
   let color;
   if(market==='kr')       color=isUp?'var(--down)':'var(--kr-down)';
   else if(market==='vix') color=isUp?'var(--down)':'var(--up)';
@@ -254,9 +485,6 @@ async function updateCard(inst){
   const cls=r.indicators?.quote?.[0]?.close??[];
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
 
-  // KR: 상승=kr-up(빨강), 하락=kr-down(파랑)
-  // VIX: 상승=down(빨강/공포↑), 하락=up(초록/안정)
-  // US: 상승=up(초록), 하락=down(빨강)
   const colorClass = inst.market==='kr'  ? (up?'kr-up':'kr-down')
                    : inst.market==='vix' ? (up?'down':'up')
                    : (up?'up':'down');
@@ -266,7 +494,6 @@ async function updateCard(inst){
   cEl.textContent=`${sg}${chg.toFixed(2)} (${sg}${pct.toFixed(2)}%)`;
   cEl.className = `cc ${colorClass}`;
   sEl.innerHTML=spark(cls,up,inst.market)||'<div class="skel" style="opacity:.3"></div>';
-  // KR 플래시: 상승=빨강(flku), 하락=파랑(flkd) / VIX: 상승=빨강(fld), 하락=초록(flu) / US: 기본
   card.classList.remove('flu','fld','flku','flkd');void card.offsetWidth;
   if(inst.market==='kr')       card.classList.add(up?'flku':'flkd');
   else if(inst.market==='vix') card.classList.add(up?'fld':'flu');
@@ -288,7 +515,11 @@ async function bootstrap(){
   crumb=await getCrumb();
   setStat('데이터 로딩 중...','load');
   document.getElementById('pxStat').textContent='';
-  await Promise.all(INSTR.map(updateCard));
+  // 시장 데이터 + 공포탐욕 병렬 로딩
+  await Promise.all([
+    ...INSTR.map(updateCard),
+    updateFng()
+  ]);
   document.getElementById('lastUp').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   if(winPx!==null){
     setStat('Live','live');
@@ -300,23 +531,15 @@ async function bootstrap(){
   resetCd();
 }
 
-// ── 장 개장 여부 감지 → 갱신 주기 결정 (KST 기준)
+// ── 장 개장 여부 감지
 function getRefreshSecs(){
   const now=new Date();
   const kst=new Date(now.getTime()+9*60*60*1000);
-  const day=kst.getUTCDay();           // 0=일, 6=토
+  const day=kst.getUTCDay();
   const hm=kst.getUTCHours()*60+kst.getUTCMinutes();
   const isWeekday=day>=1&&day<=5;
-
-  // 한국장: 평일 09:00~15:30 KST
   const krOpen=isWeekday&&hm>=9*60&&hm<15*60+30;
-
-  // 미국장: 평일 23:30~ + 다음날 ~06:00 KST
-    // 썸머타임: 평일 22:30~ + 다음날 ~05:00 KST
-  // day 1~5이고 hm>=23:30  →  당일 야간 개장
-  // day 2~6이고 hm<6:00    →  전날 야간 이어서 (토요일 새벽 포함)
   const usOpen=(isWeekday&&hm>=22*60+30)||((day>=2&&day<=6)&&hm<5*60);
-
   if(krOpen&&usOpen) return{secs:30,label:'KR·US 개장'};
   if(krOpen)         return{secs:30,label:'KR 개장'};
   if(usOpen)         return{secs:30,label:'US 개장'};
