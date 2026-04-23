@@ -562,10 +562,8 @@ const PX=[
   u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-  u=>`https://cors.eu.org/${u}`,
   u=>`https://thingproxy.freeboard.io/fetch/${u}`,
   u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}&cachebust=${Date.now()}`,
-  u=>`https://cors-anywhere.herokuapp.com/${u}`,
   u=>`https://proxy.cors.sh/${u}`,
 ];
 const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
@@ -614,7 +612,7 @@ async function getCrumb(){
       const res=await fetch(PX[i](url),{signal:ctrl(7000).signal});
       if(!res.ok) continue;
       const txt=await res.text();
-      if(txt&&txt.length<50&&!txt.includes('<')){dlog(`✅ crumb OK (#${i+1})`);return txt.trim();}
+      if(txt&&txt.length<50&&txt.length>2&&!txt.includes('<')&&!txt.includes(' ')&&!txt.toLowerCase().includes('error')&&!txt.toLowerCase().includes('request')){dlog(`✅ crumb OK (#${i+1})`);return txt.trim();}
     }catch(e){dlog(`crumb #${i+1} 실패: ${e.message.slice(0,50)}`);}
   }
   dlog('⚠️ crumb 없음 — 계속 진행');
