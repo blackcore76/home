@@ -162,7 +162,8 @@
   .at-lower .at-input:focus{border-color:var(--down)}
 
   /* 저장 버튼 */
-  .alert-save-row{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px}
+  .alert-save-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
+  .alert-save-notice{font-size:8px;font-weight:600;letter-spacing:.08em;color:var(--muted2);text-transform:uppercase;text-align:center;flex:1}
   .alert-save-btn{background:rgba(61,139,255,.15);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:10px;font-weight:700;padding:6px 20px;border-radius:5px;cursor:pointer;letter-spacing:.1em;transition:all .2s}
   .alert-save-btn:hover{background:rgba(61,139,255,.28)}
   .alert-save-btn:active{transform:scale(.97)}
@@ -295,9 +296,7 @@
 
   <div class="alert-save-row">
     <span class="alert-save-msg" id="alert-save-msg"></span>
-    <!-- ⬇️ 여기에 새로운 문구가 들어갔습니다. ⬇️ -->
-<span class="test-label">· 푸시 알림을 받으려면 브라우저의 알림 설정을 허용해주세요</span>
-    <!--  여기까지 삭제.  -->
+    <span class="alert-save-notice">푸시 알림을 받으려면 브라우저의 알림 설정을 허용해주세요</span>
     <button class="alert-save-btn" onclick="saveAlertConditions()">💾 저장</button>
   </div>
 </div>
