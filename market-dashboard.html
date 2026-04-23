@@ -163,7 +163,7 @@
 
   /* 저장 버튼 */
   .alert-save-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
-  .alert-save-notice{font-size:8px;font-weight:600;letter-spacing:.08em;color:var(--muted2);text-transform:uppercase;text-align:center;flex:1}
+  .alert-save-notice{font-size:9px;font-weight:600;letter-spacing:.08em;color:var(--muted2);text-transform:uppercase;text-align:center;flex:1}
   .alert-save-btn{background:rgba(61,139,255,.15);border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:10px;font-weight:700;padding:6px 20px;border-radius:5px;cursor:pointer;letter-spacing:.1em;transition:all .2s}
   .alert-save-btn:hover{background:rgba(61,139,255,.28)}
   .alert-save-btn:active{transform:scale(.97)}
@@ -521,6 +521,8 @@ function checkNotifPermission() {
     txt.textContent = '✅ 알림 활성화됨';
     btn.disabled = true;
     dot.classList.add('on');
+    // 페이지 로드 시 자동으로 토큰 등록 (다중 기기 지원)
+    requestNotifPermission();
   } else if (Notification.permission === 'denied') {
     txt.textContent = '❌ 알림 차단됨 (브라우저 설정 확인)';
     btn.disabled = true;
