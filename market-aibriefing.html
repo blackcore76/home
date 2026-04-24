@@ -93,7 +93,8 @@
         .card {
             background: var(--sf); border: 1px solid var(--bd);
             border-radius: 14px; padding: 20px; margin-bottom: 16px;
-            position: relative; overflow: hidden; transition: border-color .2s, background .2s;
+            position: relative;
+            transition: border-color .2s, background .2s;
         }
         .card::before {
             content: ''; position: absolute; left: 0; top: 0; bottom: 0;
@@ -316,6 +317,19 @@
         .toast.err { background: rgba(255,82,82,.15); border-color: rgba(255,82,82,.4); color: var(--red); }
 
         .gone { display: none !important; }
+
+        /* ── 심볼 자동완성 드롭다운 ── */
+        .drop-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; cursor: pointer;
+            transition: background .15s; border-bottom: 1px solid var(--bd);
+        }
+        .drop-item:last-child { border-bottom: none; }
+        .drop-item:hover { background: var(--sf3); }
+        .drop-sym { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--ac); min-width: 60px; }
+        .drop-name { font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .drop-type { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-left: auto; flex-shrink: 0; }
+        .drop-loading { padding: 12px 14px; font-family: var(--mono); font-size: 11px; color: var(--text3); text-align: center; }
     </style>
 </head>
 <body>
@@ -368,9 +382,16 @@
                 <h2>주식 심볼 검색</h2>
                 <span class="badge">실시간</span>
             </div>
-            <label class="s-label">심볼 입력 (예: AAPL, TSLA, MSFT / 한국 티커 불가)</label>
-            <div class="s-box">
-                <input type="text" id="symIn" value="AAPL" class="s-inp" placeholder="심볼">
+            <label class="s-label">종목명 또는 심볼 입력 (예: 테슬라, AAPL, 애플, 한국 종목 X)</label>
+            <div class="s-box" style="position:relative">
+                <div style="flex:1;position:relative">
+                    <input type="text" id="symIn" class="s-inp" placeholder="종목명 또는 심볼" autocomplete="off" style="width:100%">
+                    <div id="symDrop" style="
+                        display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
+                        background:var(--sf2);border:1px solid var(--bd2);border-radius:0 0 10px 10px;
+                        overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);
+                    "></div>
+                </div>
                 <button id="runBtn" class="btn-main">분석 시작</button>
             </div>
         </div>
@@ -721,7 +742,176 @@ async function run() {
 }
 
 document.getElementById('runBtn').addEventListener('click', run);
-document.getElementById('symIn').addEventListener('keypress', e => { if(e.key==='Enter') run(); });
+document.getElementById('symIn').addEventListener('keypress', e => { if(e.key==='Enter'){ closeDrop(); run(); } });
+
+/* ══════════════════════════════
+   한글 종목명 매핑 테이블
+══════════════════════════════ */
+const KR_MAP = {
+    /* 미국 빅테크 */
+    '애플':'apple','아이폰':'apple',
+    '마이크로소프트':'microsoft','엠에스':'microsoft',
+    '구글':'google','알파벳':'alphabet',
+    '아마존':'amazon',
+    '메타':'meta','페이스북':'facebook',
+    '테슬라':'tesla',
+    '엔비디아':'nvidia','엔비':'nvidia',
+    '넷플릭스':'netflix',
+    '인텔':'intel',
+    '퀄컴':'qualcomm',
+    'AMD':'amd','에이엠디':'amd',
+    '어도비':'adobe',
+    '세일즈포스':'salesforce',
+    '오라클':'oracle',
+    '시스코':'cisco',
+    '텍사스인스트루먼트':'texas instruments',
+    '브로드컴':'broadcom',
+    /* 반도체·하드웨어 */
+    'TSMC':'tsmc','대만반도체':'tsmc',
+    'ASML':'asml','에이에스엠엘':'asml',
+    '마이크론':'micron',
+    '웨스턴디지털':'western digital',
+    '씨게이트':'seagate',
+    /* 금융 */
+    '제이피모건':'jpmorgan','JP모건':'jpmorgan',
+    '골드만삭스':'goldman sachs',
+    '뱅크오브아메리카':'bank of america','뱅크':'bank of america',
+    '웰스파고':'wells fargo',
+    '모건스탠리':'morgan stanley',
+    '버크셔해서웨이':'berkshire','버크셔':'berkshire',
+    '비자':'visa',
+    '마스터카드':'mastercard',
+    '페이팔':'paypal',
+    /* 소비재·리테일 */
+    '월마트':'walmart',
+    '코스트코':'costco',
+    '타겟':'target',
+    '홈디포':'home depot',
+    '맥도날드':'mcdonalds','맥도':'mcdonalds',
+    '스타벅스':'starbucks','스벅':'starbucks',
+    '나이키':'nike',
+    '코카콜라':'cocacola','코카':'cocacola',
+    '펩시':'pepsi',
+    '존슨앤존슨':'johnson','존슨':'johnson',
+    '프록터앤갬블':'procter','피앤지':'procter',
+    /* 전기차·에너지 */
+    '리비안':'rivian',
+    '루시드':'lucid',
+    '니오':'nio',
+    '엑슨모빌':'exxon','엑슨':'exxon',
+    '쉐브론':'chevron',
+    /* 바이오·헬스 */
+    '화이자':'pfizer',
+    '모더나':'moderna',
+    '존슨':'johnson',
+    '애브비':'abbvie',
+    '유나이티드헬스':'unitedhealth',
+    /* ETF */
+    'SPY':'spy','에스피와이':'spy',
+    'QQQ':'qqq','큐큐큐':'qqq',
+    'VTI':'vti',
+    'ARKK':'arkk','아크':'arkk',
+    'TOPW':'topw','라운드힐 탑 위클리페이':'topw',
+    'SOXL':'soxl','쏙슬':'soxl',
+    
+    /* 엔터·게임 */
+    '디즈니':'disney',
+    '넷이즈':'netease',
+    '로블록스':'roblox',
+    '유니티':'unity',
+    '일렉트로닉아츠':'electronic arts','EA':'electronic arts',
+    '액티비전':'activision',
+    /* 기타 */
+    '스페이스엑스':'spacex',
+    '팔란티어':'palantir',
+    '스노우플레이크':'snowflake',
+    '쇼피파이':'shopify',
+    '줌':'zoom',
+    '슬랙':'slack',
+    '트위터':'twitter','엑스':'twitter',
+    '우버':'uber',
+    '리프트':'lyft',
+    '에어비앤비':'airbnb',
+    '도어대시':'doordash',
+    '코인베이스':'coinbase',
+    '로빈후드':'robinhood',
+};
+
+function translateKr(q) {
+    const lower = q.toLowerCase().trim();
+    // 정확히 일치하는 키 먼저
+    for (const [kr, en] of Object.entries(KR_MAP)) {
+        if (kr.toLowerCase() === lower) return en;
+    }
+    // 포함 검색
+    for (const [kr, en] of Object.entries(KR_MAP)) {
+        if (lower.includes(kr.toLowerCase()) || kr.toLowerCase().includes(lower)) return en;
+    }
+    return null;
+}
+
+/* ══════════════════════════════
+   심볼 자동완성
+══════════════════════════════ */
+let dropTimer = null;
+const $symIn  = document.getElementById('symIn');
+const $drop   = document.getElementById('symDrop');
+
+function closeDrop() { $drop.style.display = 'none'; }
+
+$symIn.addEventListener('input', () => {
+    clearTimeout(dropTimer);
+    const q = $symIn.value.trim();
+    if (!q || q.length < 1) { closeDrop(); return; }
+    dropTimer = setTimeout(() => searchSymbol(q), 400);
+});
+
+$symIn.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDrop();
+});
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('#symIn') && !e.target.closest('#symDrop')) closeDrop();
+});
+
+async function searchSymbol(q) {
+    const fhKey = document.getElementById('fhKey').value.trim();
+    if (!fhKey) return;
+
+    // 한글 → 영문 변환 시도
+    const translated = translateKr(q);
+    const query = translated || q;
+
+    $drop.style.display = 'block';
+    $drop.innerHTML = translated
+        ? `<div class="drop-loading">🔄 "${q}" → "${translated}" 로 검색 중...</div>`
+        : '<div class="drop-loading">🔍 검색 중...</div>';
+
+    try {
+        const res  = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${fhKey}`);
+        const data = await res.json();
+        const items = (data.result || []).filter(r => r.type === 'Common Stock' || r.type === 'ETP').slice(0, 8);
+        if (!items.length) {
+            $drop.innerHTML = '<div class="drop-loading">검색 결과 없음</div>';
+            return;
+        }
+        $drop.innerHTML = items.map(r => `
+            <div class="drop-item" onclick="pickSym('${r.symbol}')">
+                <span class="drop-sym">${r.symbol}</span>
+                <span class="drop-name">${r.description || ''}</span>
+                <span class="drop-type">${r.type || ''}</span>
+            </div>
+        `).join('');
+    } catch(e) {
+        $drop.innerHTML = '<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
+    }
+}
+
+function pickSym(sym) {
+    $symIn.value = sym;
+    closeDrop();
+    run();
+}
 
 /* ══════════════════════════════
    히스토리 로드
