@@ -93,7 +93,8 @@
         .card {
             background: var(--sf); border: 1px solid var(--bd);
             border-radius: 14px; padding: 20px; margin-bottom: 16px;
-            position: relative; overflow: hidden; transition: border-color .2s, background .2s;
+            position: relative;
+            transition: border-color .2s, background .2s;
         }
         .card::before {
             content: ''; position: absolute; left: 0; top: 0; bottom: 0;
@@ -381,7 +382,7 @@
                 <h2>주식 심볼 검색</h2>
                 <span class="badge">실시간</span>
             </div>
-            <label class="s-label">종목명 또는 심볼 입력 (예: 테슬라, AAPL, 애플)</label>
+            <label class="s-label">종목명 또는 심볼 입력 (예: 테슬라, AAPL, 애플, 한국 종목 X)</label>
             <div class="s-box" style="position:relative">
                 <div style="flex:1;position:relative">
                     <input type="text" id="symIn" class="s-inp" placeholder="종목명 또는 심볼" autocomplete="off" style="width:100%">
@@ -496,12 +497,12 @@
 ════════════════════════════════ -->
 <script>
 const FB_CFG = {
-    apiKey:            "여기에_apiKey",
-    authDomain:        "여기에_authDomain",
-    projectId:         "여기에_projectId",
-    storageBucket:     "여기에_storageBucket",
-    messagingSenderId: "여기에_messagingSenderId",
-    appId:             "여기에_appId"
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
 };
 const COL = "market_aibriefings"; // Firestore 컬렉션명
 
