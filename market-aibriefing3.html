@@ -16,6 +16,7 @@
     <!-- Firebase SDK (compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
     <style>
         :root {
@@ -44,7 +45,7 @@
 
         /* ── HEADER ── */
         header {
-            position: sticky; top: 0; z-index: 100;
+            position: sticky; top: 36px; z-index: 100;
             background: rgba(8,12,20,.96); backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--bd);
             padding: 0 20px; height: 52px;
@@ -70,7 +71,7 @@
 
         /* ── TAB BAR ── */
         .tab-bar {
-            position: sticky; top: 52px; z-index: 90;
+            position: sticky; top: 88px; z-index: 90;
             background: rgba(8,12,20,.92); backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--bd); display: flex;
         }
@@ -84,7 +85,7 @@
         .tab-btn:hover:not(.active){ color: var(--text2); }
 
         /* ── LAYOUT ── */
-        .container { max-width: 760px; margin: 0 auto; padding: 20px 16px; }
+        .container { max-width: 720px; margin: 0 auto; padding: 20px 16px; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
@@ -322,7 +323,14 @@
 <!-- HEADER -->
 <header>
     <div class="logo"><div class="logo-dot"></div>AI 주식 분석 브리핑</div>
-    <span class="hdr-tag">PRO</span>
+    <div style="display:flex;align-items:center;gap:8px">
+        <span id="userInfo" style="font-family:var(--mono);font-size:10px;color:var(--text3);display:none"></span>
+        <button id="authBtn" onclick="toggleAuth()" style="
+            background:var(--sf2);border:1px solid var(--bd);color:var(--text2);
+            border-radius:6px;padding:5px 11px;font-family:var(--mono);font-size:10px;
+            cursor:pointer;transition:all .2s;white-space:nowrap
+        ">로그인</button>
+    </div>
 </header>
 
 <!-- TAB BAR -->
@@ -468,17 +476,44 @@
 ════════════════════════════════ -->
 <script>
 const FB_CFG = {
-    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
-    projectId:         "my-bp-tracker-3d595",
-    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
-    messagingSenderId: "1016360206319",
-    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+    apiKey:            "여기에_apiKey",
+    authDomain:        "여기에_authDomain",
+    projectId:         "여기에_projectId",
+    storageBucket:     "여기에_storageBucket",
+    messagingSenderId: "여기에_messagingSenderId",
+    appId:             "여기에_appId"
 };
-const COL = "aibriefings"; // Firestore 컬렉션명 (자유롭게 변경 가능)
+const COL = "market_aibriefings"; // Firestore 컬렉션명
 
 firebase.initializeApp(FB_CFG);
-const db = firebase.firestore();
+const db   = firebase.firestore();
+const auth = firebase.auth();
+let currentUser = null;
+
+auth.onAuthStateChanged(user => {
+    currentUser = user;
+    const btn  = document.getElementById('authBtn');
+    const info = document.getElementById('userInfo');
+    if (user) {
+        info.textContent = user.displayName || user.email || '로그인됨';
+        info.style.display = 'block';
+        btn.textContent = '로그아웃';
+        btn.style.color = 'var(--green)';
+    } else {
+        info.style.display = 'none';
+        btn.textContent = '로그인';
+        btn.style.color = 'var(--text2)';
+    }
+});
+
+function toggleAuth() {
+    if (currentUser) {
+        auth.signOut();
+    } else {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(e => showToast('로그인 실패: ' + e.message, true));
+    }
+}
 </script>
 
 <script>
@@ -548,6 +583,12 @@ function showToast(msg, isErr=false) {
 ══════════════════════════════ */
 async function saveRpt(sym, content, pi) {
     const st = document.getElementById('saveSt');
+    if (!currentUser) {
+        st.style.color = 'var(--yel)';
+        st.textContent = '⚠️ 로그인 후 저장 가능';
+        showToast('⚠️ 저장하려면 우상단 로그인 버튼을 눌러주세요.', true);
+        return;
+    }
     st.style.color = 'var(--text3)';
     st.textContent = '저장 중...';
     try {
@@ -652,7 +693,7 @@ async function run() {
 전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
 
         const gmRes  = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gmKey}`,
             { method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:.4,maxOutputTokens:8192} }) }
         );
