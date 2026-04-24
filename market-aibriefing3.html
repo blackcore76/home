@@ -499,6 +499,8 @@ auth.onAuthStateChanged(user => {
         info.style.display = 'block';
         btn.textContent = '로그아웃';
         btn.style.color = 'var(--green)';
+        // 히스토리 탭이 열려있으면 자동 새로고침
+        if (document.getElementById('pH').classList.contains('active')) loadHist();
     } else {
         info.style.display = 'none';
         btn.textContent = '로그인';
@@ -725,6 +727,14 @@ document.getElementById('symIn').addEventListener('keypress', e => { if(e.key===
    히스토리 로드
 ══════════════════════════════ */
 async function loadHist() {
+    if (!currentUser) {
+        document.getElementById('ll').classList.add('gone');
+        document.getElementById('emptyBox').classList.remove('gone');
+        document.getElementById('emptyBox').innerHTML = `
+            <div class="ei">🔐</div>
+            <p>저장된 리포트를 보려면<br>우상단 <strong style="color:var(--ac)">로그인</strong> 버튼을 눌러주세요.</p>`;
+        return;
+    }
     document.getElementById('ll').classList.remove('gone');
     document.getElementById('rList').classList.add('gone');
     document.getElementById('emptyBox').classList.add('gone');
