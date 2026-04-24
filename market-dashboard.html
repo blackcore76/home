@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Market Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#06090d;--card:#0f1520;--cardh:#131b27;--border:rgba(99,155,255,.08);--bord2:rgba(99,155,255,.18);--text:#d1ddf0;--muted:#4a607a;--muted2:#6b84a0;--up:#00e676;--down:#ff3b5c;--accent:#3d8bff;--kr-down:#448aff}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;min-height:100vh;padding:18px 16px 28px;background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(30,60,130,.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 100%,rgba(10,40,90,.10) 0%,transparent 60%)}
+  header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bord2)}
+  .logo{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--accent);display:flex;align-items:center;gap:8px}
+  .logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:lp 3s ease-in-out infinite}
+  @keyframes lp{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
+  .hdr-r{text-align:right;font-size:10px;color:var(--muted2);line-height:1.8}
+  .srow{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:1px}
+  .ldot{width:5px;height:5px;border-radius:50%;background:var(--up);box-shadow:0 0 5px var(--up);animation:bl 2s infinite;flex-shrink:0}
+  .ldot.err{background:var(--down);box-shadow:0 0 5px var(--down);animation:none}
+  .ldot.load{background:#f59e0b;box-shadow:0 0 5px #f59e0b;animation:bl .5s infinite}
+  @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+  .rbtn{background:transparent;border:1px solid var(--bord2);color:var(--muted2);font-family:inherit;font-size:10px;padding:3px 10px;border-radius:4px;cursor:pointer;transition:all .2s}
+  .rbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .rbtn:active{transform:scale(.95)}
+  #pxStat{font-size:9px;color:var(--muted)}
+  .sec{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:20px 0 10px}
+  .sec span{flex-shrink:0}
+  .sec::after{content:'';flex:1;height:1px;background:var(--bord2)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr); grid-auto-rows: 1fr; height: calc(100vh - 160px); gap:14px}
+  .card {  display: flex;  flex-direction: column;  justify-content: space-between; }
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 13px 11px;position:relative;overflow:hidden;transition:border-color .3s,background .3s}
+  .card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(61,139,255,.04) 0%,transparent 60%);pointer-events:none}
+  .card:hover{border-color:var(--bord2);background:var(--cardh)}
+  .cn{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--muted2);text-transform:uppercase;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cp{font-size:24px;font-weight:700;line-height:1.25;margin:5px 0 3px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cc{font-size:13px;font-weight:600;white-space:nowrap}
+  .up{color:var(--up)}.down{color:var(--down)}.nt{color:var(--muted2)}
+  .kr-up{color:var(--down)}.kr-down{color:var(--kr-down)}
+  .sp{margin-top:8px;height:34px}
+  .sp svg{width:100%;height:100%;display:block}
+  .skel{height:34px;background:linear-gradient(90deg,var(--border) 25%,rgba(61,139,255,.06) 50%,var(--border) 75%);background-size:200% 100%;animation:sh 1.5s linear infinite;border-radius:3px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes fu{0%{background:rgba(0,230,118,.13)}100%{background:var(--card)}}
+  @keyframes fd{0%{background:rgba(255,59,92,.11)}100%{background:var(--card)}}
+  @keyframes fku{0%{background:rgba(255,59,92,.13)}100%{background:var(--card)}}
+  @keyframes fkd{0%{background:rgba(68,138,255,.13)}100%{background:var(--card)}}
+  .flu{animation:fu .7s ease-out}.fld{animation:fd .7s ease-out}
+  .flku{animation:fku .7s ease-out}.flkd{animation:fkd .7s ease-out}
+
+  /* ── 공포·탐욕 카드 ── */
+  .fng-card{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:22px 24px 20px;position:relative;overflow:hidden;
+    transition:border-color .3s,background .3s;margin-top:14px;
+  }
+  .fng-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(61,139,255,.04) 0%,transparent 60%);pointer-events:none}
+  .fng-card:hover{border-color:var(--bord2);background:var(--cardh)}
+
+  /* 카드 상단 타이틀 행 */
+  .fng-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .fng-title{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--muted2);text-transform:uppercase}
+  .fng-src{font-size:8px;color:var(--muted);letter-spacing:.04em}
+
+  /* 메인 3열 레이아웃 */
+  .fng-body{display:grid;grid-template-columns:200px 1fr 1fr;gap:28px;align-items:start}
+
+  /* ① 반원 게이지 영역 */
+  .fng-gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:0}
+  .fng-gauge-svg{width:200px;height:110px;display:block}
+  .fng-gauge-score{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:1;text-align:center;margin-top:-4px;transition:color .5s}
+  .fng-gauge-lbl{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;text-align:center;margin-top:4px;transition:color .5s}
+  .fng-gauge-sub{font-size:9px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.6}
+  .fng-zone-day{color:var(--muted2)}
+  .fng-delta{font-size:10px;font-weight:600}
+
+  /* ② 비교 박스 + 구성요소 열 */
+  .fng-mid{display:flex;flex-direction:column;gap:14px}
+  .fng-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .fng-cbox{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:7px;padding:10px 10px 8px;text-align:center}
+  .fng-cbox-lbl{font-size:8px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+  .fng-cbox-score{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px}
+  .fng-cbox-tag{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+
+  /* 구성요소 바 */
+  .fng-comps{display:flex;flex-direction:column;gap:7px}
+  .fng-comp-row{display:flex;align-items:center;gap:8px}
+  .fng-comp-name{font-size:8px;color:var(--muted2);letter-spacing:.06em;width:80px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fng-comp-bar-wrap{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+  .fng-comp-bar{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+  .fng-comp-val{font-size:9px;font-weight:600;width:26px;text-align:right;flex-shrink:0}
+
+  /* ③ 히스토리 차트 열 */
+  .fng-right{display:flex;flex-direction:column;gap:8px}
+  .fng-chart-hdr{display:flex;justify-content:space-between;align-items:center}
+  .fng-chart-label{font-size:9px;color:var(--muted2);letter-spacing:.08em}
+  .fng-chart-range{display:flex;gap:4px}
+  .fng-rbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:8px;padding:1px 7px;border-radius:3px;cursor:pointer;transition:all .2s}
+  .fng-rbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(61,139,255,.08)}
+  .fng-rbtn:hover{border-color:var(--bord2);color:var(--muted2)}
+  .fng-chart{height:110px}
+  .fng-chart svg{width:100%;height:100%;display:block}
+  .fng-skel{height:110px;background:linear-gradient(90deg,var(--border) 25%,rgba(61,139,255,.06) 50%,var(--border) 75%);background-size:200% 100%;animation:sh 1.5s linear infinite;border-radius:3px}
+  .fng-chart-date{font-size:8px;color:var(--muted);letter-spacing:.04em;text-align:right}
+
+  @media(max-width:900px){
+    .fng-body{grid-template-columns:160px 1fr;grid-template-rows:auto auto}
+    .fng-right{grid-column:1/-1}
+  }
+  @media(max-width:600px){
+    .fng-body{grid-template-columns:1fr}
+    .fng-gauge-svg{width:160px;height:88px}
+    .fng-gauge-score{font-size:38px}
+    .fng-compare{grid-template-columns:repeat(3,1fr)}
+  }
+
+  #dbg{display:none;background:#0a0f18;border:1px solid var(--bord2);border-radius:8px;padding:12px;margin-top:14px;font-size:9px;color:var(--muted2);line-height:1.8;max-height:150px;overflow-y:auto}
+  #dbg.show{display:block}
+  .dbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:9px;padding:2px 8px;border-radius:3px;cursor:pointer;margin-top:12px;display:block;margin:12px auto 0}
+  footer{margin-top:18px;font-size:9px;color:var(--muted);text-align:center;padding-top:12px;border-top:1px solid var(--border);letter-spacing:.05em;line-height:1.9}
+  @media(max-width:920px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:600px){
+    body{padding:12px 10px 20px}
+    .grid{grid-template-columns:repeat(2,1fr);gap:8px}.cp{font-size:14px}
+    .fng-inner{grid-template-columns:1fr;gap:12px}
+    .fng-left{min-width:0}
+    .fng-score{font-size:28px}
+  }
+</style>
+<script src="home-bar.js"></script>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-dot"></div>Market Dashboard</div>
+  <div class="hdr-r">
+    <div class="srow"><div class="ldot" id="ldot"></div><span id="stxt">초기화 중...</span><button class="rbtn" onclick="bootstrap()">↻ 갱신</button></div>
+    <div>업데이트&nbsp;<span id="lastUp">--:--:--</span></div>
+    <div>다음&nbsp;<span id="cd">--</span>s&nbsp;<span id="mktStat" style="color:var(--muted)"></span></div>
+    <div id="pxStat"></div>
+  </div>
+</header>
+
+<div class="grid" id="main-grid"></div>
+
+<!-- 공포·탐욕 인덱스 카드 -->
+<div class="fng-card" id="fng-card">
+  <!-- 상단 타이틀 -->
+  <div class="fng-topbar">
+    <span class="fng-title">공포·탐욕 인덱스 &nbsp;/&nbsp; Market Sentiment Index</span>
+    <span class="fng-src">feargreedchart.com · S&amp;P 500 기반</span>
+  </div>
+
+  <div class="fng-body">
+    <!-- ① 반원 게이지 -->
+    <div class="fng-gauge-wrap">
+      <svg class="fng-gauge-svg" id="fng-gauge-svg" viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+        <!-- 배경 트랙 -->
+        <path d="M20,100 A80,80 0 0,1 180,100" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="14" stroke-linecap="round"/>
+        <!-- 컬러 그라디언트 트랙 -->
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#ff3b5c"/>
+            <stop offset="25%"  stop-color="#ff8c42"/>
+            <stop offset="50%"  stop-color="#f59e0b"/>
+            <stop offset="75%"  stop-color="#a3e635"/>
+            <stop offset="100%" stop-color="#00e676"/>
+          </linearGradient>
+        </defs>
+        <path id="fng-arc-bg" d="M20,100 A80,80 0 0,1 180,100" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round"/>
+        <!-- 마스크용 어두운 오버레이 (오른쪽을 가림) — JS로 dashoffset 제어 -->
+        <path id="fng-arc-mask" d="M20,100 A80,80 0 0,1 180,100" fill="none" stroke="rgba(6,9,13,.85)" stroke-width="15" stroke-linecap="round"
+              style="stroke-dasharray:251.2;stroke-dashoffset:0;transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)"/>
+        <!-- 바늘 -->
+        <line id="fng-needle-line" x1="100" y1="100" x2="100" y2="28"
+              stroke="white" stroke-width="2.5" stroke-linecap="round"
+              style="transform-origin:100px 100px;transform:rotate(0deg);transition:transform .8s cubic-bezier(.4,0,.2,1);opacity:.9"/>
+        <circle cx="100" cy="100" r="5" fill="white" opacity=".9"/>
+        <!-- 라벨 -->
+        <text x="22" y="108" font-size="7" fill="#6b84a0" font-family="JetBrains Mono,monospace" letter-spacing="0">FEAR</text>
+        <text x="155" y="108" font-size="7" fill="#6b84a0" font-family="JetBrains Mono,monospace" letter-spacing="0">GREED</text>
+        <text x="100" y="24" font-size="7" fill="#6b84a0" font-family="JetBrains Mono,monospace" text-anchor="middle" letter-spacing="0">NEUTRAL</text>
+      </svg>
+      <div class="fng-gauge-score nt" id="fng-score">—</div>
+      <div class="fng-gauge-lbl nt" id="fng-label">로딩 중...</div>
+      <div class="fng-gauge-sub">
+        <div class="fng-zone-day" id="fng-zone-day"></div>
+        <div class="fng-delta" id="fng-delta"></div>
+      </div>
+    </div>
+
+    <!-- ② 비교 박스 + 구성요소 -->
+    <div class="fng-mid">
+      <!-- 비교 박스: 어제 / 5일전 / 1달전 -->
+      <div class="fng-compare">
+        <div class="fng-cbox">
+          <div class="fng-cbox-lbl">어제</div>
+          <div class="fng-cbox-score nt" id="cmp-1d">—</div>
+          <div class="fng-cbox-tag nt" id="cmp-1d-lbl"></div>
+        </div>
+        <div class="fng-cbox">
+          <div class="fng-cbox-lbl">5일 전</div>
+          <div class="fng-cbox-score nt" id="cmp-5d">—</div>
+          <div class="fng-cbox-tag nt" id="cmp-5d-lbl"></div>
+        </div>
+        <div class="fng-cbox">
+          <div class="fng-cbox-lbl">1달 전</div>
+          <div class="fng-cbox-score nt" id="cmp-1m">—</div>
+          <div class="fng-cbox-tag nt" id="cmp-1m-lbl"></div>
+        </div>
+      </div>
+      <!-- 구성요소 5개 바 -->
+      <div class="fng-comps" id="fng-comps">
+        <div style="font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">구성 요소</div>
+        <!-- JS로 채움 -->
+      </div>
+    </div>
+
+    <!-- ③ 히스토리 차트 -->
+    <div class="fng-right">
+      <div class="fng-chart-hdr">
+        <span class="fng-chart-label">히스토리</span>
+        <div class="fng-chart-range">
+          <button class="fng-rbtn active" id="rng-14" onclick="setFngRange(14)">14일</button>
+          <button class="fng-rbtn"        id="rng-30" onclick="setFngRange(30)">30일</button>
+          <button class="fng-rbtn"        id="rng-90" onclick="setFngRange(90)">90일</button>
+        </div>
+      </div>
+      <div class="fng-chart" id="fng-chart">
+        <div class="fng-skel"></div>
+      </div>
+      <div class="fng-chart-date" id="fng-chart-date"></div>
+    </div>
+  </div>
+</div>
+
+<button class="dbtn" onclick="toggleDbg()">🔧 디버그 로그</button>
+<div id="dbg"></div>
+
+<footer>
+  데이터: Yahoo Finance &nbsp;|&nbsp; 지연 ~15분 &nbsp;|&nbsp; 금·WTI 선물 기준<br>
+  KOSPI·KOSDAQ 09:00–15:30 KST &nbsp;|&nbsp; 미국장 22:30–05:00 KST<br>
+  공포·탐욕: feargreedchart.com (5분 캐시, S&P 500 기반)
+</footer>
+
+<script>
+const INSTR=[
+  {id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', market:'us', sec:'us', fmt:'int', pre:''},
+  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', market:'us', sec:'us', fmt:'int', pre:''},
+  {id:'dow',    name:'DOW',      sym:'^DJI',  market:'us', sec:'us', fmt:'int', pre:''},
+  
+  {id:'vix',    name:'VIX',      sym:'^VIX',  market:'vix', sec:'us', fmt:'d2',  pre:''},
+  {id:'kospi',  name:'KOSPI',    sym:'^KS11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  
+  {id:'gold',   name:'금 현물',  sym:'GC=F',  market:'us',  sec:'us', fmt:'d2',  pre:'$'},
+  {id:'usdkrw', name:'환율',     sym:'KRW=X', market:'us',  sec:'us', fmt:'d2',  pre:'₩'},
+  {id:'wti',    name:'WTI 원유', sym:'CL=F',  market:'us', sec:'us', fmt:'d2',  pre:'$'},
+];
+
+const PX=[
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  u=>`https://cors.eu.org/${u}`,
+  u=>`https://thingproxy.freeboard.io/fetch/${u}`,
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}&cachebust=${Date.now()}`,
+  u=>`https://cors-anywhere.herokuapp.com/${u}`,
+  u=>`https://proxy.cors.sh/${u}`,
+];
+const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
+
+let crumb=null, winPx=null, dbgLines=[];
+
+// ── 공포·탐욕 상태
+let fngHistory=[]; // {date, score}[]
+let fngRange=14;
+
+// ── 디버그
+function dlog(m){
+  const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  dbgLines.push(`[${t}] ${m}`);
+  if(dbgLines.length>80) dbgLines.shift();
+  const el=document.getElementById('dbg');
+  if(el.classList.contains('show')) el.innerHTML=dbgLines.slice().reverse().map(l=>`<div>${l}</div>`).join('');
+}
+function toggleDbg(){
+  const el=document.getElementById('dbg');
+  el.classList.toggle('show');
+  if(el.classList.contains('show')) el.innerHTML=dbgLines.slice().reverse().map(l=>`<div>${l}</div>`).join('');
+}
+
+// ── DOM 초기화
+function initCards(){
+  const g = document.getElementById('main-grid');
+  INSTR.slice(0, 9).forEach(inst => {
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.id = `card-${inst.id}`;
+    d.innerHTML = `
+      <div class="cn">${inst.name}</div>
+      <div class="cp nt" id="p-${inst.id}">—</div>
+      <div class="cc nt" id="c-${inst.id}">—</div>
+      <div class="sp" id="s-${inst.id}">
+        <div class="skel"></div>
+      </div>
+    `;
+    g.appendChild(d);
+  });
+}
+
+// ── fetch 헬퍼
+function ctrl(ms){const c=new AbortController();setTimeout(()=>c.abort(),ms);return c;}
+
+async function tryOne(pfn, url){
+  const res=await fetch(pfn(url),{signal:ctrl(10000).signal,headers:{'Accept':'application/json,*/*','Accept-Language':'ko-KR,ko;q=0.9'}});
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const d=await res.json();
+  if(!d?.chart?.result?.[0]) throw new Error('no result');
+  return d;
+}
+
+// ── crumb 획득
+async function getCrumb(){
+  const url='https://query1.finance.yahoo.com/v1/test/getcrumb';
+  dlog('crumb 획득 시도...');
+  for(let i=0;i<PX.length;i++){
+    try{
+      const res=await fetch(PX[i](url),{signal:ctrl(7000).signal});
+      if(!res.ok) continue;
+      const txt=await res.text();
+      if(txt&&txt.length<50&&!txt.includes('<')){dlog(`✅ crumb OK (#${i+1})`);return txt.trim();}
+    }catch(e){dlog(`crumb #${i+1} 실패: ${e.message.slice(0,50)}`);}
+  }
+  dlog('⚠️ crumb 없음 — 계속 진행');
+  return null;
+}
+
+// ── Yahoo Finance 데이터 fetch
+async function fetchYF(sym){
+  const order = winPx!==null ? [PX[winPx],...PX.filter((_,i)=>i!==winPx)] : PX;
+  for(const host of YF_HOSTS){
+    let url=`https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=false&corsDomain=finance.yahoo.com`;
+    if(crumb) url+=`&crumb=${encodeURIComponent(crumb)}`;
+    try{
+      const data=await Promise.any(
+        order.slice(0,4).map((pfn)=>
+          tryOne(pfn,url).then(d=>{
+            const idx=PX.indexOf(pfn);
+            if(winPx===null){winPx=idx;dlog(`🏆 working proxy: #${idx+1}`);}
+            return d;
+          })
+        )
+      );
+      dlog(`✅ ${sym} (${host})`);
+      return data;
+    }catch(_){}
+    for(let i=4;i<order.length;i++){
+      try{
+        const data=await tryOne(order[i],url);
+        const idx=PX.indexOf(order[i]);
+        if(winPx===null){winPx=idx;dlog(`🏆 working proxy: #${idx+1}`);}
+        dlog(`✅ ${sym} fallback#${i+1}`);
+        return data;
+      }catch(e){dlog(`${sym} #${i+1} fail: ${e.message.slice(0,40)}`);}
+    }
+  }
+  dlog(`❌ ${sym} 전체 실패`);
+  return null;
+}
+
+// ── 공포·탐욕 API fetch (feargreedchart.com — 키 없음, CORS 허용)
+async function fetchFng(){
+  const url='https://feargreedchart.com/api/?action=all';
+  dlog('F&G 인덱스 로딩...');
+  try{
+    const res=await fetch(url,{signal:ctrl(10000).signal,headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    dlog(`✅ F&G: ${data?.score?.score}`);
+    return data;
+  }catch(e){
+    dlog(`❌ F&G 실패: ${e.message}`);
+    return null;
+  }
+}
+
+// ── 공포·탐욕 색상
+function fngColor(score){
+  if(score<=20) return '#ff3b5c';
+  if(score<=40) return '#ff8c42';
+  if(score<=60) return '#f59e0b';
+  if(score<=80) return '#a3e635';
+  return '#00e676';
+}
+
+// ── 공포·탐욕 레이블 (한글)
+function fngLabelKo(score){
+  if(score<=20) return '극단적 공포';
+  if(score<=40) return '공포';
+  if(score<=60) return '중립';
+  if(score<=80) return '탐욕';
+  return '극단적 탐욕';
+}
+
+// ── 반원 게이지 업데이트
+// 호 총 길이: r=80, 반원 = π*80 ≈ 251.2
+const ARC_LEN = 251.2;
+function updateGauge(score){
+  const pct = score / 100; // 0~1
+  // dashoffset: 0=전체 표시, ARC_LEN=전체 가림
+  // 왼쪽(0점)→오른쪽(100점) 방향으로 채움
+  // mask는 "채워지지 않은" 오른쪽을 가리므로 offset = pct * ARC_LEN (오른쪽에서부터 지움)
+  // stroke-dasharray=ARC_LEN, dashoffset=ARC_LEN*(1-pct) → 왼쪽부터 pct 만큼 보임
+  const mask = document.getElementById('fng-arc-mask');
+  if(mask) mask.style.strokeDashoffset = (ARC_LEN * pct).toFixed(1);
+
+  // 바늘: -90deg(왼쪽 끝) ~ +90deg(오른쪽 끝), pct=0→-90, pct=1→+90
+  const deg = -90 + pct * 180;
+  const needle = document.getElementById('fng-needle-line');
+  if(needle) needle.style.transform = `rotate(${deg}deg)`;
+}
+
+// ── 히스토리 미니 차트 SVG
+function fngSpark(pts){
+  if(!pts||pts.length<2) return '<div class="fng-skel"></div>';
+  const W=400,H=110;
+  const scores=pts.map(p=>p.score);
+  const mn=Math.min(...scores,0),mx=Math.max(...scores,100),rng=mx-mn||1;
+  const last=scores[scores.length-1];
+  const color=fngColor(last);
+
+  const coords=scores.map((s,i)=>{
+    const x=((i/(scores.length-1))*W).toFixed(1);
+    const y=(H-6-((s-mn)/rng)*(H-16)).toFixed(1);
+    return`${x},${y}`;
+  });
+
+  const neutralY=(H-6-((50-mn)/rng)*(H-16));
+  const showNeutral=mn<50&&mx>50;
+  const gid=`fg${Date.now()%99999}`;
+  const ap=`M${coords[0]} L${coords.join(' L')} L${W},${H} L0,${H} Z`;
+  const lastCoord=coords[coords.length-1].split(',');
+
+  // 점수 구간별 배경 색조 영역
+  const fearY =(H-6-((40-mn)/rng)*(H-16));
+  const greedY=(H-6-((60-mn)/rng)*(H-16));
+
+  return`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${showNeutral?`<line x1="0" y1="${neutralY.toFixed(1)}" x2="${W}" y2="${neutralY.toFixed(1)}" stroke="rgba(107,132,160,.2)" stroke-width="1" stroke-dasharray="6,4"/>`:``}
+    <path d="${ap}" fill="url(#${gid})"/>
+    <polyline points="${coords.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastCoord[0]}" cy="${lastCoord[1]}" r="3.5" fill="${color}" opacity="0.95"/>
+  </svg>`;
+}
+
+// ── 비교 박스 업데이트
+function setCmpBox(id, lblId, score){
+  const el=document.getElementById(id);
+  const lbl=document.getElementById(lblId);
+  if(!el) return;
+  if(score==null){
+    el.textContent='—'; el.style.color='var(--muted2)';
+    if(lbl){lbl.textContent=''; lbl.style.color='';}
+    return;
+  }
+  const color=fngColor(score);
+  el.textContent=score;
+  el.style.color=color;
+  if(lbl){lbl.textContent=fngLabelKo(score);lbl.style.color=color;}
+}
+
+// ── 구성요소 바 렌더링
+function renderComponents(components){
+  const wrap=document.getElementById('fng-comps');
+  if(!wrap||!components||!components.length) return;
+  const hdr=wrap.querySelector('div');
+  wrap.innerHTML='';
+  if(hdr) wrap.appendChild(hdr);
+  else {
+    const h=document.createElement('div');
+    h.style.cssText='font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px';
+    h.textContent='구성 요소';
+    wrap.appendChild(h);
+  }
+  components.forEach(c=>{
+    const val=Math.round(c.val??c.value??0);
+    const color=fngColor(val);
+    const row=document.createElement('div');
+    row.className='fng-comp-row';
+    row.innerHTML=`
+      <span class="fng-comp-name" title="${c.name}">${c.name}</span>
+      <div class="fng-comp-bar-wrap">
+        <div class="fng-comp-bar" style="width:${val}%;background:${color}"></div>
+      </div>
+      <span class="fng-comp-val" style="color:${color}">${val}</span>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+// ── 히스토리 차트 렌더링
+function renderFngChart(history){
+  const pts = history.slice(-fngRange);
+  const chartEl=document.getElementById('fng-chart');
+  const dateEl=document.getElementById('fng-chart-date');
+  if(pts.length>0 && dateEl){
+    dateEl.textContent=`${pts[0].date} ~ ${pts[pts.length-1].date}`;
+  }
+  if(chartEl) chartEl.innerHTML = fngSpark(pts);
+}
+
+// ── 범위 버튼 전환
+function setFngRange(days){
+  fngRange=days;
+  ['14','30','90'].forEach(d=>{
+    const btn=document.getElementById(`rng-${d}`);
+    if(btn) btn.classList.toggle('active', d==days);
+  });
+  renderFngChart(fngHistory);
+}
+
+// ── 공포·탐욕 카드 전체 렌더
+function renderFng(score, history, raw){
+  const color=fngColor(score);
+  const label=fngLabelKo(score);
+
+  // 점수 + 레이블
+  const scoreEl=document.getElementById('fng-score');
+  const labelEl=document.getElementById('fng-label');
+  if(scoreEl){scoreEl.textContent=score;scoreEl.style.color=color;}
+  if(labelEl){labelEl.textContent=label;labelEl.style.color=color;}
+
+  // 반원 게이지
+  updateGauge(score);
+
+  // 오늘 변화량 (어제 대비)
+  const deltaEl=document.getElementById('fng-delta');
+  if(history.length>=2 && deltaEl){
+    const prev=history[history.length-2]?.score ?? score;
+    const diff=score-prev;
+    const sign=diff>0?'+':'';
+    // 상승=탐욕방향(녹색계열), 하락=공포방향(빨강)
+    const dcolor=diff>0?'#a3e635':diff<0?'#ff3b5c':'var(--muted2)';
+    deltaEl.textContent=`${sign}${diff} today`;
+    deltaEl.style.color=dcolor;
+  }
+
+  // 비교 박스: history는 오름차순(오래된→최신) 정렬됨
+  // 어제=-2번째, 5일전=-6번째, 1달전(약 22 거래일)=-22번째
+  const h=history;
+  if(h.length>1)  setCmpBox('cmp-1d','cmp-1d-lbl', h[h.length-2]?.score);
+  else            setCmpBox('cmp-1d','cmp-1d-lbl', null);
+  if(h.length>5)  setCmpBox('cmp-5d','cmp-5d-lbl', h[h.length-6]?.score);
+  else            setCmpBox('cmp-5d','cmp-5d-lbl', null);
+  if(h.length>21) setCmpBox('cmp-1m','cmp-1m-lbl', h[h.length-22]?.score);
+  else            setCmpBox('cmp-1m','cmp-1m-lbl', null);
+
+  // 구성요소
+  const components = raw?.score?.components;
+  if(components) renderComponents(components);
+
+  // 히스토리 차트
+  renderFngChart(history);
+}
+
+// ── 공포·탐욕 업데이트 메인
+async function updateFng(){
+  const data=await fetchFng();
+  if(!data){
+    document.getElementById('fng-score').textContent='ERR';
+    document.getElementById('fng-label').textContent='로딩 실패';
+    document.getElementById('fng-chart').innerHTML='<div class="fng-skel" style="opacity:.3"></div>';
+    return;
+  }
+
+  const score=data?.score?.score;
+  // API 공식 문서: 히스토리 필드명은 'recent' [{date, score}, ...]
+  const rawHistory = data?.recent ?? data?.history ?? [];
+
+  if(score==null){ dlog('F&G score 없음'); return; }
+
+  dlog('F&G raw history length: ' + rawHistory.length);
+
+  if(Array.isArray(rawHistory) && rawHistory.length > 0){
+    // 오래된 날짜 → 최신 날짜 오름차순 정렬
+    fngHistory = [...rawHistory].sort((a,b)=>a.date.localeCompare(b.date));
+    // 오늘 항목 없으면 현재 점수 추가
+    const today = new Date().toISOString().slice(0,10);
+    if(!fngHistory.find(h=>h.date===today)){
+      fngHistory.push({date:today, score});
+    }
+    dlog('F&G 히스토리: ' + fngHistory.length + '개, ' + fngHistory[0]?.date + ' ~ ' + fngHistory[fngHistory.length-1]?.date);
+  } else {
+    fngHistory = [{date: new Date().toISOString().slice(0,10), score}];
+    dlog('F&G history 없음 — 오늘 점수만 사용');
+  }
+
+  renderFng(score, fngHistory, data);
+}
+
+// ── 포맷
+function fmt(v,f,pre){
+  if(v==null||isNaN(v))return'—';
+  const s=f==='int'?Math.round(v).toLocaleString('en-US'):v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return pre+s;
+}
+
+// ── 스파크라인 SVG
+let sc=0;
+function spark(closes,isUp,market){
+  const pts=closes.filter(p=>p!=null&&!isNaN(p));
+  if(pts.length<3)return'';
+  const W=200,H=34,mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||.001;
+  let color;
+  if(market==='kr')       color=isUp?'var(--down)':'var(--kr-down)';
+  else if(market==='vix') color=isUp?'var(--down)':'var(--up)';
+  else                    color=isUp?'var(--up)':'var(--down)';
+  const coords=pts.map((p,i)=>`${((i/(pts.length-1))*W).toFixed(1)},${(H-2-((p-mn)/rng)*(H-6)).toFixed(1)}`);
+  const gid=`g${sc++}`;
+  const ap=`M${coords[0]} L${coords.join(' L')} L${W},${H} L0,${H} Z`;
+  return`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.25"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${ap}" fill="url(#${gid})"/><polyline points="${coords.join(' ')}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+// ── 카드 업데이트
+async function updateCard(inst){
+  const data=await fetchYF(inst.sym);
+  const pEl=document.getElementById(`p-${inst.id}`);
+  const cEl=document.getElementById(`c-${inst.id}`);
+  const sEl=document.getElementById(`s-${inst.id}`);
+  const card=document.getElementById(`card-${inst.id}`);
+  if(!data){
+    pEl.textContent='ERR';pEl.className='cp nt';
+    cEl.textContent='fetch failed';cEl.className='cc nt';
+    return;
+  }
+  const r=data.chart.result[0],m=r.meta;
+  const px=m.regularMarketPrice;
+  const prv=m.chartPreviousClose??m.previousClose;
+  const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
+  const cls=r.indicators?.quote?.[0]?.close??[];
+  pEl.textContent=fmt(px,inst.fmt,inst.pre);
+
+  const colorClass = inst.market==='kr'  ? (up?'kr-up':'kr-down')
+                   : inst.market==='vix' ? (up?'down':'up')
+                   : (up?'up':'down');
+
+  pEl.className = `cp ${colorClass}`;
+  const sg=up?'+':'';
+  cEl.textContent=`${sg}${chg.toFixed(2)} (${sg}${pct.toFixed(2)}%)`;
+  cEl.className = `cc ${colorClass}`;
+  sEl.innerHTML=spark(cls,up,inst.market)||'<div class="skel" style="opacity:.3"></div>';
+  card.classList.remove('flu','fld','flku','flkd');void card.offsetWidth;
+  if(inst.market==='kr')       card.classList.add(up?'flku':'flkd');
+  else if(inst.market==='vix') card.classList.add(up?'fld':'flu');
+  else                         card.classList.add(up?'flu':'fld');
+}
+
+// ── 상태 표시
+function setStat(txt,state){
+  document.getElementById('stxt').textContent=txt;
+  const d=document.getElementById('ldot');
+  d.className='ldot'+(state==='live'?'':state==='load'?' load':' err');
+}
+
+// ── 메인
+async function bootstrap(){
+  resetCd();
+  winPx=null;
+  setStat('crumb 연결 중...','load');
+  crumb=await getCrumb();
+  setStat('데이터 로딩 중...','load');
+  document.getElementById('pxStat').textContent='';
+  // 시장 데이터 + 공포탐욕 병렬 로딩
+  await Promise.all([
+    ...INSTR.map(updateCard),
+    updateFng()
+  ]);
+  document.getElementById('lastUp').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(winPx!==null){
+    setStat('Live','live');
+    document.getElementById('pxStat').textContent=`프록시 #${winPx+1} 사용 중`;
+  }else{
+    setStat('연결 실패','err');
+    document.getElementById('pxStat').textContent='⚠️ 디버그 로그 확인';
+  }
+  resetCd();
+}
+
+// ── 장 개장 여부 감지
+function getRefreshSecs(){
+  const now=new Date();
+  const kst=new Date(now.getTime()+9*60*60*1000);
+  const day=kst.getUTCDay();
+  const hm=kst.getUTCHours()*60+kst.getUTCMinutes();
+  const isWeekday=day>=1&&day<=5;
+  const krOpen=isWeekday&&hm>=9*60&&hm<15*60+30;
+  const usOpen=(isWeekday&&hm>=22*60+30)||((day>=2&&day<=6)&&hm<5*60);
+  if(krOpen&&usOpen) return{secs:30,label:'KR·US 개장'};
+  if(krOpen)         return{secs:30,label:'KR 개장'};
+  if(usOpen)         return{secs:30,label:'US 개장'};
+                     return{secs:300,label:'전 시장 휴장'};
+}
+
+// ── 카운트다운
+let cdV=60,cdT=null;
+function resetCd(){
+  clearInterval(cdT);
+  const {secs,label}=getRefreshSecs();
+  cdV=secs;
+  document.getElementById('mktStat').textContent=`[${label}]`;
+  document.getElementById('cd').textContent=cdV;
+  cdT=setInterval(()=>{
+    cdV--;
+    document.getElementById('cd').textContent=cdV;
+    if(cdV<=0) bootstrap();
+  },1000);
+}
+
+initCards();
+bootstrap();
+</script>
+</body>
+</html>
