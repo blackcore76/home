@@ -1,401 +1,807 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#080c14">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AI 브리핑">
-<title>📈 AI 주식 분석 브리핑</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#080c14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI 브리핑">
+    <title>📈 AI 주식 분석 브리핑</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="home-bar.js" onerror="console.log('home-bar.js skip')"></script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg:    #080c14;
+            --sf:    #0e1422;
+            --sf2:   #131b2d;
+            --sf3:   #181f30;
+            --bd:    #1e2d45;
+            --bd2:   #263548;
+            --text:  #c8d6e8;
+            --text2: #7a91a8;
+            --text3: #4a5f74;
+            --ac:    #00d4ff;
+            --green: #00e676;
+            --red:   #ff5252;
+            --blue:  #4da6ff;
+            --yel:   #ffca28;
+            --mono:  'JetBrains Mono', monospace;
+            --sans:  'Noto Sans KR', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: var(--sans); min-height: 100vh; padding-bottom: 80px;
+        }
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+        /* ── HEADER ── */
+        header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(8,12,20,.96); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--bd);
+            padding: 0 20px; height: 52px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-family: var(--mono); font-size: 15px; font-weight: 700;
+            color: var(--ac); display: flex; align-items: center; gap: 9px;
+        }
+        .logo-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--ac); box-shadow: 0 0 8px var(--ac);
+            animation: blink 3s ease-in-out infinite;
+        }
+        @keyframes blink {
+            0%,100%{ opacity:1; box-shadow:0 0 8px var(--ac) }
+            50%{ opacity:.3; box-shadow:0 0 3px var(--ac) }
+        }
+        .hdr-tag {
+            font-family: var(--mono); font-size: 10px; color: var(--text3);
+            border: 1px solid var(--bd); border-radius: 4px; padding: 2px 8px;
+        }
 
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-  authDomain: "my-bp-tracker-3d595.firebaseapp.com",
-  projectId: "my-bp-tracker-3d595",
-  storageBucket: "my-bp-tracker-3d595.firebasestorage.app",
-  messagingSenderId: "1016360206319",
-  appId: "1:1016360206319:web:5f5df2e2c45b30694a401a"
-});
-</script>
+        /* ── TAB BAR ── */
+        .tab-bar {
+            position: sticky; top: 52px; z-index: 90;
+            background: rgba(8,12,20,.92); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--bd); display: flex;
+        }
+        .tab-btn {
+            flex: 1; padding: 13px 0; background: none; border: none;
+            border-bottom: 2px solid transparent; color: var(--text3);
+            font-family: var(--mono); font-size: 11px; font-weight: 500;
+            letter-spacing: .07em; cursor: pointer; transition: all .2s;
+        }
+        .tab-btn.active { color: var(--ac); border-bottom-color: var(--ac); background: rgba(0,212,255,.04); }
+        .tab-btn:hover:not(.active){ color: var(--text2); }
 
-<script src="auth.js"></script>
-<script src="home-bar.js"></script>
+        /* ── LAYOUT ── */
+        .container { max-width: 760px; margin: 0 auto; padding: 20px 16px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
 
-<style>
-:root{
---bg:#080c14;
---sf:#0e1422;
---sf2:#131b2d;
---sf3:#181f30;
---bd:#1e2d45;
---bd2:#263548;
---text:#c8d6e8;
---text2:#7a91a8;
---text3:#4a5f74;
---accent:#00d4ff;
---green:#00e676;
---red:#ff5252;
---mono:'JetBrains Mono', monospace;
---sans:'Noto Sans KR', sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-background:var(--bg);
-color:var(--text);
-font-family:var(--sans);
-padding-bottom:80px;
-}
-header{
-position:sticky;
-top:36px;
-z-index:50;
-height:52px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 16px;
-background:rgba(8,12,20,.92);
-backdrop-filter:blur(16px);
-border-bottom:1px solid var(--bd);
-}
-.logo{
-font-family:var(--mono);
-color:var(--accent);
-display:flex;
-gap:8px;
-align-items:center;
-font-weight:600;
-}
-.logo-dot{
-width:7px;height:7px;border-radius:50%;
-background:var(--accent);
-box-shadow:0 0 8px var(--accent);
-}
-.user-badge{
-display:flex;
-align-items:center;
-gap:6px;
-font-family:var(--mono);
-font-size:10px;
-background:var(--sf2);
-border:1px solid var(--bd);
-padding:4px 10px;
-border-radius:20px;
-color:var(--text2);
-}
-.container{
-padding:20px 16px;
-}
-.card{
-background:var(--sf);
-border:1px solid var(--bd);
-border-radius:14px;
-padding:20px;
-margin-bottom:16px;
-}
-.search-box{
-display:flex;
-gap:8px;
-}
-.search-input{
-flex:1;
-background:var(--sf2);
-border:1px solid var(--bd2);
-color:var(--text);
-padding:12px;
-border-radius:8px;
-font-family:var(--mono);
-}
-.btn{
-background:var(--accent);
-border:none;
-padding:0 20px;
-border-radius:8px;
-font-weight:700;
-cursor:pointer;
-}
-.price-grid{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:10px;
-margin-bottom:20px;
-}
-.price-card{
-background:var(--sf3);
-border:1px solid var(--bd);
-padding:12px;
-border-radius:10px;
-text-align:center;
-}
-.chart-area{
-background:var(--sf3);
-border:1px solid var(--bd);
-padding:14px;
-border-radius:12px;
-margin-bottom:20px;
-}
-.report-area{
-background:linear-gradient(135deg,var(--sf),var(--sf2));
-border:1px solid rgba(0,212,255,.2);
-padding:18px;
-border-radius:14px;
-}
-.report-content{
-white-space:pre-line;
-line-height:1.8;
-font-size:13px;
-color:var(--text2);
-}
-.report-actions{
-display:flex;
-gap:8px;
-margin-top:16px;
-}
-.report-btn{
-flex:1;
-padding:12px;
-border-radius:10px;
-cursor:pointer;
-font-weight:700;
-}
-.save-btn{
-background:var(--accent);
-border:none;
-color:#000;
-}
-.view-btn{
-background:var(--sf3);
-border:1px solid var(--bd);
-color:var(--text);
-}
-.saved-wrap{
-margin-top:18px;
-display:none;
-}
-.symbol-group{
-margin-bottom:18px;
-}
-.symbol-title{
-font-family:var(--mono);
-color:var(--accent);
-font-size:12px;
-margin-bottom:8px;
-}
-.saved-item{
-background:var(--sf3);
-border:1px solid var(--bd);
-padding:12px;
-border-radius:10px;
-margin-bottom:8px;
-cursor:pointer;
-}
-.saved-date{
-font-size:11px;
-color:var(--text3);
-margin-bottom:6px;
-}
-.saved-preview{
-font-size:12px;
-color:var(--text2);
-line-height:1.6;
-}
-.delete-btn{
-margin-top:8px;
-background:none;
-border:1px solid var(--red);
-color:var(--red);
-padding:6px 10px;
-border-radius:8px;
-cursor:pointer;
-font-size:11px;
-}
-.hidden{display:none}
-</style>
+        /* ── CARD ── */
+        .card {
+            background: var(--sf); border: 1px solid var(--bd);
+            border-radius: 14px; padding: 20px; margin-bottom: 16px;
+            position: relative; overflow: hidden; transition: border-color .2s, background .2s;
+        }
+        .card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; border-radius: 3px 0 0 3px;
+            background: linear-gradient(to bottom, var(--ac), transparent);
+        }
+        .card:hover { border-color: var(--bd2); background: var(--sf2); }
+        .card-hd {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--bd);
+        }
+        .card-hd h2 { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--ac); }
+        .badge {
+            margin-left: auto; background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.2);
+            border-radius: 20px; padding: 2px 9px; font-size: 9px; font-family: var(--mono); color: var(--ac);
+        }
+
+        /* ── API KEY ── */
+        .api-wrap { background: var(--sf2); border: 1px solid var(--bd); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+        .api-toggle-btn {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; cursor: pointer; transition: background .2s;
+        }
+        .api-toggle-btn:hover { background: var(--sf3); }
+        .api-left { display: flex; align-items: center; gap: 8px; }
+        .api-left .lbl { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--yel); }
+        .ks { font-size: 9px; padding: 2px 6px; border-radius: 20px; background: rgba(0,230,118,.12); color: var(--green); }
+        .ks.warn { background: rgba(255,202,40,.12); color: var(--yel); }
+        .api-body { display: none; padding: 14px 16px; border-top: 1px solid var(--bd); background: var(--sf); }
+        .api-body.open { display: block; }
+        .api-inp {
+            width: 100%; background: var(--sf3); border: 1px solid var(--bd2);
+            color: var(--text); border-radius: 8px; padding: 10px 12px;
+            font-size: 12px; font-family: var(--mono); outline: none; margin-bottom: 10px;
+        }
+        .api-inp:focus { border-color: var(--ac); }
+        .api-hint { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+
+        /* ── SEARCH ── */
+        .s-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .s-box { display: flex; gap: 8px; }
+        .s-inp {
+            flex: 1; background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
+            border-radius: 8px; padding: 12px 14px; font-size: 14px; font-family: var(--mono);
+            outline: none; text-transform: uppercase;
+        }
+        .s-inp:focus { border-color: var(--ac); }
+        .btn-main {
+            background: var(--ac); color: #000; border: none; border-radius: 8px;
+            padding: 0 20px; font-family: var(--sans); font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: background .15s; white-space: nowrap;
+        }
+        .btn-main:hover { background: #33ddff; }
+        .btn-main:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* ── LOADER ── */
+        .spin {
+            border: 3px solid var(--bd2); border-top-color: var(--ac);
+            border-radius: 50%; width: 36px; height: 36px;
+            animation: rot .7s linear infinite; margin: 0 auto 12px;
+        }
+        @keyframes rot { to { transform: rotate(360deg); } }
+
+        /* ── PRICE GRID ── */
+        .pgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+        .pcell { background: var(--sf3); border: 1px solid var(--bd); border-radius: 10px; padding: 12px 8px; text-align: center; }
+        .plbl { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .08em; margin-bottom: 6px; }
+        .pval { font-family: var(--mono); font-size: 17px; font-weight: 600; }
+        .pval.up   { color: var(--red); }
+        .pval.down { color: var(--blue); }
+
+        /* ── CHART ── */
+        .chart-wrap { background: var(--sf3); border: 1px solid var(--bd); border-radius: 12px; padding: 14px; margin-bottom: 20px; }
+        .chart-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); display: flex; justify-content: space-between; margin-bottom: 10px; }
+        canvas { max-height: 180px; width: 100% !important; }
+
+        /* ── AI REPORT ── */
+        .rpt-wrap {
+            background: linear-gradient(135deg, var(--sf), var(--sf2));
+            border: 1px solid rgba(0,212,255,.22); border-radius: 14px; padding: 18px;
+        }
+        .rpt-hd { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; padding-bottom: 11px; border-bottom: 1px solid var(--bd); }
+        .rpt-hd h3 { font-family: var(--mono); font-size: 12px; color: var(--ac); }
+        .save-st { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--text3); }
+        .rpt-body { font-size: 13px; line-height: 1.85; color: var(--text2); white-space: pre-line; }
+
+        /* ── ERROR ── */
+        .err-box { background: rgba(255,82,82,.1); border: 1px solid rgba(255,82,82,.3); border-radius: 10px; padding: 14px; color: var(--red); font-size: 12px; margin-top: 12px; }
+
+        /* ── FOOTER NOTE ── */
+        .fn { text-align: center; font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 18px; line-height: 1.7; }
+
+        /* ═══════════════════════════════
+           HISTORY TAB
+        ═══════════════════════════════ */
+        .h-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .h-count { font-family: var(--mono); font-size: 11px; color: var(--text3); flex: 1; min-width: 70px; }
+        .h-count strong { color: var(--ac); }
+        .f-inp {
+            background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
+            border-radius: 8px; padding: 8px 12px; font-size: 12px; font-family: var(--mono);
+            outline: none; width: 140px; text-transform: uppercase;
+        }
+        .f-inp::placeholder { text-transform: none; color: var(--text3); }
+        .f-inp:focus { border-color: var(--ac); }
+        .btn-s {
+            background: var(--sf2); border: 1px solid var(--bd); color: var(--text2);
+            border-radius: 8px; padding: 8px 13px; font-family: var(--mono);
+            font-size: 11px; cursor: pointer; transition: all .2s; white-space: nowrap;
+        }
+        .btn-s:hover { border-color: var(--ac); color: var(--ac); }
+
+        /* 목록 */
+        .r-list { display: flex; flex-direction: column; gap: 8px; }
+        .r-item {
+            background: var(--sf); border: 1px solid var(--bd);
+            border-radius: 12px; padding: 14px 14px 14px 20px;
+            cursor: pointer; transition: all .2s;
+            display: flex; align-items: center; gap: 12px;
+            position: relative; overflow: hidden;
+        }
+        .r-item::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: linear-gradient(to bottom, var(--ac), transparent);
+        }
+        .r-item:hover { border-color: rgba(0,212,255,.35); background: var(--sf2); transform: translateX(3px); }
+        .r-body { flex: 1; min-width: 0; }
+        .r-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+        .r-sym { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--ac); }
+        .r-chg { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+        .r-chg.up   { background: rgba(255,82,82,.15); color: var(--red); }
+        .r-chg.down { background: rgba(77,166,255,.15); color: var(--blue); }
+        .r-price { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+        .r-date  { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-left: auto; }
+        .r-prev  { font-size: 12px; color: var(--text3); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .btn-del {
+            background: none; border: 1px solid transparent; color: var(--text3);
+            font-size: 14px; padding: 5px 8px; border-radius: 6px; cursor: pointer;
+            transition: all .2s; flex-shrink: 0;
+        }
+        .btn-del:hover { border-color: rgba(255,82,82,.4); color: var(--red); background: rgba(255,82,82,.08); }
+
+        /* 페이지네이션 */
+        .paging { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; }
+        .btn-pg {
+            background: var(--sf2); border: 1px solid var(--bd); color: var(--text2);
+            border-radius: 8px; padding: 8px 16px; font-family: var(--mono);
+            font-size: 11px; cursor: pointer; transition: all .2s;
+        }
+        .btn-pg:hover:not(:disabled) { border-color: var(--ac); color: var(--ac); }
+        .btn-pg:disabled { opacity: .3; cursor: not-allowed; }
+        .pg-info { font-family: var(--mono); font-size: 11px; color: var(--text3); min-width: 70px; text-align: center; }
+
+        /* 빈 상태 */
+        .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+        .empty .ei { font-size: 44px; margin-bottom: 16px; }
+        .empty p { font-size: 12px; font-family: var(--mono); line-height: 1.9; }
+
+        /* 목록 로더 */
+        .ll { text-align: center; padding: 50px; color: var(--text3); font-family: var(--mono); font-size: 11px; }
+        .ll .spin { width: 24px; height: 24px; border-width: 2px; }
+
+        /* ═══════════════════════════════
+           MODAL
+        ═══════════════════════════════ */
+        .mo-bg {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.82); backdrop-filter: blur(12px);
+            z-index: 300; align-items: flex-end; justify-content: center;
+        }
+        .mo-bg.open { display: flex; }
+        @media (min-width: 600px){ .mo-bg { align-items: center; } }
+
+        .modal {
+            background: var(--sf); border: 1px solid var(--bd2);
+            border-radius: 20px 20px 0 0;
+            width: 100%; max-width: 700px; max-height: 88vh;
+            display: flex; flex-direction: column; overflow: hidden;
+            animation: mup .28s cubic-bezier(.16,1,.3,1);
+        }
+        @media (min-width: 600px){ .modal { border-radius: 20px; max-height: 84vh; margin: 16px; } }
+        @keyframes mup {
+            from { transform: translateY(32px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        .mo-hd {
+            padding: 20px 20px 16px; border-bottom: 1px solid var(--bd);
+            display: flex; align-items: flex-start; gap: 12px; flex-shrink: 0;
+        }
+        .mo-title { flex: 1; }
+        .mo-sym { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--ac); margin-bottom: 6px; }
+        .mo-meta { display: flex; flex-wrap: wrap; gap: 12px; font-family: var(--mono); font-size: 10px; color: var(--text3); }
+        .btn-x {
+            width: 34px; height: 34px; background: var(--sf3); border: 1px solid var(--bd);
+            color: var(--text2); border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; font-size: 15px;
+            transition: all .2s; flex-shrink: 0;
+        }
+        .btn-x:hover { border-color: var(--red); color: var(--red); }
+
+        .mo-body { flex: 1; overflow-y: auto; padding: 20px; }
+        .mo-body::-webkit-scrollbar { width: 4px; }
+        .mo-body::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 4px; }
+        .mo-txt { font-size: 13.5px; line-height: 1.9; color: var(--text2); white-space: pre-line; }
+
+        .mo-ft { padding: 14px 20px; border-top: 1px solid var(--bd); display: flex; gap: 8px; flex-shrink: 0; }
+
+        /* TOAST */
+        .toast {
+            position: fixed; bottom: 90px; left: 50%;
+            transform: translateX(-50%) translateY(16px);
+            background: rgba(0,230,118,.15); border: 1px solid rgba(0,230,118,.4);
+            color: var(--green); font-family: var(--mono); font-size: 11px;
+            padding: 9px 20px; border-radius: 30px;
+            z-index: 9999; opacity: 0; transition: all .3s;
+            pointer-events: none; white-space: nowrap;
+        }
+        .toast.on  { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.err { background: rgba(255,82,82,.15); border-color: rgba(255,82,82,.4); color: var(--red); }
+
+        .gone { display: none !important; }
+    </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
-<div class="logo"><div class="logo-dot"></div>AI 주식 분석 브리핑</div>
-<div class="user-badge">
-<span>👤</span>
-<span id="userEmail">로그인</span>
-</div>
+    <div class="logo"><div class="logo-dot"></div>AI 주식 분석 브리핑</div>
+    <span class="hdr-tag">PRO</span>
 </header>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+    <button class="tab-btn active" id="tA" onclick="go('a')">📊 AI 분석</button>
+    <button class="tab-btn"        id="tH" onclick="go('h')">📋 저장된 리포트</button>
+</div>
 
 <div class="container">
 
-<div class="card">
-<div class="search-box">
-<input id="symbolInput" class="search-input" value="AAPL">
-<button class="btn" onclick="fetchAndAnalyze()">분석</button>
-</div>
+    <!-- ══ 분석 탭 ══ -->
+    <div class="tab-panel active" id="pA">
+
+        <!-- API 키 관리 -->
+        <div class="api-wrap">
+            <div class="api-toggle-btn" id="apiToggle">
+                <div class="api-left">
+                    <span>🔑</span>
+                    <span class="lbl">API 키 관리</span>
+                    <span class="ks" id="ksBadge">✓ 저장됨</span>
+                </div>
+                <span id="apiIco" style="color:var(--text3)">⚙️</span>
+            </div>
+            <div class="api-body" id="apiBody">
+                <input type="password" id="fhKey" class="api-inp" placeholder="Finnhub API Key">
+                <input type="password" id="gmKey" class="api-inp" placeholder="Google Gemini API Key">
+                <p class="api-hint">🔒 API 키는 브라우저 로컬 저장소에만 보관됩니다.</p>
+            </div>
+        </div>
+
+        <!-- 심볼 검색 -->
+        <div class="card">
+            <div class="card-hd">
+                <span>🔍</span>
+                <h2>주식 심볼 검색</h2>
+                <span class="badge">실시간</span>
+            </div>
+            <label class="s-label">심볼 입력 (예: AAPL, TSLA, MSFT / 한국 티커 불가)</label>
+            <div class="s-box">
+                <input type="text" id="symIn" value="AAPL" class="s-inp" placeholder="심볼">
+                <button id="runBtn" class="btn-main">분석 시작</button>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div id="ldArea" class="card gone" style="text-align:center">
+            <div class="spin"></div>
+            <p style="font-size:12px;color:var(--text3)">실시간 데이터 수신 및 AI 분석 리포트 생성 중...</p>
+        </div>
+
+        <!-- 결과 -->
+        <div id="rsArea" class="gone">
+            <div class="pgrid">
+                <div class="pcell"><div class="plbl">현재가</div><div class="pval" id="vCur">-</div></div>
+                <div class="pcell"><div class="plbl">변동률</div><div class="pval" id="vChg">-</div></div>
+                <div class="pcell"><div class="plbl">변동폭</div><div class="pval" id="vRng">-</div></div>
+            </div>
+            <div class="chart-wrap">
+                <div class="chart-lbl">
+                    <span>📉 일중 가격 범위</span>
+                    <span style="color:var(--ac)">자동 스케일</span>
+                </div>
+                <canvas id="myChart"></canvas>
+                <div class="chart-lbl" style="margin-top:8px">
+                    <span>저가</span><span>현재가</span><span>고가</span>
+                </div>
+            </div>
+            <div class="rpt-wrap">
+                <div class="rpt-hd">
+                    <span>🤵</span>
+                    <h3>AI 주식 분석 리포트</h3>
+                    <span class="save-st" id="saveSt">-</span>
+                </div>
+                <div class="rpt-body" id="rptTxt">분석 결과가 여기에 표시됩니다.</div>
+            </div>
+            <p class="fn">
+                * 분석 데이터는 참고용이며 투자 책임은 본인에게 있습니다.<br>
+                * Finnhub / Gemini Flash &nbsp;|&nbsp; 분석 완료 시 Firestore에 자동 저장
+            </p>
+        </div>
+
+        <!-- 에러 -->
+        <div id="errArea" class="err-box gone"><span id="errMsg"></span></div>
+    </div>
+
+    <!-- ══ 히스토리 탭 ══ -->
+    <div class="tab-panel" id="pH">
+        <div class="h-toolbar">
+            <span class="h-count">총 <strong id="totCnt">-</strong>개</span>
+            <input type="text" id="filt" class="f-inp" placeholder="심볼 필터 (예: AAPL)">
+            <button class="btn-s" onclick="loadHist()">🔄 새로고침</button>
+        </div>
+
+        <div id="ll" class="ll">
+            <div class="spin"></div>
+            <p style="margin-top:8px">리포트 불러오는 중...</p>
+        </div>
+        <div id="rList" class="r-list gone"></div>
+        <div id="emptyBox" class="empty gone">
+            <div class="ei">📭</div>
+            <p>저장된 리포트가 없습니다.<br>AI 분석 탭에서 분석 후 자동 저장됩니다.</p>
+        </div>
+        <div class="paging" id="pgBar">
+            <button class="btn-pg" id="pgPrev" onclick="pg(-1)" disabled>◀ 이전</button>
+            <span class="pg-info" id="pgInfo">- / -</span>
+            <button class="btn-pg" id="pgNext" onclick="pg(1)"  disabled>다음 ▶</button>
+        </div>
+    </div>
+
 </div>
 
-<div id="resultArea" class="hidden">
-<div class="price-grid">
-<div class="price-card"><div>현재가</div><div id="currentPrice">-</div></div>
-<div class="price-card"><div>변동률</div><div id="changePercent">-</div></div>
-<div class="price-card"><div>변동폭</div><div id="rangeValue">-</div></div>
+<!-- MODAL -->
+<div class="mo-bg" id="moBg" onclick="bgClick(event)">
+    <div class="modal">
+        <div class="mo-hd">
+            <div class="mo-title">
+                <div class="mo-sym" id="mSym">-</div>
+                <div class="mo-meta">
+                    <span>📅 <span id="mDate">-</span></span>
+                    <span>💵 <span id="mPrice">-</span></span>
+                    <span>📈 <span id="mChg">-</span></span>
+                </div>
+            </div>
+            <button class="btn-x" onclick="closeMo()">✕</button>
+        </div>
+        <div class="mo-body">
+            <div class="mo-txt" id="mTxt">-</div>
+        </div>
+        <div class="mo-ft">
+            <button class="btn-s" onclick="cpRpt()">📋 복사</button>
+            <button class="btn-s" style="margin-left:auto" onclick="closeMo()">닫기</button>
+        </div>
+    </div>
 </div>
 
-<div class="chart-area">
-<canvas id="chart"></canvas>
-</div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-<div class="report-area">
-<div id="analysisText" class="report-content"></div>
-
-<div class="report-actions">
-<button class="report-btn save-btn" onclick="saveReport()">리포트 저장</button>
-<button class="report-btn view-btn" onclick="toggleReports()">저장된 리포트</button>
-</div>
-
-<div id="savedWrap" class="saved-wrap"></div>
-</div>
-</div>
-
-</div>
-
+<!-- ════════════════════════════════
+     🔥 Firebase 설정
+     아래 값을 본인 Firebase 프로젝트 설정으로 교체하세요
+     Firebase 콘솔 → 프로젝트 설정 → 앱 → SDK 설정
+════════════════════════════════ -->
 <script>
-const db = firebase.firestore();
-const COL = "market_aibriefings";
-
-let currentUser=null;
-let currentReport=null;
-let chart=null;
-
-firebase.auth().onAuthStateChanged(user=>{
-currentUser=user;
-document.getElementById("userEmail").textContent=user?user.email.split("@")[0]:"로그인";
-});
-
-async function fetchAndAnalyze(){
-const symbol=document.getElementById("symbolInput").value.trim().toUpperCase();
-const finnhubKey=localStorage.getItem("finnhub_key");
-const geminiKey=localStorage.getItem("gemini_key");
-
-const stock=await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${finnhubKey}`).then(r=>r.json());
-
-document.getElementById("currentPrice").innerText=`$${stock.c}`;
-document.getElementById("changePercent").innerText=`${stock.dp}%`;
-document.getElementById("rangeValue").innerText=`$${(stock.h-stock.l).toFixed(2)}`;
-
-const ctx=document.getElementById("chart").getContext("2d");
-if(chart) chart.destroy();
-
-chart=new Chart(ctx,{
-type:"line",
-data:{
-labels:["저가","현재","고가"],
-datasets:[{
-data:[stock.l,stock.c,stock.h],
-borderColor:"#00d4ff",
-tension:.2
-}]
-},
-options:{plugins:{legend:{display:false}}}
-});
-
-const prompt=`${symbol} 주식 현재가 ${stock.c} 기준 한국어 투자 브리핑 작성`;
-
-const ai=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiKey}`,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-contents:[{parts:[{text:prompt}]}]
-})
-}).then(r=>r.json());
-
-const text=ai.candidates?.[0]?.content?.parts?.[0]?.text || "분석 실패";
-document.getElementById("analysisText").innerText=text;
-document.getElementById("resultArea").classList.remove("hidden");
-
-currentReport={
-symbol,
-report:text,
-price:stock.c,
-createdAt:new Date().toISOString(),
-title:`${symbol} ${new Date().toLocaleDateString("ko-KR")} 분석`
+const FB_CFG = {
+    apiKey:            "여기에_apiKey",
+    authDomain:        "여기에_authDomain",
+    projectId:         "여기에_projectId",
+    storageBucket:     "여기에_storageBucket",
+    messagingSenderId: "여기에_messagingSenderId",
+    appId:             "여기에_appId"
 };
-}
+const COL = "ai_briefings"; // Firestore 컬렉션명 (자유롭게 변경 가능)
 
-async function saveReport(){
-if(!currentUser){
-alert("로그인 후 저장 가능합니다.");
-return;
-}
-if(!currentReport)return;
-
-await db.collection(COL).add({
-...currentReport,
-uid:currentUser.uid,
-email:currentUser.email
-});
-
-alert("저장 완료");
-}
-
-async function toggleReports(){
-const wrap=document.getElementById("savedWrap");
-
-if(wrap.style.display==="block"){
-wrap.style.display="none";
-return;
-}
-
-const snap=await db.collection(COL).orderBy("createdAt","desc").limit(50).get();
-
-const grouped={};
-
-snap.forEach(doc=>{
-const d=doc.data();
-if(!grouped[d.symbol]) grouped[d.symbol]=[];
-grouped[d.symbol].push({id:doc.id,...d});
-});
-
-let html="";
-
-Object.keys(grouped).forEach(symbol=>{
-html+=`<div class="symbol-group"><div class="symbol-title">${symbol}</div>`;
-grouped[symbol].forEach(item=>{
-html+=`
-<div class="saved-item" onclick="loadReport('${item.id}')">
-<div class="saved-date">${new Date(item.createdAt).toLocaleString("ko-KR")}</div>
-<div class="saved-preview">${item.report.substring(0,120)}...</div>
-${currentUser && currentUser.uid===item.uid ? `<button class="delete-btn" onclick="event.stopPropagation();deleteReport('${item.id}')">삭제</button>` : ""}
-</div>`;
-});
-html+="</div>";
-});
-
-wrap.innerHTML=html || "저장된 리포트 없음";
-wrap.style.display="block";
-}
-
-async function loadReport(id){
-const doc=await db.collection(COL).doc(id).get();
-const d=doc.data();
-document.getElementById("analysisText").innerText=d.report;
-}
-
-async function deleteReport(id){
-if(!confirm("삭제하시겠습니까?")) return;
-await db.collection(COL).doc(id).delete();
-toggleReports();
-toggleReports();
-}
+firebase.initializeApp(FB_CFG);
+const db = firebase.firestore();
 </script>
 
+<script>
+/* ── 상수 ── */
+const PG = 10; // 한 페이지 표시 수
+
+/* ── 상태 ── */
+let chartIns = null;
+let allDocs  = [];
+let filtered = [];
+let curPg    = 1;
+let curDoc   = null;
+
+/* ══════════════════════════════
+   탭 전환
+══════════════════════════════ */
+function go(t) {
+    document.getElementById('tA').classList.toggle('active', t==='a');
+    document.getElementById('tH').classList.toggle('active', t==='h');
+    document.getElementById('pA').classList.toggle('active', t==='a');
+    document.getElementById('pH').classList.toggle('active', t==='h');
+    if (t === 'h') loadHist();
+}
+
+/* ══════════════════════════════
+   API 키 관리
+══════════════════════════════ */
+const $fh  = document.getElementById('fhKey');
+const $gm  = document.getElementById('gmKey');
+const $ksB = document.getElementById('ksBadge');
+
+(function init() {
+    const f = localStorage.getItem('fh_k'), g = localStorage.getItem('gm_k');
+    if (f) $fh.value = f;
+    if (g) $gm.value = g;
+    updKs();
+})();
+
+function saveK() { localStorage.setItem('fh_k',$fh.value); localStorage.setItem('gm_k',$gm.value); updKs(); }
+function updKs() {
+    const ok = $fh.value && $gm.value;
+    $ksB.className = ok ? 'ks' : 'ks warn';
+    $ksB.textContent = ok ? '✓ 저장됨' : '⚠️ 입력 필요';
+}
+
+document.getElementById('apiToggle').addEventListener('click', () => {
+    const b = document.getElementById('apiBody');
+    b.classList.toggle('open');
+    document.getElementById('apiIco').textContent = b.classList.contains('open') ? '▲' : '⚙️';
+});
+$fh.addEventListener('input', saveK);
+$gm.addEventListener('input', saveK);
+
+/* ══════════════════════════════
+   토스트
+══════════════════════════════ */
+function showToast(msg, isErr=false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast' + (isErr ? ' err' : '');
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), 3000);
+}
+
+/* ══════════════════════════════
+   Firestore 저장
+══════════════════════════════ */
+async function saveRpt(sym, content, pi) {
+    const st = document.getElementById('saveSt');
+    st.style.color = 'var(--text3)';
+    st.textContent = '저장 중...';
+    try {
+        const n = new Date();
+        const p = v => String(v).padStart(2,'0');
+        const ds = `${n.getFullYear()}.${p(n.getMonth()+1)}.${p(n.getDate())} ${p(n.getHours())}:${p(n.getMinutes())}`;
+        await db.collection(COL).add({
+            symbol: sym, content, dateStr: ds,
+            price: pi.c, change: pi.d, chgPct: pi.dp, high: pi.h, low: pi.l,
+            createdAt: firebase.firestore.Timestamp.now()
+        });
+        st.style.color = 'var(--green)';
+        st.textContent = '✓ 저장 완료';
+        showToast('✅ Firestore에 저장되었습니다.');
+    } catch(e) {
+        st.style.color = 'var(--red)';
+        st.textContent = '⚠️ 저장 실패';
+        showToast('⚠️ 저장 실패: ' + e.message, true);
+    }
+}
+
+/* ══════════════════════════════
+   분석 실행
+══════════════════════════════ */
+async function run() {
+    const fhKey = $fh.value.trim();
+    const gmKey = $gm.value.trim();
+    const sym   = document.getElementById('symIn').value.trim().toUpperCase();
+    if (!fhKey || !gmKey) { alert('⚙️ API 키를 먼저 입력하세요.'); return; }
+    if (!sym)             { alert('심볼을 입력하세요.'); return; }
+
+    const $ld  = document.getElementById('ldArea');
+    const $rs  = document.getElementById('rsArea');
+    const $err = document.getElementById('errArea');
+    $ld.classList.remove('gone'); $rs.classList.add('gone'); $err.classList.add('gone');
+    document.getElementById('saveSt').textContent = '';
+    document.getElementById('runBtn').disabled = true;
+
+    try {
+        /* 1. Finnhub */
+        const fhRes  = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${fhKey}`);
+        const fh     = await fhRes.json();
+        if (fh.error || (fh.c===0 && fh.h===0)) throw new Error('유효하지 않은 심볼이거나 데이터가 없습니다.');
+
+        const { c, d, dp, h, l } = fh;
+        const range = (h - l).toFixed(2);
+        const rPct  = ((range / l) * 100).toFixed(2);
+
+        /* 2. 가격 카드 */
+        document.getElementById('vCur').textContent = `$${c.toFixed(2)}`;
+        const vChgEl = document.getElementById('vChg');
+        vChgEl.innerHTML = `${dp.toFixed(2)}%<span style="font-size:10px"> ($${d.toFixed(2)})</span>`;
+        vChgEl.className = `pval ${dp >= 0 ? 'up' : 'down'}`;
+        document.getElementById('vRng').innerHTML = `$${range}<span style="font-size:10px"> (${rPct}%)</span>`;
+
+        /* 3. 차트 */
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (chartIns) chartIns.destroy();
+        chartIns = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['저가','현재가','고가'],
+                datasets: [{
+                    data: [l, c, h],
+                    borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,.07)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: ['#10b981','#fbbf24','#ef4444'],
+                    pointBorderColor: '#fff', pointRadius: 5, pointHoverRadius: 7,
+                    tension: 0.1, fill: true
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>` $${ctx.raw.toFixed(2)}`}} },
+                scales: {
+                    y: { min:l*.995, max:h*1.005, grid:{color:'#1e2d45'}, ticks:{color:'#7a91a8',font:{size:10}} },
+                    x: { grid:{display:false}, ticks:{color:'#7a91a8'} }
+                }
+            }
+        });
+
+        /* 4. Gemini */
+        const now = new Date();
+        const dS  = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
+        const prompt = `오늘은 ${dS}입니다. 당신은 AI 수석 기술적 애널리스트입니다.
+다음 주식 데이터를 바탕으로 개미 투자자에게 제공하는 심층 기술적 분석 리포트를 작성하세요.
+"오늘 기분이 좋아요" 같은 주관적 표현은 절대 금지입니다.
+
+분석 데이터:
+- 심볼: ${sym}
+- 현재가: $${c.toFixed(2)}
+- 변동률: ${dp.toFixed(2)}%
+- 금일 레인지: $${range} (변동폭 ${rPct}%)
+
+분석 리포트에 반드시 포함할 항목:
+1. 현재 가격의 기술적 위치 (52주 신고가/신저가 대비, 주요 이동평균선과의 관계)
+2. 오늘의 변동성 분석 (레인지 비율 평가)
+3. 단기 추세 전망 (내일 또는 이번 주 예상 움직임)
+4. 주요 지지선과 저항선 레벨 제시
+5. 투자자를 위한 액션 플랜 (관망·분할 매수·익절 등 구체적 제안)
+
+전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
+
+        const gmRes  = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gmKey}`,
+            { method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:.4,maxOutputTokens:8192} }) }
+        );
+        const gm     = await gmRes.json();
+        let aiText = '';
+        if (gm.candidates?.length > 0) aiText = gm.candidates[0].content.parts[0].text;
+        else if (gm.error)             aiText = `AI 분석 오류: ${gm.error.message}`;
+        else                           aiText = 'AI 분석 오류. API 키 또는 모델명을 확인하세요.';
+
+        document.getElementById('rptTxt').textContent = aiText;
+        $ld.classList.add('gone'); $rs.classList.remove('gone');
+
+        /* 5. 자동 저장 */
+        await saveRpt(sym, aiText, { c, d, dp, h, l });
+
+    } catch(e) {
+        $ld.classList.add('gone');
+        document.getElementById('errMsg').textContent = e.message || '네트워크 오류 또는 API 키 문제입니다.';
+        $err.classList.remove('gone');
+    } finally {
+        document.getElementById('runBtn').disabled = false;
+    }
+}
+
+document.getElementById('runBtn').addEventListener('click', run);
+document.getElementById('symIn').addEventListener('keypress', e => { if(e.key==='Enter') run(); });
+
+/* ══════════════════════════════
+   히스토리 로드
+══════════════════════════════ */
+async function loadHist() {
+    document.getElementById('ll').classList.remove('gone');
+    document.getElementById('rList').classList.add('gone');
+    document.getElementById('emptyBox').classList.add('gone');
+    document.getElementById('pgBar').style.visibility = 'hidden';
+    try {
+        const snap = await db.collection(COL).orderBy('createdAt','desc').get();
+        allDocs = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        doFilter();
+    } catch(e) {
+        document.getElementById('ll').innerHTML = `<p style="color:var(--red)">⚠️ 로드 실패: ${e.message}</p>`;
+    }
+}
+
+function doFilter() {
+    const kw = document.getElementById('filt').value.trim().toUpperCase();
+    filtered = kw ? allDocs.filter(d => (d.symbol||'').includes(kw)) : allDocs;
+    curPg = 1;
+    renderList();
+}
+document.getElementById('filt').addEventListener('input', doFilter);
+
+function renderList() {
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / PG));
+    const start = (curPg - 1) * PG;
+    const slice = filtered.slice(start, start + PG);
+
+    document.getElementById('totCnt').textContent = total;
+    document.getElementById('ll').classList.add('gone');
+
+    if (total === 0) {
+        document.getElementById('emptyBox').classList.remove('gone');
+        document.getElementById('rList').classList.add('gone');
+        document.getElementById('pgBar').style.visibility = 'hidden';
+        return;
+    }
+
+    document.getElementById('emptyBox').classList.add('gone');
+    const $rl = document.getElementById('rList');
+    $rl.classList.remove('gone');
+    $rl.innerHTML = '';
+
+    slice.forEach(doc => {
+        const pct  = parseFloat(doc.chgPct) || 0;
+        const cls  = pct >= 0 ? 'up' : 'down';
+        const sign = pct >= 0 ? '+' : '';
+        const prev = (doc.content || '').replace(/\n/g,' ').slice(0, 90) + '…';
+
+        const el = document.createElement('div');
+        el.className = 'r-item';
+        el.innerHTML = `
+            <div class="r-body">
+                <div class="r-top">
+                    <span class="r-sym">${doc.symbol||'-'}</span>
+                    <span class="r-chg ${cls}">${sign}${pct.toFixed(2)}%</span>
+                    <span class="r-price">$${parseFloat(doc.price||0).toFixed(2)}</span>
+                    <span class="r-date">${doc.dateStr||'-'}</span>
+                </div>
+                <div class="r-prev">${prev}</div>
+            </div>
+            <button class="btn-del" title="삭제" onclick="delDoc(event,'${doc.id}')">🗑</button>
+        `;
+        el.addEventListener('click', e => { if (!e.target.closest('.btn-del')) openMo(doc); });
+        $rl.appendChild(el);
+    });
+
+    document.getElementById('pgInfo').textContent = `${curPg} / ${pages}`;
+    document.getElementById('pgPrev').disabled = curPg <= 1;
+    document.getElementById('pgNext').disabled = curPg >= pages;
+    document.getElementById('pgBar').style.visibility = pages > 1 ? 'visible' : 'hidden';
+}
+
+function pg(dir) {
+    const pages = Math.ceil(filtered.length / PG);
+    curPg = Math.max(1, Math.min(pages, curPg + dir));
+    renderList();
+    window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function delDoc(e, id) {
+    e.stopPropagation();
+    if (!confirm('이 리포트를 삭제할까요?')) return;
+    try {
+        await db.collection(COL).doc(id).delete();
+        allDocs = allDocs.filter(d => d.id !== id);
+        doFilter();
+        showToast('🗑 삭제되었습니다.');
+    } catch(err) { showToast('⚠️ 삭제 실패: ' + err.message, true); }
+}
+
+/* ══════════════════════════════
+   모달
+══════════════════════════════ */
+function openMo(doc) {
+    curDoc = doc;
+    const pct  = parseFloat(doc.chgPct) || 0;
+    const sign = pct >= 0 ? '+' : '';
+    document.getElementById('mSym').textContent   = doc.symbol || '-';
+    document.getElementById('mDate').textContent  = doc.dateStr || '-';
+    document.getElementById('mPrice').textContent = `$${parseFloat(doc.price||0).toFixed(2)}`;
+    document.getElementById('mChg').textContent   = `${sign}${pct.toFixed(2)}%`;
+    document.getElementById('mTxt').textContent   = doc.content || '내용 없음';
+    document.getElementById('moBg').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeMo() {
+    document.getElementById('moBg').classList.remove('open');
+    document.body.style.overflow = '';
+    curDoc = null;
+}
+function bgClick(e) { if (e.target === document.getElementById('moBg')) closeMo(); }
+function cpRpt() {
+    if (!curDoc) return;
+    navigator.clipboard.writeText(`[${curDoc.symbol}] ${curDoc.dateStr}\n\n${curDoc.content}`)
+        .then(() => showToast('📋 클립보드에 복사되었습니다.'))
+        .catch(() => showToast('복사 실패', true));
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMo(); });
+</script>
 </body>
 </html>
