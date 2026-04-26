@@ -660,6 +660,13 @@ async function run() {
         const range = (h - l).toFixed(2);
         const rPct  = ((range / l) * 100).toFixed(2);
 
+
+const ma20 = typeof stock !== "undefined" ? stock.ma20 ?? null : null;
+const ma50 = stock.ma50 ?? null;
+const rsi = stock.rsi ?? null;
+const macd = stock.macd ?? null;
+
+
         /* 2. 가격 카드 */
         document.getElementById('vCur').textContent = `$${c.toFixed(2)}`;
         const vChgEl = document.getElementById('vChg');
