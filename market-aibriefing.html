@@ -663,10 +663,13 @@ async function run() {
 
 const safeStock = typeof stock !== "undefined" ? stock : {};
 
-const ma20 = safeStock.ma20 ?? null;
-const ma50 = safeStock.ma50 ?? null;
-const rsi  = safeStock.rsi ?? null;
-const macd = safeStock.macd ?? null;
+const ma20   = safeStock.ma20 ?? null;
+const ma50   = safeStock.ma50 ?? null;
+const rsi    = safeStock.rsi ?? null;
+const macd   = safeStock.macd ?? null;
+const high52 = safeStock.high52 ?? null;
+const low52  = safeStock.low52 ?? null;
+const volume = safeStock.volume ?? null;
 
 
         /* 2. 가격 카드 */
