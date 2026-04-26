@@ -651,92 +651,14 @@ async function run() {
     document.getElementById('runBtn').disabled = true;
 
     try {
-/* 1. Finnhub 기본 시세 */
-const fhRes = await fetch(
-    `https://finnhub.io/api/v1/quote?symbol=${sym}&token=${fhKey}`
-);
-const fh = await fhRes.json();
+        /* 1. Finnhub */
+        const fhRes  = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${fhKey}`);
+        const fh     = await fhRes.json();
+        if (fh.error || (fh.c===0 && fh.h===0)) throw new Error('유효하지 않은 심볼이거나 데이터가 없습니다.');
 
-if (fh.error || (fh.c === 0 && fh.h === 0)) {
-    throw new Error('유효하지 않은 심볼이거나 데이터가 없습니다.');
-}
-
-const { c, d, dp, h, l } = fh;
-const range = (h - l).toFixed(2);
-const rPct = ((range / l) * 100).toFixed(2);
-
-/* 2. 52주 / 거래량 데이터 */
-const metricRes = await fetch(
-    `https://finnhub.io/api/v1/stock/metric?symbol=${sym}&metric=all&token=${fhKey}`
-);
-const metricJson = await metricRes.json();
-const metric = metricJson.metric || {};
-
-const high52 = metric["52WeekHigh"] ?? null;
-const low52 = metric["52WeekLow"] ?? null;
-const volume = metric["10DayAverageTradingVolume"] ?? null;
-
-/* 3. 최근 60일 캔들 */
-const to = Math.floor(Date.now() / 1000);
-const from = to - (60 * 24 * 60 * 60);
-
-const candleRes = await fetch(
-    `https://finnhub.io/api/v1/stock/candle?symbol=${sym}&resolution=D&from=${from}&to=${to}&token=${fhKey}`
-);
-const candleJson = await candleRes.json();
-const closes = candleJson.c || [];
-
-/* 4. 기술지표 계산 */
-function calcMA(arr, period) {
-    if (!arr || arr.length < period) return null;
-    const slice = arr.slice(-period);
-    const avg = slice.reduce((sum, val) => sum + val, 0) / period;
-    return Number(avg.toFixed(2));
-}
-
-function calcRSI(arr, period = 14) {
-    if (!arr || arr.length < period + 1) return null;
-
-    let gain = 0;
-    let loss = 0;
-
-    for (let i = arr.length - period; i < arr.length; i++) {
-        const diff = arr[i] - arr[i - 1];
-
-        if (diff >= 0) {
-            gain += diff;
-        } else {
-            loss += Math.abs(diff);
-        }
-    }
-
-    if (loss === 0) return 100;
-
-    const rs = gain / loss;
-    const rsiValue = 100 - (100 / (1 + rs));
-
-    return Number(rsiValue.toFixed(2));
-}
-
-const ma20 = calcMA(closes, 20);
-const ma50 = calcMA(closes, 50);
-const rsi = calcRSI(closes);
-
-/* 무료 플랜에서는 정확한 MACD 계산 생략 가능 */
-const macd = null;
-
-
-
-const safeStock = typeof stock !== "undefined" ? stock : {};
-
-const ma20   = safeStock.ma20 ?? null;
-const ma50   = safeStock.ma50 ?? null;
-const rsi    = safeStock.rsi ?? null;
-const macd   = safeStock.macd ?? null;
-const high52 = safeStock.high52 ?? null;
-const low52  = safeStock.low52 ?? null;
-const volume = safeStock.volume ?? null;
-
+        const { c, d, dp, h, l } = fh;
+        const range = (h - l).toFixed(2);
+        const rPct  = ((range / l) * 100).toFixed(2);
 
         /* 2. 가격 카드 */
         document.getElementById('vCur').textContent = `$${c.toFixed(2)}`;
@@ -774,96 +696,29 @@ const volume = safeStock.volume ?? null;
         /* 4. Gemini */
         const now = new Date();
         const dS  = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
- 
+        const prompt = `오늘은 ${dS}입니다. 당신은 AI 수석 기술적 애널리스트입니다.
+다음 주식 데이터를 바탕으로 개미 투자자에게 제공하는 심층 기술적 분석 리포트를 작성하세요.
+"오늘 기분이 좋아요" 같은 주관적 표현은 절대 금지입니다.
 
-const prompt = `
-오늘은 ${dS}입니다.
-
-당신은 개인 투자자를 위한 AI 수석 기술적 애널리스트입니다.
-아래 데이터를 기반으로 객관적인 기술적 분석 리포트를 한국어로 작성하세요.
-
-[중요 규칙]
-- 감정적 표현 금지
-- 과장 금지
-- 단정 표현 금지
-- 없는 데이터 생성 금지
-- 부족한 데이터는 "추가 데이터 필요" 표시
-- 상승/하락 가능성은 조건부로 설명
-- 숫자 중심 분석
-- Markdown 형식
-- 핵심만 간결하게 작성
-- 불필요한 반복 금지
-
-[입력 데이터]
-- 종목: ${sym}
+분석 데이터:
+- 심볼: ${sym}
 - 현재가: $${c.toFixed(2)}
-- 등락률: ${dp.toFixed(2)}%
-- 금일 변동폭: $${range}
-- 레인지 비율: ${rPct}%
-- MA20: ${ma20 ?? "없음"}
-- MA50: ${ma50 ?? "없음"}
-- RSI: ${rsi ?? "없음"}
-- MACD: ${macd ?? "없음"}
-- 52주 고가: ${high52 ?? "없음"}
-- 52주 저가: ${low52 ?? "없음"}
-- 거래량: ${volume ?? "없음"}
+- 변동률: ${dp.toFixed(2)}%
+- 금일 레인지: $${range} (변동폭 ${rPct}%)
 
-[분석 항목]
+분석 리포트에 반드시 포함할 항목:
+1. 현재 가격의 기술적 위치 (52주 신고가/신저가 대비, 주요 이동평균선과의 관계)
+2. 오늘의 변동성 분석 (레인지 비율 평가)
+3. 단기 추세 전망 (내일 또는 이번 주 예상 움직임)
+4. 주요 지지선과 저항선 레벨 제시
+5. 투자자를 위한 액션 플랜 (관망·분할 매수·익절 등 구체적 제안)
 
-## 1. 현재 가격 위치
-- 이동평균선 대비 위치
-- 52주 고저점 대비 위치
-- 과열/침체 여부 판단
-
-## 2. 변동성 분석
-- 오늘 레인지 평가
-- 변동성 수준 해석
-- 매수세와 매도세 균형
-
-## 3. 단기 전망
-- 내일 또는 이번 주 가능성
-- 상승 조건
-- 하락 조건
-
-## 4. 지지선 / 저항선
-- 1차 지지선
-- 2차 지지선
-- 1차 저항선
-- 2차 저항선
-
-## 5. 투자 전략
-### 보유자
-간단 전략 제시
-
-### 신규 진입자
-간단 전략 제시
-
-### 리스크 관리
-주의 가격대 제시
-
-## 6. 기술 점수
-다음 기준으로 100점 만점 평가
-- 추세
-- 모멘텀
-- 변동성
-- 거래량
-
-절대 요약하지 말고 마지막 6번 항목까지 동일한 분량으로 작성하세요.
-
-형식:
-강세 점수: XX / 100
-판단: 강세 / 중립 / 약세
-
-[출력 형식]
-제목:
-[${sym}] ${dS} 기술적 분석 리포트
-
-`;
+전문가답게, 데이터 기반으로, 한국어로 상세히 작성하세요.`;
 
         const gmRes  = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
             { method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:.3,maxOutputTokens:8192} }) }
+              body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:.4,maxOutputTokens:8192} }) }
         );
         const gm     = await gmRes.json();
         let aiText = '';
@@ -958,7 +813,7 @@ const KR_MAP = {
     'ARKK':'arkk','아크':'arkk',
     'TOPW':'topw','라운드힐 탑 위클리페이':'topw',
     'SOXL':'soxl','쏙슬':'soxl',
-
+    
     /* 엔터·게임 */
     '디즈니':'disney',
     '넷이즈':'netease',
