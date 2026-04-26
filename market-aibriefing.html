@@ -848,6 +848,8 @@ const prompt = `
 - 변동성
 - 거래량
 
+절대 요약하지 말고 마지막 6번 항목까지 동일한 분량으로 작성하세요.
+
 형식:
 강세 점수: XX / 100
 판단: 강세 / 중립 / 약세
@@ -856,14 +858,12 @@ const prompt = `
 제목:
 [${sym}] ${dS} 기술적 분석 리포트
 
-마지막 문구:
-본 분석은 참고용이며 투자 판단의 책임은 투자자 본인에게 있습니다.
 `;
 
         const gmRes  = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
             { method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:.4,maxOutputTokens:8192} }) }
+              body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:.3,topK:32,topP:0.9,maxOutputTokens:8192} }) }
         );
         const gm     = await gmRes.json();
         let aiText = '';
