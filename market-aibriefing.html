@@ -661,10 +661,12 @@ async function run() {
         const rPct  = ((range / l) * 100).toFixed(2);
 
 
-const ma20 = typeof stock !== "undefined" ? stock.ma20 ?? null : null;
-const ma50 = stock.ma50 ?? null;
-const rsi = stock.rsi ?? null;
-const macd = stock.macd ?? null;
+const safeStock = typeof stock !== "undefined" ? stock : {};
+
+const ma20 = safeStock.ma20 ?? null;
+const ma50 = safeStock.ma50 ?? null;
+const rsi  = safeStock.rsi ?? null;
+const macd = safeStock.macd ?? null;
 
 
         /* 2. 가격 카드 */
