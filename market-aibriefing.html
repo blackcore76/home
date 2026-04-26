@@ -651,14 +651,80 @@ async function run() {
     document.getElementById('runBtn').disabled = true;
 
     try {
-        /* 1. Finnhub */
-        const fhRes  = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${fhKey}`);
-        const fh     = await fhRes.json();
-        if (fh.error || (fh.c===0 && fh.h===0)) throw new Error('유효하지 않은 심볼이거나 데이터가 없습니다.');
+/* 1. Finnhub 기본 시세 */
+const fhRes = await fetch(
+    `https://finnhub.io/api/v1/quote?symbol=${sym}&token=${fhKey}`
+);
+const fh = await fhRes.json();
 
-        const { c, d, dp, h, l } = fh;
-        const range = (h - l).toFixed(2);
-        const rPct  = ((range / l) * 100).toFixed(2);
+if (fh.error || (fh.c === 0 && fh.h === 0)) {
+    throw new Error('유효하지 않은 심볼이거나 데이터가 없습니다.');
+}
+
+const { c, d, dp, h, l } = fh;
+const range = (h - l).toFixed(2);
+const rPct = ((range / l) * 100).toFixed(2);
+
+/* 2. 52주 / 거래량 데이터 */
+const metricRes = await fetch(
+    `https://finnhub.io/api/v1/stock/metric?symbol=${sym}&metric=all&token=${fhKey}`
+);
+const metricJson = await metricRes.json();
+const metric = metricJson.metric || {};
+
+const high52 = metric["52WeekHigh"] ?? null;
+const low52 = metric["52WeekLow"] ?? null;
+const volume = metric["10DayAverageTradingVolume"] ?? null;
+
+/* 3. 최근 60일 캔들 */
+const to = Math.floor(Date.now() / 1000);
+const from = to - (60 * 24 * 60 * 60);
+
+const candleRes = await fetch(
+    `https://finnhub.io/api/v1/stock/candle?symbol=${sym}&resolution=D&from=${from}&to=${to}&token=${fhKey}`
+);
+const candleJson = await candleRes.json();
+const closes = candleJson.c || [];
+
+/* 4. 기술지표 계산 */
+function calcMA(arr, period) {
+    if (!arr || arr.length < period) return null;
+    const slice = arr.slice(-period);
+    const avg = slice.reduce((sum, val) => sum + val, 0) / period;
+    return Number(avg.toFixed(2));
+}
+
+function calcRSI(arr, period = 14) {
+    if (!arr || arr.length < period + 1) return null;
+
+    let gain = 0;
+    let loss = 0;
+
+    for (let i = arr.length - period; i < arr.length; i++) {
+        const diff = arr[i] - arr[i - 1];
+
+        if (diff >= 0) {
+            gain += diff;
+        } else {
+            loss += Math.abs(diff);
+        }
+    }
+
+    if (loss === 0) return 100;
+
+    const rs = gain / loss;
+    const rsiValue = 100 - (100 / (1 + rs));
+
+    return Number(rsiValue.toFixed(2));
+}
+
+const ma20 = calcMA(closes, 20);
+const ma50 = calcMA(closes, 50);
+const rsi = calcRSI(closes);
+
+/* 무료 플랜에서는 정확한 MACD 계산 생략 가능 */
+const macd = null;
+
 
 
 const safeStock = typeof stock !== "undefined" ? stock : {};
