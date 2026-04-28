@@ -224,6 +224,16 @@
         </div>
 
         <div id="rsArea" class="gone">
+            <!-- 종목명 + 데이터 날짜 배너 -->
+            <div id="stockInfoBar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:10px 14px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="stockMktBadge" class="mkt-badge mkt-us">🇺🇸 US</span>
+                    <span id="stockCodeEl" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ac)">-</span>
+                    <span id="stockNameEl" style="font-family:var(--sans);font-size:12px;color:var(--text2)"></span>
+                </div>
+                <div id="dataDateEl" style="font-family:var(--mono);font-size:10px;color:var(--text3);">-</div>
+            </div>
+
             <div class="pgrid">
                 <div class="pcell"><div class="plbl">현재가</div><div class="pval" id="vCur">-</div></div>
                 <div class="pcell"><div class="plbl">변동률</div><div class="pval" id="vChg">-</div></div>
@@ -276,12 +286,15 @@
 
             <div class="rpt-wrap">
                 <div class="rpt-hd"><span>🤵</span><h3>AI 주식 분석 리포트</h3><span class="save-st" id="saveSt">-</span></div>
+                <div id="rptDataMeta" style="display:none;margin-bottom:12px;padding:8px 12px;background:var(--sf3);border-radius:8px;border-left:3px solid var(--bd2);">
+                    <span id="rptDataMetaTxt" style="font-family:var(--mono);font-size:10px;color:var(--text3);"></span>
+                </div>
                 <div class="rpt-body" id="rptTxt">분석 결과가 여기에 표시됩니다.</div>
             </div>
             <p class="fn">
                 * 분석 데이터는 참고용이며 투자 책임은 본인에게 있습니다.<br>
                 * 현재가: Finnhub(미국) / Yahoo Finance(한국) | 캔들·지표: Yahoo Finance (JS 직접 계산)<br>
-                * AI: Gemini-3-Flash Preview | 완료 시 Firestore 자동 저장
+                * AI: Gemini 3 Flash Preview | 완료 시 Firestore 자동 저장
             </p>
         </div>
 
@@ -385,10 +398,7 @@ const KR_NAME_MAP={
     '현대모비스':'012330','lg전자':'066570','삼성물산':'028260',
     '두산에너빌리티':'034020','한화에어로스페이스':'012450',
     '크래프톤':'259960','펄어비스':'263750','에코프로':'086520','에코프로비엠':'247540',
-    'ls일렉트릭':'010120','고려아연':'010130','한미사이언스':'008930','POSCO홀딩스':'005490',
-    'HD현대일렉트릭':'267260','우리금융지주':'316140','삼성생명':'032830','LG에너지솔루션':'373220',
-    'HD한국조선해양': '009540','삼성중공업':'010140','미래에셋증권':'006800','한화오션':'042660',
-    '카카오':'035720','HD현대중공업':'329180','LG화학':'051910','삼성바이오로직스':'207940'
+    'ls일렉트릭':'010120','고려아연':'010130','한미사이언스':'008930',
 };
 function krNameToCode(q){
     const lower=q.toLowerCase().trim();
@@ -420,7 +430,7 @@ async function fetchYFCandles(yfSym,days=110){
     return raw;
 }
 
-/* Yahoo Finance 현재가 (한국주식용) */
+/* Yahoo Finance 현재가 (한국주식용) — 종목명·데이터날짜 포함 */
 async function fetchYFQuote(yfSym){
     const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=1d&range=1d`;
     const tryFetch=async px=>{
@@ -431,6 +441,20 @@ async function fetchYFQuote(yfSym){
         return meta;
     };
     return await Promise.any(PROXIES.map(p=>tryFetch(p)));
+}
+
+/* 타임스탬프 → "YYYY.MM.DD" 문자열 */
+function tsToDateStr(ts){
+    if(!ts)return null;
+    const d=new Date(ts*1000);
+    const p=v=>String(v).padStart(2,'0');
+    return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`;
+}
+
+/* 데이터 날짜 경과일 계산 */
+function dateDiffDays(ts){
+    if(!ts)return null;
+    return Math.floor((Date.now()-ts*1000)/(86400000));
 }
 
 /* ══ 기술지표 JS 직접 계산 ══ */
@@ -632,7 +656,7 @@ function buildPrompt(sym,quote,ind,dS,isKr){
 ### 보유자
 간단 전략 제시
 ### 신규 진입자
-간단 전략 제시
+간단 전략 제시(진입가 제시)
 ### 리스크 관리
 주의 가격대 제시
 
@@ -646,7 +670,7 @@ function buildPrompt(sym,quote,ind,dS,isKr){
 
 [출력 형식]
 제목: [${sym}] ${dS} 기술적 분석 리포트
-마지막 문구: 본 분석은 참고용이며 투자 판단의 책임은 투자자 본인에게 있습니다.`;
+`;
 }
 
 /* ══ 분석 실행 ══ */
@@ -674,20 +698,29 @@ async function run(){
         /* STEP 1: 현재가 */
         ldStep(1);
         document.getElementById('ls1t').textContent=isKr?'현재가 수신 (Yahoo Finance KR)':'현재가 수신 (Finnhub)';
-        let quote;
+        let quote, stockName='', dataTs=null;
         if(isKr){
             let meta;
             try{meta=await fetchYFQuote(yfSym);}
-            catch{yfSym=sym+'.KQ';meta=await fetchYFQuote(yfSym);} /* .KS 실패 → .KQ */
+            catch{yfSym=sym+'.KQ';meta=await fetchYFQuote(yfSym);}
             const c=meta.regularMarketPrice,pc=meta.chartPreviousClose||meta.previousClose||c;
             const h=meta.regularMarketDayHigh||c,l=meta.regularMarketDayLow||c;
             const d=parseFloat((c-pc).toFixed(2)),dp=parseFloat(((d/pc)*100).toFixed(2));
+            stockName=meta.longName||meta.shortName||'';
+            dataTs=meta.regularMarketTime||null;
             quote={c,d,dp,h,l};
         }else{
             if(!fhKey)throw new Error('미국 주식은 Finnhub API 키가 필요합니다.');
             const res=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${fhKey}`);
             const fh=await res.json();
             if(fh.error||(fh.c===0&&fh.h===0))throw new Error('유효하지 않은 심볼이거나 Finnhub 데이터가 없습니다.');
+            dataTs=fh.t||null;
+            /* 미국도 Yahoo에서 회사명 병행 조회 */
+            try{
+                const yfMeta=await fetchYFQuote(sym);
+                stockName=yfMeta.longName||yfMeta.shortName||'';
+                if(!dataTs)dataTs=yfMeta.regularMarketTime||null;
+            }catch{stockName='';}
             quote={c:fh.c,d:fh.d,dp:fh.dp,h:fh.h,l:fh.l};
         }
 
@@ -716,6 +749,40 @@ async function run(){
         const rng=h-l;
         document.getElementById('vRng').innerHTML=`${fmtP(parseFloat(rng.toFixed(isKr?0:2)),isKr)}<span style="font-size:10px"> (${(rng/l*100).toFixed(2)}%)</span>`;
         document.getElementById('chartTitle').innerHTML=`📉 일중 가격 범위 <span class="mkt-badge ${isKr?'mkt-kr':'mkt-us'}">${isKr?'🇰🇷 KRX':'🇺🇸 US'}</span>`;
+
+        /* 종목 정보 배너 */
+        document.getElementById('stockMktBadge').className=`mkt-badge ${isKr?'mkt-kr':'mkt-us'}`;
+        document.getElementById('stockMktBadge').textContent=isKr?'🇰🇷 KRX':'🇺🇸 US';
+        document.getElementById('stockCodeEl').textContent=sym;
+        document.getElementById('stockNameEl').textContent=stockName?`· ${stockName}`:'';
+
+        /* 데이터 날짜 표시 */
+        const dateStr=tsToDateStr(dataTs);
+        const diffDays=dateDiffDays(dataTs);
+        let dateLabelColor='var(--text3)';
+        let dateLabelIcon='📅';
+        if(diffDays!=null){
+            if(diffDays>=5){dateLabelColor='var(--red)';dateLabelIcon='⚠️';}
+            else if(diffDays>=2){dateLabelColor='var(--yel)';dateLabelIcon='🕐';}
+            else{dateLabelColor='var(--green)';dateLabelIcon='✅';}
+        }
+        const diffTxt=diffDays!=null?(diffDays===0?' (오늘)':diffDays===1?' (어제)':` (${diffDays}일 전)`):'';
+        const dateElTxt=dateStr?`${dateLabelIcon} 데이터 기준일: ${dateStr}${diffTxt}`:'📅 데이터 기준일: 확인 불가';
+        const dateEl=document.getElementById('dataDateEl');
+        dateEl.textContent=dateElTxt;
+        dateEl.style.color=dateLabelColor;
+
+        /* 리포트 상단 메타 표시 */
+        const rptMeta=document.getElementById('rptDataMeta');
+        const rptMetaTxt=document.getElementById('rptDataMetaTxt');
+        if(dateStr){
+            rptMeta.style.display='block';
+            rptMeta.style.borderLeftColor=dateLabelColor;
+            rptMetaTxt.style.color=dateLabelColor;
+            rptMetaTxt.textContent=`${dateLabelIcon} 이 리포트는 ${dateStr}${diffTxt} 데이터를 기반으로 분석되었습니다.${diffDays>=5?' 최신 데이터와 차이가 클 수 있습니다.':''}`;
+        }else{
+            rptMeta.style.display='none';
+        }
 
         /* 지표 UI */
         renderIndicators(indicators,c,isKr);
@@ -750,7 +817,7 @@ async function run(){
         $ld.classList.add('gone');$rs.classList.remove('gone');
 
         /* Firestore 저장 */
-        await saveRpt(sym,aiText,quote,indicators,isKr,yfSym);
+        await saveRpt(sym,stockName,aiText,quote,indicators,isKr,yfSym,dataTs);
 
     }catch(e){
         $ld.classList.add('gone');
@@ -760,14 +827,14 @@ async function run(){
 }
 
 /* ══ Firestore 저장 ══ */
-async function saveRpt(sym,content,quote,indicators,isKr,yfSym){
+async function saveRpt(sym,stockName,content,quote,indicators,isKr,yfSym,dataTs){
     const st=document.getElementById('saveSt');
     if(!currentUser){st.style.color='var(--yel)';st.textContent='⚠️ 로그인 후 저장 가능';showToast('⚠️ 저장하려면 로그인하세요.',true);return;}
     st.style.color='var(--text3)';st.textContent='저장 중...';
     try{
         const n=new Date(),p=v=>String(v).padStart(2,'0');
         const ds=`${n.getFullYear()}.${p(n.getMonth()+1)}.${p(n.getDate())} ${p(n.getHours())}:${p(n.getMinutes())}`;
-        await db.collection(COL).add({symbol:sym,content,dateStr:ds,price:quote.c,change:quote.d,chgPct:quote.dp,high:quote.h,low:quote.l,market:isKr?'KR':'US',yfSymbol:yfSym,indicators:indicators||{},createdAt:firebase.firestore.Timestamp.now()});
+        await db.collection(COL).add({symbol:sym,stockName:stockName||'',content,dateStr:ds,price:quote.c,change:quote.d,chgPct:quote.dp,high:quote.h,low:quote.l,market:isKr?'KR':'US',yfSymbol:yfSym,dataTs:dataTs||null,indicators:indicators||{},createdAt:firebase.firestore.Timestamp.now()});
         st.style.color='var(--green)';st.textContent='✓ 저장 완료';showToast('✅ Firestore에 저장되었습니다.');
     }catch(e){st.style.color='var(--red)';st.textContent='⚠️ 저장 실패';showToast('⚠️ 저장 실패: '+e.message,true);}
 }
@@ -829,7 +896,7 @@ function renderList(){
         const priceStr=isKrDoc?parseFloat(doc.price||0).toLocaleString('ko-KR')+'원':'$'+parseFloat(doc.price||0).toFixed(2);
         const prev=(doc.content||'').replace(/\n/g,' ').slice(0,90)+'…';
         const el=document.createElement('div');el.className='r-item';
-        el.innerHTML=`<div class="r-body"><div class="r-top"><span class="r-sym">${doc.symbol||'-'}</span><span class="mkt-badge ${isKrDoc?'mkt-kr':'mkt-us'}" style="font-size:8px">${isKrDoc?'🇰🇷':'🇺🇸'}</span><span class="r-chg ${cls}">${sign}${pct.toFixed(2)}%</span><span class="r-price">${priceStr}</span><span class="r-date">${doc.dateStr||'-'}</span></div><div class="r-prev">${prev}</div></div><button class="btn-del" title="삭제" onclick="delDoc(event,'${doc.id}')">🗑</button>`;
+        el.innerHTML=`<div class="r-body"><div class="r-top"><span class="r-sym">${doc.symbol||'-'}</span><span class="mkt-badge ${isKrDoc?'mkt-kr':'mkt-us'}" style="font-size:8px">${isKrDoc?'🇰🇷':'🇺🇸'}</span>${doc.stockName?`<span style="font-size:11px;color:var(--text2)">${doc.stockName}</span>`:''}<span class="r-chg ${cls}">${sign}${pct.toFixed(2)}%</span><span class="r-price">${priceStr}</span><span class="r-date">${doc.dateStr||'-'}</span></div><div class="r-prev">${prev}</div></div><button class="btn-del" title="삭제" onclick="delDoc(event,'${doc.id}')">🗑</button>`;
         el.addEventListener('click',e=>{if(!e.target.closest('.btn-del'))openMo(doc);});
         $rl.appendChild(el);
     });
