@@ -206,8 +206,8 @@
 
         <div class="card">
             <div class="card-hd"><span>🔍</span><h2>주식 심볼 검색</h2><span class="badge">실시간</span></div>
-            <label class="s-label">미국: 심볼(AAPL)이나 종목명 기준 영어로 입력해주세요</label>
-            <label class="s-label">한국: 6자리 코드(005930)나 종목명 기준 한글로 입력해주세요</label>
+            <label class="s-label">미국: 심볼(AAPL)이나 종목명 기준 '영어'로 입력해주세요</label>
+            <label class="s-label">한국: 6자리 코드(005930)나 종목명 기준 '한글'로 입력해주세요</label>
             <label class="s-label">한국 종목의 경우 네이버 자동완성 API 추출이라 검색 시간이 지연될수 있습니다</label>
             <br>
             <div class="s-box" style="position:relative">
@@ -648,7 +648,7 @@ function fmtV(v,isKr){
 
 /* ══ 기술지표 UI ══ */
 function renderIndicators(ind,cur,isKr){
-    const{ma20,ma50,rsi,macd,high52,low52,avgVol}=ind;
+    const{ma20,ma50,rsi,macd,high52,low52,avgVol,todayVol}=ind;
     const setMA=(sfx,val)=>{
         if(val!=null){
             const above=cur>=val;
@@ -693,10 +693,21 @@ function renderIndicators(ind,cur,isKr){
         document.getElementById('i52W').classList.add('has-data');
     }else{document.getElementById('v52W').textContent='데이터 부족';document.getElementById('v52W').className='ival none';}
 
-    if(avgVol!=null){
-        document.getElementById('vVol').textContent=fmtV(avgVol,isKr);
+    if(avgVol!=null||todayVol!=null){
+        /* 메인 값: 당일 거래량 우선, 없으면 20일 평균 */
+        const mainVal=todayVol!=null?todayVol:avgVol;
+        const mainLbl=todayVol!=null?'당일':'20일 평균';
+        document.getElementById('vVol').textContent=fmtV(mainVal,isKr);
         document.getElementById('vVol').className='ival';
-        document.getElementById('sVol').textContent='20일 평균';
+        /* sub: 비율 표시 */
+        if(todayVol!=null&&avgVol!=null&&avgVol>0){
+            const ratio=(todayVol/avgVol*100).toFixed(0);
+            const ratioColor=ratio>=150?'var(--red)':ratio<=60?'var(--blue)':'var(--text3)';
+            document.getElementById('sVol').innerHTML=
+                `<span style="color:${ratioColor};font-weight:600">${ratio}%</span> <span style="color:var(--text3)">/ 평균대비 · 평균 ${fmtV(avgVol,isKr)}</span>`;
+        }else{
+            document.getElementById('sVol').textContent=`${mainLbl}`;
+        }
         document.getElementById('iVol').classList.add('has-data');
     }else{document.getElementById('vVol').textContent='데이터 부족';document.getElementById('vVol').className='ival none';}
 
@@ -708,14 +719,18 @@ function renderIndicators(ind,cur,isKr){
 
 /* ══ Gemini 프롬프트 ══ */
 function buildPrompt(sym,quote,ind,dS,isKr){
-    const{c,d,dp,h,l}=quote;
+    const{c,d,dp,h,l,todayVol}=quote;
     const range=(h-l);
     const rPct=(range/l*100).toFixed(2);
     const{ma20,ma50,rsi,macd,high52,low52,avgVol}=ind;
     const cur=isKr?'원':'$';
     const fmt=v=>v!=null?v:'없음';
     const fmtM=m=>m!=null?`MACD ${m.macd>0?'+':''}${m.macd} / Signal ${m.signal} / Hist ${m.hist>0?'+':''}${m.hist}`:'없음';
-    const fmtVstr=v=>v!=null?fmtV(v,isKr)+' (20일 평균)'  :'없음';
+    const fmtVstr=v=>v!=null?fmtV(v,isKr):'없음';
+    /* 당일 거래량 vs 평균 거래량 비율 */
+    const volRatio=(todayVol!=null&&avgVol!=null&&avgVol>0)
+        ?(todayVol/avgVol*100).toFixed(1)+'% (평균 대비)'
+        :'없음';
     return `오늘은 ${dS}입니다.
 
 당신은 개인 투자자를 위한 AI 수석 기술적 애널리스트입니다.
@@ -745,7 +760,9 @@ function buildPrompt(sym,quote,ind,dS,isKr){
 - MACD: ${fmtM(macd)}
 - 52주 고가: ${fmt(high52)}
 - 52주 저가: ${fmt(low52)}
-- 평균 거래량(20일): ${fmtVstr(avgVol)}
+- 당일 거래량: ${todayVol!=null?fmtV(todayVol,isKr):'없음'}
+- 평균 거래량(20일): ${avgVol!=null?fmtVstr(avgVol):'없음'}
+- 거래량 비율(당일/20일평균): ${volRatio}
 
 [분석 항목]
 
@@ -825,19 +842,22 @@ async function run(){
             const d=parseFloat((c-pc).toFixed(2)),dp=parseFloat(((d/pc)*100).toFixed(2));
             stockName=meta.longName||meta.shortName||'';
             dataTs=meta.regularMarketTime||null;
-            quote={c,d,dp,h,l};
+            const todayVol=meta.regularMarketVolume||null;
+            quote={c,d,dp,h,l,todayVol};
         }else{
             if(!fhKey)throw new Error('미국 주식은 Finnhub API 키가 필요합니다.');
             const res=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${fhKey}`);
             const fh=await res.json();
             if(fh.error||(fh.c===0&&fh.h===0))throw new Error('유효하지 않은 심볼이거나 Finnhub 데이터가 없습니다.');
             dataTs=fh.t||null;
+            let todayVol=null;
             try{
                 const yfMeta=await fetchYFQuote(sym);
                 stockName=yfMeta.longName||yfMeta.shortName||'';
                 if(!dataTs)dataTs=yfMeta.regularMarketTime||null;
+                todayVol=yfMeta.regularMarketVolume||null;
             }catch{stockName='';}
-            quote={c:fh.c,d:fh.d,dp:fh.dp,h:fh.h,l:fh.l};
+            quote={c:fh.c,d:fh.d,dp:fh.dp,h:fh.h,l:fh.l,todayVol};
         }
 
         /* STEP 2: 캔들 */
@@ -854,7 +874,8 @@ async function run(){
         ldStep(4);
         const{high52,low52}=calc52W(candles);
         const avgVol=calcAvgVol(candles,20);
-        const indicators={ma20,ma50,rsi,macd,high52,low52,avgVol};
+        const todayVol=quote.todayVol||null;
+        const indicators={ma20,ma50,rsi,macd,high52,low52,avgVol,todayVol};
 
         /* 가격 카드 */
         const{c,d,dp,h,l}=quote;
