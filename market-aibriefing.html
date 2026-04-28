@@ -154,12 +154,17 @@
         .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
         .toast.err{background:rgba(255,82,82,.15);border-color:rgba(255,82,82,.4);color:var(--red);}
         .gone{display:none!important;}
+
+        /* ── 드롭다운 ── */
         .drop-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--bd);}
-        .drop-item:last-child{border-bottom:none;} .drop-item:hover{background:var(--sf3);}
-        .drop-sym{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ac);min-width:60px;}
-        .drop-name{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-        .drop-type{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto;flex-shrink:0;}
+        .drop-item:last-child{border-bottom:none;}
+        .drop-item:hover{background:var(--sf3);}
+        .drop-sym{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ac);min-width:72px;}
+        .drop-name{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+        .drop-exch{font-family:var(--mono);font-size:8px;color:var(--text3);flex-shrink:0;margin-left:4px;}
+        .drop-type{font-family:var(--mono);font-size:9px;color:var(--text3);flex-shrink:0;}
         .drop-loading{padding:12px 14px;font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;}
+        .drop-section{padding:5px 14px 3px;font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;background:var(--sf3);border-bottom:1px solid var(--bd);}
         .src-tag{font-family:var(--mono);font-size:8px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;}
     </style>
 </head>
@@ -193,19 +198,19 @@
                 <p class="api-hint">
                     🔒 API 키는 브라우저 로컬 저장소에만 보관됩니다.<br>
                     📊 캔들/MA/RSI/MACD: Yahoo Finance (무료, 키 불필요)<br>
-                    🇰🇷 한국 주식: 종목코드 6자리 입력 (예: 005930)<br>
-                    🇺🇸 미국 주식: 심볼 입력 (예: AAPL, TSLA)
+                    🇰🇷 한국 주식: 종목코드 6자리 또는 종목명 검색 (네이버 파이낸스)<br>
+                    🇺🇸 미국 주식: 심볼 또는 회사명 검색 (Finnhub + Yahoo Finance)
                 </p>
             </div>
         </div>
 
         <div class="card">
             <div class="card-hd"><span>🔍</span><h2>주식 심볼 검색</h2><span class="badge">실시간</span></div>
-            <label class="s-label">미국: 심볼 (AAPL) · 한국: 종목코드 6자리 (005930) 또는 종목명 (삼성전자)</label>
+            <label class="s-label">미국: 심볼(AAPL) · 한국: 6자리 코드(005930) 또는 종목명(한미약품, 에스티아이)</label>
             <div class="s-box" style="position:relative">
                 <div style="flex:1;position:relative">
-                    <input type="text" id="symIn" class="s-inp" placeholder="AAPL / 005930 / 삼성전자" autocomplete="off" style="width:100%">
-                    <div id="symDrop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--sf2);border:1px solid var(--bd2);border-radius:0 0 10px 10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>
+                    <input type="text" id="symIn" class="s-inp" placeholder="AAPL / 005930 / 한미약품" autocomplete="off" style="width:100%">
+                    <div id="symDrop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--sf2);border:1px solid var(--bd2);border-radius:0 0 10px 10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);max-height:320px;overflow-y:auto;"></div>
                 </div>
                 <button id="runBtn" class="btn-main">분석 시작</button>
             </div>
@@ -330,7 +335,6 @@
             <button class="btn-x" onclick="closeMo()">✕</button>
         </div>
         <div class="mo-body">
-            <!-- 저장된 지표 카드 -->
             <div id="moInfoBar" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                     <span id="moMktBadge" class="mkt-badge mkt-us">🇺🇸 US</span>
@@ -338,13 +342,11 @@
                     <span id="moNameEl" style="font-size:12px;color:var(--text2)"></span>
                     <span id="moDataDate" style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)"></span>
                 </div>
-                <!-- 가격 3셀 -->
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
                     <div class="pcell"><div class="plbl">현재가</div><div class="pval" id="moCur">-</div></div>
                     <div class="pcell"><div class="plbl">변동률</div><div class="pval" id="moChgVal">-</div></div>
                     <div class="pcell"><div class="plbl">변동폭</div><div class="pval" id="moRng">-</div></div>
                 </div>
-                <!-- 지표 그리드 -->
                 <div id="moIndGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
             </div>
             <div class="mo-txt" id="mTxt">-</div>
@@ -406,24 +408,7 @@ $fh.addEventListener('input',saveK);$gm.addEventListener('input',saveK);
 
 /* ══ 한국 종목 감지 ══ */
 function isKrCode(s){return /^\d{6}$/.test(s.trim());}
-
-const KR_NAME_MAP={
-    '삼성전자':'005930','sk하이닉스':'000660','sk하이닉':'000660',
-    '현대차':'005380','현대자동차':'005380','기아':'000270','기아차':'000270',
-    'lg화학':'051910','lg에너지솔루션':'373220','삼성바이오로직스':'207940',
-    '셀트리온':'068270','카카오':'035720','카카오뱅크':'323410','카카오페이':'377300',
-    '네이버':'035420','naver':'035420','삼성sdi':'006400','포스코홀딩스':'005490',
-    'kb금융':'105560','신한지주':'055550','하나금융지주':'086790',
-    '현대모비스':'012330','lg전자':'066570','삼성물산':'028260',
-    '두산에너빌리티':'034020','한화에어로스페이스':'012450',
-    '크래프톤':'259960','펄어비스':'263750','에코프로':'086520','에코프로비엠':'247540',
-    'ls일렉트릭':'010120','고려아연':'010130','한미사이언스':'008930',
-};
-function krNameToCode(q){
-    const lower=q.toLowerCase().trim();
-    for(const[name,code]of Object.entries(KR_NAME_MAP)){if(lower===name||lower.includes(name)||name.includes(lower))return code;}
-    return null;
-}
+function isKrText(s){return /[가-힣]/.test(s);}  /* 한글 포함 여부 */
 
 /* ══ Yahoo Finance 캔들 ══ */
 async function fetchYFCandles(yfSym,days=110){
@@ -462,7 +447,7 @@ async function fetchYFQuote(yfSym){
     return await Promise.any(PROXIES.map(p=>tryFetch(p)));
 }
 
-/* 타임스탬프 → "YYYY.MM.DD" 문자열 */
+/* 타임스탬프 → "YYYY.MM.DD" */
 function tsToDateStr(ts){
     if(!ts)return null;
     const d=new Date(ts*1000);
@@ -470,10 +455,117 @@ function tsToDateStr(ts){
     return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`;
 }
 
-/* 데이터 날짜 경과일 계산 */
+/* 경과일 계산 */
 function dateDiffDays(ts){
     if(!ts)return null;
     return Math.floor((Date.now()-ts*1000)/(86400000));
+}
+
+/* ══════════════════════════════════════════
+   ★ 한국 종목 검색 — 네이버 파이낸스 자동완성
+   ══════════════════════════════════════════ */
+async function searchNaverKR(query){
+    /* 네이버 주식 자동완성 API (CORS 프록시 경유) */
+    const url=`https://ac.stock.naver.com/ac?q=${encodeURIComponent(query)}&target=stock,index,marketindicator`;
+    const tryFetch=async px=>{
+        const res=await fetch(px(url),{signal:AbortSignal.timeout(7000)});
+        const text=await res.text();
+        /* 응답이 JSON 배열 형태: [[["005930","삼성전자","KOSPI","KR",...], ...], ...] */
+        const data=JSON.parse(text);
+        /* 네이버 자동완성 응답 구조: { items: [[code, name, market, ...]] } 또는 배열 */
+        if(Array.isArray(data)){
+            /* 구형 포맷: [[ [code,name,market,...], ... ], count] */
+            const arr=Array.isArray(data[0])?data[0]:data;
+            return arr;
+        }
+        if(data?.items) return data.items;
+        return [];
+    };
+
+    for(const px of PROXIES){
+        try{
+            const items=await tryFetch(px);
+            if(!items||!items.length) continue;
+            /* 각 item: [종목코드, 종목명, 시장구분(KOSPI/KOSDAQ), ...] */
+            return items
+                .filter(it=>Array.isArray(it)&&it.length>=2&&/^\d{6}$/.test(it[0]))
+                .slice(0,8)
+                .map(it=>({
+                    code: it[0],
+                    name: it[1]||'',
+                    market: (it[2]||'').toUpperCase().includes('KOSDAQ')?'KOSDAQ':'KOSPI'
+                }));
+        }catch(e){continue;}
+    }
+
+    /* 폴백: Yahoo Finance v1 search (한글은 잘 안 되지만 시도) */
+    try{
+        const url2=`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=ko-KR&region=KR&quotesCount=10&newsCount=0&listsCount=0&enableFuzzyQuery=true`;
+        const tryF=async px=>{
+            const res=await fetch(px(url2),{signal:AbortSignal.timeout(7000)});
+            const d=await res.json();
+            return d?.quotes||[];
+        };
+        const quotes=await Promise.any(PROXIES.map(p=>tryF(p)));
+        const kr=quotes.filter(q=>q.symbol&&(q.symbol.endsWith('.KS')||q.symbol.endsWith('.KQ')));
+        return kr.slice(0,6).map(q=>({
+            code: q.symbol.replace(/\.(KS|KQ)$/,''),
+            name: q.longname||q.shortname||q.symbol,
+            market: q.symbol.endsWith('.KQ')?'KOSDAQ':'KOSPI'
+        }));
+    }catch{return [];}
+}
+
+/* ══════════════════════════════════════════
+   ★ 미국 종목 검색 — Finnhub + Yahoo Finance 병렬
+   ══════════════════════════════════════════ */
+async function searchUSSymbol(query){
+    const fhKey=$fh.value.trim();
+    const results=[];
+    const seen=new Set();
+
+    const addItems=(items)=>{
+        for(const it of items){
+            if(!it.symbol||seen.has(it.symbol)) continue;
+            seen.add(it.symbol);
+            results.push(it);
+        }
+    };
+
+    /* Finnhub 검색 */
+    if(fhKey){
+        try{
+            const res=await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${fhKey}`,{signal:AbortSignal.timeout(6000)});
+            const data=await res.json();
+            const items=(data.result||[])
+                .filter(r=>r.type==='Common Stock'||r.type==='ETP'||r.type==='ETF')
+                /* 미국 거래소 우선 필터 (점(.) 없는 심볼 = 주로 미국) */
+                .filter(r=>!r.symbol.includes('.'))
+                .slice(0,8)
+                .map(r=>({symbol:r.symbol,name:r.description||'',exchange:'US',type:r.type||''}));
+            addItems(items);
+        }catch{}
+    }
+
+    /* Yahoo Finance 검색 (Finnhub 결과 부족 시 보완) */
+    if(results.length < 4){
+        try{
+            const url=`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en&region=US&quotesCount=8&newsCount=0&listsCount=0&enableFuzzyQuery=true`;
+            const tryF=async px=>{
+                const res=await fetch(px(url),{signal:AbortSignal.timeout(7000)});
+                const d=await res.json();
+                return d?.quotes||[];
+            };
+            const quotes=await Promise.any(PROXIES.map(p=>tryF(p)));
+            const items=quotes
+                .filter(q=>q.symbol&&!q.symbol.includes('.')&&(q.quoteType==='EQUITY'||q.quoteType==='ETF'))
+                .slice(0,6)
+                .map(q=>({symbol:q.symbol,name:q.longname||q.shortname||'',exchange:q.exchange||'US',type:q.quoteType||''}));
+            addItems(items);
+        }catch{}
+    }
+
+    return results.slice(0,8);
 }
 
 /* ══ 기술지표 JS 직접 계산 ══ */
@@ -703,8 +795,7 @@ async function run(){
     if(!gmKey){alert('⚙️ Gemini API 키를 먼저 입력하세요.');return;}
     if(!rawIn){alert('종목을 입력하세요.');return;}
 
-    /* 한국 종목명 → 코드 */
-    if(!isKrCode(rawIn)){const code=krNameToCode(rawIn);if(code){rawIn=code;document.getElementById('symIn').value=code;}}
+    /* 6자리 숫자 → 한국 코드 직행 */
     const isKr=isKrCode(rawIn);
     const sym=rawIn.toUpperCase();
     let yfSym=isKr?sym+'.KS':sym;
@@ -738,7 +829,6 @@ async function run(){
             const fh=await res.json();
             if(fh.error||(fh.c===0&&fh.h===0))throw new Error('유효하지 않은 심볼이거나 Finnhub 데이터가 없습니다.');
             dataTs=fh.t||null;
-            /* 미국도 Yahoo에서 회사명 병행 조회 */
             try{
                 const yfMeta=await fetchYFQuote(sym);
                 stockName=yfMeta.longName||yfMeta.shortName||'';
@@ -782,20 +872,17 @@ async function run(){
         /* 데이터 날짜 표시 */
         const dateStr=tsToDateStr(dataTs);
         const diffDays=dateDiffDays(dataTs);
-        let dateLabelColor='var(--text3)';
-        let dateLabelIcon='📅';
+        let dateLabelColor='var(--text3)',dateLabelIcon='📅';
         if(diffDays!=null){
             if(diffDays>=5){dateLabelColor='var(--red)';dateLabelIcon='⚠️';}
             else if(diffDays>=2){dateLabelColor='var(--yel)';dateLabelIcon='🕐';}
             else{dateLabelColor='var(--green)';dateLabelIcon='✅';}
         }
         const diffTxt=diffDays!=null?(diffDays===0?' (오늘)':diffDays===1?' (어제)':` (${diffDays}일 전)`):'';
-        const dateElTxt=dateStr?`${dateLabelIcon} 데이터 기준일: ${dateStr}${diffTxt}`:'📅 데이터 기준일: 확인 불가';
         const dateEl=document.getElementById('dataDateEl');
-        dateEl.textContent=dateElTxt;
+        dateEl.textContent=dateStr?`${dateLabelIcon} 데이터 기준일: ${dateStr}${diffTxt}`:'📅 데이터 기준일: 확인 불가';
         dateEl.style.color=dateLabelColor;
 
-        /* 리포트 상단 메타 표시 */
         const rptMeta=document.getElementById('rptDataMeta');
         const rptMetaTxt=document.getElementById('rptDataMetaTxt');
         if(dateStr){
@@ -803,9 +890,7 @@ async function run(){
             rptMeta.style.borderLeftColor=dateLabelColor;
             rptMetaTxt.style.color=dateLabelColor;
             rptMetaTxt.textContent=`${dateLabelIcon} 이 리포트는 ${dateStr}${diffTxt} 데이터를 기반으로 분석되었습니다.${diffDays>=5?' 최신 데이터와 차이가 클 수 있습니다.':''}`;
-        }else{
-            rptMeta.style.display='none';
-        }
+        }else{rptMeta.style.display='none';}
 
         /* 지표 UI */
         renderIndicators(indicators,c,isKr);
@@ -839,7 +924,6 @@ async function run(){
         document.getElementById('rptTxt').textContent=aiText;
         $ld.classList.add('gone');$rs.classList.remove('gone');
 
-        /* Firestore 저장 */
         await saveRpt(sym,stockName,aiText,quote,indicators,isKr,yfSym,dataTs);
 
     }catch(e){
@@ -862,39 +946,101 @@ async function saveRpt(sym,stockName,content,quote,indicators,isKr,yfSym,dataTs)
     }catch(e){st.style.color='var(--red)';st.textContent='⚠️ 저장 실패';showToast('⚠️ 저장 실패: '+e.message,true);}
 }
 
-/* ══ 심볼 자동완성 ══ */
-const KR_MAP={'애플':'apple','마이크로소프트':'microsoft','구글':'google','알파벳':'alphabet','아마존':'amazon','메타':'meta','테슬라':'tesla','엔비디아':'nvidia','엔비':'nvidia','넷플릭스':'netflix','인텔':'intel','퀄컴':'qualcomm','어도비':'adobe','오라클':'oracle','브로드컴':'broadcom','비자':'visa','마스터카드':'mastercard','페이팔':'paypal','월마트':'walmart','코스트코':'costco','맥도날드':'mcdonalds','스타벅스':'starbucks','나이키':'nike','화이자':'pfizer','모더나':'moderna','팔란티어':'palantir','우버':'uber','에어비앤비':'airbnb','코인베이스':'coinbase'};
-function translateKr(q){const lower=q.toLowerCase().trim();for(const[kr,en]of Object.entries(KR_MAP)){if(kr===lower)return en;}for(const[kr,en]of Object.entries(KR_MAP)){if(lower.includes(kr)||kr.includes(lower))return en;}return null;}
-
+/* ══════════════════════════════════════════
+   ★★ 통합 심볼 자동완성 드롭다운
+   ══════════════════════════════════════════ */
 let dropTimer=null;
 const $symIn=document.getElementById('symIn'),$drop=document.getElementById('symDrop');
+
 function closeDrop(){$drop.style.display='none';}
+
+function buildDropHtml(items,isKrMode){
+    if(!items.length) return '<div class="drop-loading">검색 결과 없음</div>';
+    return items.map(it=>{
+        if(isKrMode){
+            /* 한국 종목: code, name, market */
+            const exch=it.market==='KOSDAQ'?
+                `<span class="mkt-badge mkt-kr" style="font-size:8px">KOSDAQ</span>`:
+                `<span class="mkt-badge mkt-kr" style="font-size:8px">KOSPI</span>`;
+            return `<div class="drop-item" onclick="pickKrSym('${it.code}','${it.name.replace(/'/g,"\\'")}')">
+                <span class="drop-sym">${it.code}</span>
+                <span class="drop-name">${it.name}</span>
+                ${exch}
+            </div>`;
+        }else{
+            /* 미국 종목: symbol, name, exchange, type */
+            const exBadge=`<span class="drop-exch">${it.exchange||''}</span>`;
+            return `<div class="drop-item" onclick="pickSym('${it.symbol}')">
+                <span class="drop-sym">${it.symbol}</span>
+                <span class="drop-name">${it.name||''}</span>
+                ${exBadge}
+                <span class="drop-type">${it.type||''}</span>
+            </div>`;
+        }
+    }).join('');
+}
+
 $symIn.addEventListener('input',()=>{
     clearTimeout(dropTimer);
     const q=$symIn.value.trim();
     if(!q){closeDrop();return;}
-    if(/^\d+$/.test(q)){closeDrop();return;} /* 숫자 입력 중엔 드롭다운 X */
-    const krCode=krNameToCode(q);
-    if(krCode){$drop.style.display='block';$drop.innerHTML=`<div class="drop-item" onclick="pickSym('${krCode}')"><span class="drop-sym">${krCode}</span><span class="drop-name">${q}</span><span class="drop-type mkt-badge mkt-kr">🇰🇷 KRX</span></div>`;return;}
-    dropTimer=setTimeout(()=>searchSymbol(q),400);
+
+    /* ① 6자리 숫자 입력 중 → 드롭다운 없이 직접 입력 허용 */
+    if(/^\d{6}$/.test(q)){
+        closeDrop();
+        return;
+    }
+
+    /* ② 한글 포함 or 숫자 1~5자리(한국 코드 입력 중) → 네이버 KR 검색 */
+    if(isKrText(q)||(/^\d{1,5}$/.test(q))){
+        $drop.style.display='block';
+        $drop.innerHTML='<div class="drop-loading">🇰🇷 네이버 파이낸스 검색 중...</div>';
+        dropTimer=setTimeout(async()=>{
+            try{
+                const items=await searchNaverKR(q);
+                $drop.style.display='block';
+                $drop.innerHTML=items.length
+                    ? '<div class="drop-section">🇰🇷 한국 종목</div>'+buildDropHtml(items,true)
+                    : '<div class="drop-loading">한국 종목 검색 결과 없음</div>';
+            }catch{
+                $drop.innerHTML='<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
+            }
+        },350);
+        return;
+    }
+
+    /* ③ 영문 → Finnhub + Yahoo Finance 미국 검색 */
+    $drop.style.display='block';
+    $drop.innerHTML='<div class="drop-loading">🔍 검색 중...</div>';
+    dropTimer=setTimeout(async()=>{
+        try{
+            const items=await searchUSSymbol(q);
+            $drop.style.display='block';
+            $drop.innerHTML=items.length
+                ? '<div class="drop-section">🇺🇸 미국 종목</div>'+buildDropHtml(items,false)
+                : '<div class="drop-loading">검색 결과 없음</div>';
+        }catch{
+            $drop.innerHTML='<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
+        }
+    },350);
 });
+
 $symIn.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrop();});
 document.addEventListener('click',e=>{if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop'))closeDrop();});
 
-async function searchSymbol(q){
-    const fhKey=document.getElementById('fhKey').value.trim();if(!fhKey)return;
-    const translated=translateKr(q),query=translated||q;
-    $drop.style.display='block';
-    $drop.innerHTML=translated?`<div class="drop-loading">🔄 "${q}" → "${translated}" 검색 중...</div>`:'<div class="drop-loading">🔍 검색 중...</div>';
-    try{
-        const res=await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${fhKey}`);
-        const data=await res.json();
-        const items=(data.result||[]).filter(r=>r.type==='Common Stock'||r.type==='ETP').slice(0,8);
-        if(!items.length){$drop.innerHTML='<div class="drop-loading">검색 결과 없음</div>';return;}
-        $drop.innerHTML=items.map(r=>`<div class="drop-item" onclick="pickSym('${r.symbol}')"><span class="drop-sym">${r.symbol}</span><span class="drop-name">${r.description||''}</span><span class="drop-type">${r.type||''}</span></div>`).join('');
-    }catch(e){$drop.innerHTML='<div class="drop-loading" style="color:var(--red)">검색 실패</div>';}
+/* 한국 종목 선택 → 코드 입력 후 분석 */
+function pickKrSym(code, name){
+    $symIn.value=code;
+    closeDrop();
+    run();
 }
-function pickSym(sym){$symIn.value=sym;closeDrop();run();}
+/* 미국 종목 선택 */
+function pickSym(sym){
+    $symIn.value=sym;
+    closeDrop();
+    run();
+}
+
 document.getElementById('runBtn').addEventListener('click',run);
 $symIn.addEventListener('keypress',e=>{if(e.key==='Enter'){closeDrop();run();}});
 
@@ -937,28 +1083,23 @@ function openMo(doc){
     const isKrDoc=doc.market==='KR';
     const fp=v=>isKrDoc?parseFloat(v||0).toLocaleString('ko-KR')+'원':'$'+parseFloat(v||0).toFixed(2);
 
-    /* 헤더 */
     document.getElementById('mSym').textContent=doc.symbol||'-';
     document.getElementById('mDate').textContent=doc.dateStr||'-';
     document.getElementById('mPrice').textContent=fp(doc.price);
     document.getElementById('mChg').textContent=`${sign}${pct.toFixed(2)}%`;
     document.getElementById('mTxt').textContent=doc.content||'내용 없음';
 
-    /* 지표 카드 영역 */
     const infoBar=document.getElementById('moInfoBar');
     const ind=doc.indicators||{};
     const hasInd=Object.keys(ind).length>0;
 
     if(hasInd || doc.stockName || doc.dataTs){
         infoBar.style.display='block';
-
-        /* 종목 배너 */
         document.getElementById('moMktBadge').className=`mkt-badge ${isKrDoc?'mkt-kr':'mkt-us'}`;
         document.getElementById('moMktBadge').textContent=isKrDoc?'🇰🇷 KRX':'🇺🇸 US';
         document.getElementById('moCodeEl').textContent=doc.symbol||'-';
         document.getElementById('moNameEl').textContent=doc.stockName?`· ${doc.stockName}`:'';
 
-        /* 데이터 기준일 */
         const dateStr=tsToDateStr(doc.dataTs);
         const diffDays=dateDiffDays(doc.dataTs);
         const moDateEl=document.getElementById('moDataDate');
@@ -968,11 +1109,8 @@ function openMo(doc){
             const diffTxt=diffDays===0?' (오늘)':diffDays===1?' (어제)':`  (${diffDays}일 전)`;
             moDateEl.textContent=`${icon} 데이터 기준일: ${dateStr}${diffTxt}`;
             moDateEl.style.color=color;
-        } else {
-            moDateEl.textContent='';
-        }
+        } else { moDateEl.textContent=''; }
 
-        /* 가격 3셀 */
         const c=parseFloat(doc.price||0), d=parseFloat(doc.change||0);
         const h=parseFloat(doc.high||c), l=parseFloat(doc.low||c);
         document.getElementById('moCur').textContent=fp(c);
@@ -982,82 +1120,33 @@ function openMo(doc){
         const rng=h-l;
         document.getElementById('moRng').innerHTML=`${isKrDoc?rng.toFixed(0):rng.toFixed(2)}<span style="font-size:10px"> (${rng&&l?(rng/l*100).toFixed(2):'-'}%)</span>`;
 
-        /* 지표 그리드 */
         const grid=document.getElementById('moIndGrid');
         grid.innerHTML='';
         if(hasInd){
-            const fv=v=>v!=null?v:'없음';
             const fmtVol=(v,kr)=>{
                 if(v==null)return '없음';
                 if(kr)return v>=1e8?`${(v/1e8).toFixed(1)}억주`:v>=1e4?`${(v/1e4).toFixed(0)}만주`:`${v.toLocaleString()}주`;
                 return v>=1e9?`${(v/1e9).toFixed(2)}B`:v>=1e6?`${(v/1e6).toFixed(1)}M`:v>=1e3?`${(v/1e3).toFixed(0)}K`:`${v}`;
             };
-
-            /* MA20 */
             const ma20=ind.ma20!=null;
-            grid.innerHTML+=`<div class="icell ${ma20?'has-data':''}">
-                <div class="ilbl">MA 20</div>
-                <div class="ival ${ma20?(c>=ind.ma20?'bull':'bear'):'none'}">${ma20?fp(ind.ma20):'없음'}</div>
-                ${ma20?`<div class="isub"><span class="ma-tag ${c>=ind.ma20?'above':'below'}">${c>=ind.ma20?'↑ 상회':'↓ 하회'}</span></div>`:''}
-            </div>`;
-
-            /* MA50 */
+            grid.innerHTML+=`<div class="icell ${ma20?'has-data':''}"><div class="ilbl">MA 20</div><div class="ival ${ma20?(c>=ind.ma20?'bull':'bear'):'none'}">${ma20?fp(ind.ma20):'없음'}</div>${ma20?`<div class="isub"><span class="ma-tag ${c>=ind.ma20?'above':'below'}">${c>=ind.ma20?'↑ 상회':'↓ 하회'}</span></div>`:''}</div>`;
             const ma50=ind.ma50!=null;
-            grid.innerHTML+=`<div class="icell ${ma50?'has-data':''}">
-                <div class="ilbl">MA 50</div>
-                <div class="ival ${ma50?(c>=ind.ma50?'bull':'bear'):'none'}">${ma50?fp(ind.ma50):'없음'}</div>
-                ${ma50?`<div class="isub"><span class="ma-tag ${c>=ind.ma50?'above':'below'}">${c>=ind.ma50?'↑ 상회':'↓ 하회'}</span></div>`:''}
-            </div>`;
-
-            /* RSI */
+            grid.innerHTML+=`<div class="icell ${ma50?'has-data':''}"><div class="ilbl">MA 50</div><div class="ival ${ma50?(c>=ind.ma50?'bull':'bear'):'none'}">${ma50?fp(ind.ma50):'없음'}</div>${ma50?`<div class="isub"><span class="ma-tag ${c>=ind.ma50?'above':'below'}">${c>=ind.ma50?'↑ 상회':'↓ 하회'}</span></div>`:''}</div>`;
             const rsi=ind.rsi;
             const rsiCls=rsi!=null?(rsi>=70?'bull':rsi<=30?'bear':'neut'):'none';
             const rsiLbl=rsi!=null?(rsi>=70?'과매수':rsi<=30?'과매도':'중립'):'';
-            grid.innerHTML+=`<div class="icell ${rsi!=null?'has-data':''}">
-                <div class="ilbl">RSI (14)</div>
-                <div class="ival ${rsiCls}">${rsi!=null?rsi:'없음'}</div>
-                ${rsi!=null?`<div class="isub">${rsiLbl}</div>`:''}
-            </div>`;
-
-            /* MACD */
+            grid.innerHTML+=`<div class="icell ${rsi!=null?'has-data':''}"><div class="ilbl">RSI (14)</div><div class="ival ${rsiCls}">${rsi!=null?rsi:'없음'}</div>${rsi!=null?`<div class="isub">${rsiLbl}</div>`:''}</div>`;
             const macd=ind.macd;
-            grid.innerHTML+=`<div class="icell ${macd?'has-data':''}">
-                <div class="ilbl">MACD</div>
-                <div class="ival ${macd?(macd.hist>=0?'bull':'bear'):'none'}">${macd?(macd.macd>0?'+':'')+macd.macd:'없음'}</div>
-                ${macd?`<div class="isub">Sig:${macd.signal} Hist:${macd.hist>0?'+':''}${macd.hist}</div>`:''}
-            </div>`;
-
-            /* 52주 고저 — 2칸 */
+            grid.innerHTML+=`<div class="icell ${macd?'has-data':''}"><div class="ilbl">MACD</div><div class="ival ${macd?(macd.hist>=0?'bull':'bear'):'none'}">${macd?(macd.macd>0?'+':'')+macd.macd:'없음'}</div>${macd?`<div class="isub">Sig:${macd.signal} Hist:${macd.hist>0?'+':''}${macd.hist}</div>`:''}</div>`;
             const h52=ind.high52!=null&&ind.low52!=null;
             const w52pct=h52?((c-ind.low52)/(ind.high52-ind.low52)*100).toFixed(1):null;
-            grid.innerHTML+=`<div class="icell ${h52?'has-data':''}" style="grid-column:span 2">
-                <div class="ilbl">52주 고가 / 저가</div>
-                <div class="ival ${h52?'':'none'}">${h52?`${fp(ind.high52)} / ${fp(ind.low52)}`:'없음'}</div>
-                ${h52?`<div class="w52-bar-wrap">
-                    <div class="w52-bar-bg"><div class="w52-bar-fill" style="width:${Math.min(100,Math.max(0,w52pct))}%"></div></div>
-                    <div class="w52-labels"><span>${fp(ind.low52)}</span><span>현재 ${w52pct}%</span><span>${fp(ind.high52)}</span></div>
-                </div>`:''}
-            </div>`;
-
-            /* 거래량 */
+            grid.innerHTML+=`<div class="icell ${h52?'has-data':''}" style="grid-column:span 2"><div class="ilbl">52주 고가 / 저가</div><div class="ival ${h52?'':'none'}">${h52?`${fp(ind.high52)} / ${fp(ind.low52)}`:'없음'}</div>${h52?`<div class="w52-bar-wrap"><div class="w52-bar-bg"><div class="w52-bar-fill" style="width:${Math.min(100,Math.max(0,w52pct))}%"></div></div><div class="w52-labels"><span>${fp(ind.low52)}</span><span>현재 ${w52pct}%</span><span>${fp(ind.high52)}</span></div></div>`:''}</div>`;
             const vol=ind.avgVol!=null;
-            grid.innerHTML+=`<div class="icell ${vol?'has-data':''}">
-                <div class="ilbl">평균 거래량</div>
-                <div class="ival ${vol?'':'none'}">${vol?fmtVol(ind.avgVol,isKrDoc):'없음'}</div>
-                ${vol?`<div class="isub">20일 평균</div>`:''}
-            </div>`;
-
-            /* 충실도 */
+            grid.innerHTML+=`<div class="icell ${vol?'has-data':''}"><div class="ilbl">평균 거래량</div><div class="ival ${vol?'':'none'}">${vol?fmtVol(ind.avgVol,isKrDoc):'없음'}</div>${vol?`<div class="isub">20일 평균</div>`:''}</div>`;
             const total=[ind.ma20,ind.ma50,ind.rsi,ind.macd,ind.high52,ind.avgVol].filter(v=>v!=null).length;
-            grid.innerHTML+=`<div class="icell has-data">
-                <div class="ilbl">데이터 충실도</div>
-                <div class="ival" style="color:var(--ac)">${Math.round(total/6*100)}%</div>
-                <div class="isub">${total}/6 항목</div>
-            </div>`;
+            grid.innerHTML+=`<div class="icell has-data"><div class="ilbl">데이터 충실도</div><div class="ival" style="color:var(--ac)">${Math.round(total/6*100)}%</div><div class="isub">${total}/6 항목</div></div>`;
         }
-    } else {
-        infoBar.style.display='none';
-    }
+    } else { infoBar.style.display='none'; }
 
     document.getElementById('moBg').classList.add('open');
     document.body.style.overflow='hidden';
