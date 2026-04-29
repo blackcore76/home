@@ -774,10 +774,9 @@ function spark(closes,isUp,market){
   const pts=closes.filter(p=>p!=null&&!isNaN(p));
   if(pts.length<3)return'';
   const W=200,H=34,mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||.001;
-  let color;
-  if(market==='kr')color=isUp?'var(--down)':'var(--kr-down)';
-  else if(market==='vix')color=isUp?'var(--down)':'var(--up)';
-  else color=isUp?'var(--up)':'var(--down)';
+let color;
+  if(market==='vix') color=isUp?'var(--kr-down)':'var(--down)';
+  else color=isUp?'var(--down)':'var(--kr-down)';
   const coords=pts.map((p,i)=>`${((i/(pts.length-1))*W).toFixed(1)},${(H-2-((p-mn)/rng)*(H-6)).toFixed(1)}`);
   const gid=`g${sc++}`;
   const ap=`M${coords[0]} L${coords.join(' L')} L${W},${H} L0,${H} Z`;
