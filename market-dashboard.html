@@ -796,7 +796,7 @@ async function updateCard(inst){
   const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
   const cls=r.indicators?.quote?.[0]?.close??[];
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
-  const colorClass=inst.market==='kr'?(up?'kr-up':'kr-down'):inst.market==='vix'?(up?'down':'up'):(up?'up':'down');
+  const colorClass=inst.market==='kr'?(up?'kr-up':'kr-down'):inst.market==='vix'?(up?'kr-down':'down'):(up?'kr-up':'kr-down');
   pEl.className=`cp ${colorClass}`;
   const sg=up?'+':'';
   cEl.textContent=`${sg}${chg.toFixed(2)} (${sg}${pct.toFixed(2)}%)`;
