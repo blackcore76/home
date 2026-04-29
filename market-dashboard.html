@@ -775,7 +775,7 @@ function spark(closes,isUp,market){
   if(pts.length<3)return'';
   const W=200,H=34,mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||.001;
 let color;
-  if(market==='vix') color=isUp?'var(--kr-down)':'var(--down)';
+if(market==='vix'||market==='wti') color=isUp?'var(--kr-down)':'var(--down)';
   else color=isUp?'var(--down)':'var(--kr-down)';
   const coords=pts.map((p,i)=>`${((i/(pts.length-1))*W).toFixed(1)},${(H-2-((p-mn)/rng)*(H-6)).toFixed(1)}`);
   const gid=`g${sc++}`;
@@ -796,7 +796,7 @@ async function updateCard(inst){
   const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
   const cls=r.indicators?.quote?.[0]?.close??[];
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
-  const colorClass=inst.market==='kr'?(up?'kr-up':'kr-down'):inst.market==='vix'?(up?'kr-down':'down'):(up?'kr-up':'kr-down');
+  const colorClass=(inst.market==='vix'||inst.id==='wti')?(up?'kr-down':'down'):(up?'kr-up':'kr-down');
   pEl.className=`cp ${colorClass}`;
   const sg=up?'+':'';
   cEl.textContent=`${sg}${chg.toFixed(2)} (${sg}${pct.toFixed(2)}%)`;
