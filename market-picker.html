@@ -2,722 +2,772 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0a0a0f">
-<title>Market Picker</title>
-<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="마켓픽커">
+<title>마켓픽커 — 성장주 체크리스트</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where, Timestamp }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
-  authDomain: "my-bp-tracker-3d595.firebaseapp.com",
-  projectId: "my-bp-tracker-3d595",
-  storageBucket: "my-bp-tracker-3d595.appspot.com",
-  messagingSenderId: "1016360206319",
-  appId: "1:1016360206319:web:5f5df2e2c45b30694a401a"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-let currentUser = null;
-let allRecords = [];
-let editingId = null;
-
-// ─── 체크리스트 항목 정의 ───
-const CHECKLIST_ITEMS = [
-  { id:'c01', cat:'수익성',   label:'영업이익 증가',      criteria:'최근 3년 연속 증가',        scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c02', cat:'수익성',   label:'순이익 증가',         criteria:'최근 3년 연속 증가',        scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c03', cat:'수익성',   label:'매출 증가',           criteria:'최근 3년 연속 증가',        scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c04', cat:'수익성',   label:'매출총이익률 추세',   criteria:'규모 확장과 함께 상승 추세', scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c05', cat:'수익성',   label:'영업이익률',          criteria:'10% 이상',                  scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c06', cat:'수익성',   label:'순이익률',            criteria:'8% 이상',                   scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c07', cat:'수익성',   label:'1회성 이익 여부',     criteria:'일회성 이익 없음',           scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c08', cat:'밸류에이션', label:'업종 평균 PER 비교', criteria:'업종 평균 이하',            scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c09', cat:'밸류에이션', label:'Forward PER',       criteria:'현재 PER보다 낮음',         scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c10', cat:'밸류에이션', label:'EPS 증가',           criteria:'최근 3년 증가',             scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c11', cat:'밸류에이션', label:'EPS 정확도',         criteria:'예상치와 큰 괴리 없음',     scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c12', cat:'재무건전성', label:'부채비율',           criteria:'100% 이하',                 scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c13', cat:'재무건전성', label:'당좌비율',           criteria:'1.0 이상',                  scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c14', cat:'재무건전성', label:'유동비율',           criteria:'1.5 이상',                  scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c15', cat:'재무건전성', label:'자본 증가',          criteria:'최근 3년 증가',             scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c16', cat:'재무건전성', label:'현금흐름',           criteria:'영업CF 플러스',             scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c17', cat:'재무건전성', label:'운전자본 안정성',    criteria:'매출 대비 외상매출·매입 안정', scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c18', cat:'재무건전성', label:'주식희석률',         criteria:'과도한 주식 발행 없음',     scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c19', cat:'경쟁력',   label:'브랜드 구축',         criteria:'강한 브랜드 인지도',        scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c20', cat:'경쟁력',   label:'시장 선도',           criteria:'업종 상위권',               scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c21', cat:'경쟁력',   label:'시장 점유율',         criteria:'상위 3위 이내',             scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c22', cat:'경쟁력',   label:'고객 충성도',         criteria:'높은 리텐션·재구매율',      scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c23', cat:'경쟁력',   label:'배당 성향',           criteria:'0~1% 이하 (재투자 선호)',   scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c24', cat:'신뢰도',   label:'내부자 매도',         criteria:'과도한 매도 없음',          scoreMap:{부합:4, 확인필요:2, 미달:0} },
-  { id:'c25', cat:'신뢰도',   label:'사업보고서 리스크',   criteria:'중대 리스크 없음',          scoreMap:{부합:4, 확인필요:2, 미달:0} },
-];
-
-const MAX_SCORE = CHECKLIST_ITEMS.length * 4; // 100점
-
-function calcScore(checks) {
-  let total = 0;
-  CHECKLIST_ITEMS.forEach(item => {
-    const v = checks[item.id];
-    if (v && item.scoreMap[v] !== undefined) total += item.scoreMap[v];
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
   });
-  return Math.round(total / MAX_SCORE * 100);
-}
-
-function getJudge(score) {
-  if (score >= 85) return { label:'매수검토', cls:'badge-buy' };
-  if (score >= 71) return { label:'관망',     cls:'badge-watch' };
-  return                  { label:'매수불가', cls:'badge-no' };
-}
-
-// ─── Auth ───
-window.loginGoogle = async () => {
-  try { await signInWithPopup(auth, provider); } catch(e) { showToast('로그인 실패: '+e.message,'err'); }
-};
-window.logoutUser = async () => {
-  await signOut(auth);
-  showToast('로그아웃되었습니다.');
-};
-
-onAuthStateChanged(auth, user => {
-  currentUser = user;
-  document.getElementById('authSection').innerHTML = user
-    ? `<span class="uid-label">${user.displayName || user.email}</span>
-       <button class="btn-ghost sm" onclick="logoutUser()">로그아웃</button>`
-    : `<button class="btn-gold sm" onclick="loginGoogle()">Google 로그인</button>`;
-  if (user) loadRecords();
-});
-
-// ─── Firestore CRUD ───
-async function loadRecords() {
-  try {
-    const q = query(collection(db,'marketPicker'), where('uid','==',currentUser.uid), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    allRecords = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    renderList(allRecords);
-    showToast(`${allRecords.length}건 로드 완료`);
-  } catch(e) { showToast('로드 오류: '+e.message,'err'); }
-}
-
-window.saveRecord = async () => {
-  if (!currentUser) { showToast('로그인이 필요합니다.','err'); return; }
-  const name   = document.getElementById('inp_name').value.trim();
-  const ticker = document.getElementById('inp_ticker').value.trim().toUpperCase();
-  const stype  = document.getElementById('inp_type').value;
-  const memo   = document.getElementById('inp_memo').value.trim();
-  const date   = document.getElementById('inp_date').value;
-  if (!name||!ticker||!date) { showToast('회사명·티커·날짜는 필수입니다.','err'); return; }
-
-  const checks = {};
-  const actuals = {};
-  CHECKLIST_ITEMS.forEach(item => {
-    checks[item.id]  = document.getElementById('chk_'+item.id)?.value || '미달';
-    actuals[item.id] = document.getElementById('act_'+item.id)?.value.trim() || '';
-  });
-
-  const score = calcScore(checks);
-  const judge = getJudge(score).label;
-  const data  = { uid:currentUser.uid, name, ticker, stype, memo, date, checks, actuals, score, judge, createdAt:Timestamp.now() };
-
-  try {
-    if (editingId) {
-      await updateDoc(doc(db,'marketPicker',editingId), data);
-      showToast('수정 완료 ✓');
-    } else {
-      await addDoc(collection(db,'marketPicker'), data);
-      showToast('저장 완료 ✓');
-    }
-    editingId = null;
-    document.getElementById('editLabel').textContent = '신규 종목 분석';
-    await loadRecords();
-    showPage('list');
-  } catch(e) { showToast('저장 오류: '+e.message,'err'); }
-};
-
-window.deleteRecord = async (id) => {
-  if (!confirm('삭제하시겠습니까?')) return;
-  await deleteDoc(doc(db,'marketPicker',id));
-  showToast('삭제 완료');
-  await loadRecords();
-};
-
-window.editRecord = (id) => {
-  const r = allRecords.find(x=>x.id===id);
-  if (!r) return;
-  editingId = id;
-  document.getElementById('editLabel').textContent = `수정 중: ${r.name} (${r.ticker})`;
-  document.getElementById('inp_name').value   = r.name;
-  document.getElementById('inp_ticker').value = r.ticker;
-  document.getElementById('inp_type').value   = r.stype||'성장주';
-  document.getElementById('inp_memo').value   = r.memo||'';
-  document.getElementById('inp_date').value   = r.date;
-  CHECKLIST_ITEMS.forEach(item => {
-    const el = document.getElementById('chk_'+item.id);
-    const al = document.getElementById('act_'+item.id);
-    if (el) el.value = r.checks?.[item.id]||'미달';
-    if (al) al.value = r.actuals?.[item.id]||'';
-  });
-  updateLiveScore();
-  showPage('form');
-  window.scrollTo(0,0);
-};
-
-window.viewDetail = (id) => {
-  const r = allRecords.find(x=>x.id===id);
-  if (!r) return;
-  const judge = getJudge(r.score);
-  const catGroups = {};
-  CHECKLIST_ITEMS.forEach(item => {
-    if (!catGroups[item.cat]) catGroups[item.cat] = [];
-    catGroups[item.cat].push(item);
-  });
-  let rows = '';
-  Object.entries(catGroups).forEach(([cat, items]) => {
-    rows += `<tr class="cat-row"><td colspan="4">${cat}</td></tr>`;
-    items.forEach(item => {
-      const v = r.checks?.[item.id]||'미달';
-      const act = r.actuals?.[item.id]||'-';
-      const vcls = v==='부합'?'v-ok':v==='확인필요'?'v-warn':'v-bad';
-      rows += `<tr>
-        <td class="item-label">${item.label}</td>
-        <td class="criteria-col">${item.criteria}</td>
-        <td class="actual-col">${act}</td>
-        <td><span class="vtag ${vcls}">${v}</span></td>
-      </tr>`;
-    });
-  });
-  document.getElementById('detailContent').innerHTML = `
-    <div class="detail-hero">
-      <div class="detail-company">${r.name}<span class="detail-ticker">${r.ticker}</span></div>
-      <div class="detail-date">${r.date} · ${r.stype||''}</div>
-      <div class="detail-score-row">
-        <div class="big-score">${r.score}<span class="score-unit">/100</span></div>
-        <span class="badge ${judge.cls} big">${judge.label}</span>
-      </div>
-      ${r.memo?`<div class="detail-memo">${r.memo}</div>`:''}
-    </div>
-    <table class="detail-table"><thead>
-      <tr><th>항목</th><th>기준치</th><th>실제값</th><th>판정</th></tr>
-    </thead><tbody>${rows}</tbody></table>
-    <div class="detail-actions">
-      <button class="btn-ghost" onclick="editRecord('${r.id}')">✏️ 수정</button>
-      <button class="btn-danger" onclick="deleteRecord('${r.id}');showPage('list')">🗑 삭제</button>
-    </div>`;
-  showPage('detail');
-};
-
-// ─── 검색 ───
-window.doSearch = () => {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  const ft = document.getElementById('filterJudge').value;
-  let res = allRecords;
-  if (q) res = res.filter(r =>
-    r.name?.toLowerCase().includes(q) ||
-    r.ticker?.toLowerCase().includes(q) ||
-    r.date?.includes(q) ||
-    r.memo?.toLowerCase().includes(q)
-  );
-  if (ft) res = res.filter(r => r.judge===ft);
-  renderList(res);
-};
-
-function renderList(records) {
-  const el = document.getElementById('recordList');
-  if (!records.length) { el.innerHTML='<div class="empty-state">📭 분석 기록이 없습니다</div>'; return; }
-  el.innerHTML = records.map(r => {
-    const judge = getJudge(r.score);
-    const conf = r.checks ? Object.values(r.checks).filter(v=>v==='부합').length : 0;
-    const warn = r.checks ? Object.values(r.checks).filter(v=>v==='확인필요').length : 0;
-    const bad  = r.checks ? Object.values(r.checks).filter(v=>v==='미달').length : 0;
-    return `
-    <div class="record-card" onclick="viewDetail('${r.id}')">
-      <div class="card-top">
-        <div class="card-company">
-          <span class="card-name">${r.name}</span>
-          <span class="card-ticker">${r.ticker}</span>
-          <span class="card-type">${r.stype||''}</span>
-        </div>
-        <div class="card-right">
-          <div class="card-score">${r.score}<span class="s-unit">/100</span></div>
-          <span class="badge ${judge.cls}">${judge.label}</span>
-        </div>
-      </div>
-      <div class="card-stats">
-        <span class="stat ok">●부합 ${conf}</span>
-        <span class="stat warn">●확인 ${warn}</span>
-        <span class="stat bad">●미달 ${bad}</span>
-        <span class="stat date">${r.date}</span>
-      </div>
-      ${r.memo?`<div class="card-memo">${r.memo}</div>`:''}
-      <div class="card-actions" onclick="event.stopPropagation()">
-        <button class="btn-ghost xs" onclick="editRecord('${r.id}')">수정</button>
-        <button class="btn-danger xs" onclick="deleteRecord('${r.id}')">삭제</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ─── 실시간 점수 ───
-window.updateLiveScore = () => {
-  const checks = {};
-  CHECKLIST_ITEMS.forEach(item => {
-    checks[item.id] = document.getElementById('chk_'+item.id)?.value||'미달';
-  });
-  const score = calcScore(checks);
-  const judge = getJudge(score);
-  document.getElementById('liveScore').textContent = score;
-  const lb = document.getElementById('liveJudge');
-  lb.textContent = judge.label;
-  lb.className = 'badge '+judge.cls+' big';
-};
-
-// ─── 페이지 전환 ───
-window.showPage = (page) => {
-  ['pageList','pageForm','pageDetail'].forEach(p => {
-    document.getElementById(p).classList.toggle('hidden', p !== 'page'+cap(page));
-  });
-  if (page==='form' && !editingId) {
-    document.getElementById('inp_date').value = new Date().toISOString().slice(0,10);
-    document.getElementById('editLabel').textContent = '신규 종목 분석';
-    document.getElementById('inp_name').value = '';
-    document.getElementById('inp_ticker').value = '';
-    document.getElementById('inp_memo').value = '';
-    CHECKLIST_ITEMS.forEach(item => {
-      const el = document.getElementById('chk_'+item.id);
-      const al = document.getElementById('act_'+item.id);
-      if (el) el.value = '미달';
-      if (al) al.value = '';
-    });
-    updateLiveScore();
-  }
-};
-
-function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
-window.showToast = (msg, type='ok') => {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show '+(type==='err'?'toast-err':'');
-  setTimeout(()=>t.classList.remove('show'),2800);
-};
 </script>
-
+<script src="home-bar.js"></script>
 <style>
 :root {
-  --bg:       #07070f;
-  --bg2:      #0d0d1a;
-  --bg3:      #121224;
-  --surface:  #161630;
-  --surface2: #1c1c3a;
-  --gold:     #c9a84c;
-  --gold-lt:  #e8c96b;
-  --gold-dk:  #8a6b20;
-  --green:    #00d97e;
-  --green-dk: #00854b;
-  --amber:    #f5a623;
-  --red:      #e74c3c;
-  --text:     #e8e8f0;
-  --text2:    #9090b0;
-  --text3:    #55556a;
-  --border:   #1e1e3a;
-  --border2:  #2a2a4a;
-  --radius:   8px;
-  --mono:     'DM Mono', monospace;
-  --sans:     'Noto Sans KR', sans-serif;
-  --display:  'Bebas Neue', sans-serif;
+  --bg:      #080c14;
+  --sf:      #0e1422;
+  --sf2:     #131b2d;
+  --sf3:     #181f30;
+  --bd:      #1e2d45;
+  --bd2:     #263548;
+  --text:    #c8d6e8;
+  --text2:   #7a91a8;
+  --text3:   #4a5f74;
+  --accent:  #00d4ff;
+  --accent2: #0099cc;
+  --green:   #00e676;
+  --red:     #ff5252;
+  --yellow:  #ffca28;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Noto Sans KR', sans-serif;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{font-size:14px;-webkit-tap-highlight-color:transparent;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:80px;}
 
-/* ── 스크롤바 */
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-track{background:var(--bg2);}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-
-/* ── 레이아웃 */
-.app-wrap{max-width:860px;margin:0 auto;padding:0 12px 80px;}
-
-/* ── 헤더 */
-.app-header{
+/* ── 헤더 (픽노트 동일) */
+header{
+  position:sticky;top:36px;z-index:50;
+  background:rgba(8,12,20,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bd);padding:0 16px;height:52px;
   display:flex;align-items:center;justify-content:space-between;
-  padding:16px 0 12px;border-bottom:1px solid var(--border2);
-  position:sticky;top:0;background:var(--bg);z-index:100;
 }
-.logo-block{display:flex;align-items:baseline;gap:10px;}
-.logo-main{font-family:var(--display);font-size:26px;letter-spacing:2px;color:var(--gold);}
-.logo-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;}
-.uid-label{font-size:11px;color:var(--text2);margin-right:8px;}
+.logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
 
-/* ── 탭 네비 */
-.tab-nav{display:flex;gap:4px;padding:12px 0 10px;border-bottom:1px solid var(--border);}
-.tab-btn{
-  padding:6px 18px;border-radius:20px;border:1px solid var(--border2);
-  background:transparent;color:var(--text2);font-family:var(--sans);font-size:12px;
-  cursor:pointer;transition:all .2s;
-}
-.tab-btn:hover{border-color:var(--gold-dk);color:var(--gold);}
-.tab-btn.active{background:var(--gold);border-color:var(--gold);color:#0a0a0f;font-weight:700;}
+.sync-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
+.sync-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.sync-dot.live{background:var(--green);box-shadow:0 0 5px var(--green);animation:bl 3s infinite;}
+.sync-dot.loading{background:var(--yellow);box-shadow:0 0 5px var(--yellow);animation:bl .6s infinite;}
+.sync-dot.offline{background:var(--red);}
+.sync-dot.saving{background:var(--accent);box-shadow:0 0 5px var(--accent);animation:bl .4s infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.sync-txt.live{color:var(--green);}.sync-txt.loading{color:var(--yellow);}.sync-txt.offline{color:var(--red);}.sync-txt.saving{color:var(--accent);}
 
-/* ── 버튼 */
-.btn-gold{
-  background:var(--gold);color:#0a0a0f;font-weight:700;font-family:var(--sans);
-  border:none;border-radius:var(--radius);cursor:pointer;transition:all .15s;
-  padding:8px 18px;font-size:13px;
-}
-.btn-gold:hover{background:var(--gold-lt);}
-.btn-gold.sm{padding:5px 12px;font-size:11px;}
-.btn-ghost{
-  background:transparent;color:var(--text2);border:1px solid var(--border2);
-  border-radius:var(--radius);cursor:pointer;font-family:var(--sans);
-  padding:7px 16px;font-size:12px;transition:all .15s;
-}
-.btn-ghost:hover{border-color:var(--gold-dk);color:var(--gold);}
-.btn-ghost.sm{padding:4px 10px;font-size:11px;}
-.btn-ghost.xs{padding:3px 8px;font-size:10px;}
-.btn-danger{
-  background:transparent;color:var(--red);border:1px solid rgba(231,76,60,.3);
-  border-radius:var(--radius);cursor:pointer;font-family:var(--sans);
-  padding:7px 16px;font-size:12px;transition:all .15s;
-}
-.btn-danger:hover{background:rgba(231,76,60,.1);}
-.btn-danger.xs{padding:3px 8px;font-size:10px;}
-.hidden{display:none!important;}
+.user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;cursor:pointer;}
+.user-badge:hover{border-color:var(--accent);color:var(--accent);}
 
-/* ── 검색 바 */
-.search-bar{display:flex;gap:8px;padding:14px 0 10px;flex-wrap:wrap;align-items:center;}
-.search-input{
-  flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border2);
-  color:var(--text);border-radius:var(--radius);padding:8px 14px;font-family:var(--sans);
-  font-size:13px;outline:none;
-}
-.search-input:focus{border-color:var(--gold-dk);}
-.search-input::placeholder{color:var(--text3);}
-select.filter-sel{
-  background:var(--surface);border:1px solid var(--border2);color:var(--text2);
-  border-radius:var(--radius);padding:8px 10px;font-family:var(--sans);font-size:12px;outline:none;
-}
-select.filter-sel:focus{border-color:var(--gold-dk);}
+.btn-add{background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 14px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
+.btn-add:hover{background:#33ddff;}
 
-/* ── 카드 */
-.record-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:10px;
-  padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all .18s;
-}
-.record-card:hover{border-color:var(--gold-dk);background:var(--surface2);}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
-.card-company{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
-.card-name{font-weight:700;font-size:15px;color:var(--text);}
-.card-ticker{font-family:var(--mono);font-size:12px;color:var(--gold);background:rgba(201,168,76,.1);padding:2px 7px;border-radius:4px;}
-.card-type{font-size:10px;color:var(--text3);}
-.card-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
-.card-score{font-family:var(--display);font-size:30px;color:var(--gold);line-height:1;}
-.s-unit{font-family:var(--sans);font-size:11px;color:var(--text3);}
-.card-stats{display:flex;gap:12px;margin-top:8px;font-family:var(--mono);font-size:11px;}
-.stat.ok{color:var(--green);}.stat.warn{color:var(--amber);}.stat.bad{color:var(--red);}
-.stat.date{color:var(--text3);margin-left:auto;}
-.card-memo{margin-top:6px;font-size:11px;color:var(--text3);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.card-actions{display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
-.empty-state{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px;}
+/* ── 필터바 */
+.filter-bar{padding:10px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
+.filter-input{background:var(--sf2);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--sans);outline:none;color-scheme:dark;}
+.filter-input:focus{border-color:var(--accent);}
+select.filter-input option{background:var(--sf2);}
+.count-chip{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
+.count-chip span{color:var(--accent);font-weight:600;}
 
-/* ── 배지 */
-.badge{
-  display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;
-  letter-spacing:.5px;font-family:var(--mono);
-}
-.badge.big{padding:5px 16px;font-size:14px;}
-.badge-buy{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.3);}
-.badge-watch{background:rgba(245,166,35,.12);color:var(--amber);border:1px solid rgba(245,166,35,.3);}
-.badge-no{background:rgba(231,76,60,.12);color:var(--red);border:1px solid rgba(231,76,60,.3);}
+/* ── 피드 */
+.feed{padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+.date-group{display:flex;align-items:center;gap:10px;margin:6px 0 2px;}
+.date-group .date-label{font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;}
+.date-group .line{flex:1;height:1px;background:rgba(0,212,255,.1);}
+.date-group .count-badge{font-family:var(--mono);font-size:10px;color:var(--text3);}
 
-/* ── 폼 */
-.form-section{margin-top:20px;}
-.form-title-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.form-title{font-family:var(--display);font-size:20px;letter-spacing:1px;color:var(--gold);}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-@media(max-width:520px){.form-grid{grid-template-columns:1fr;}}
-.form-group{display:flex;flex-direction:column;gap:5px;}
+/* ── 카드 (픽노트 동일 구조) */
+.feed-item{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s,background .2s;animation:fadeIn .3s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.feed-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--accent),transparent);border-radius:3px 0 0 3px;}
+.feed-item:hover{border-color:var(--bd2);background:var(--sf2);}
+
+.item-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.item-name{font-size:16px;font-weight:700;color:var(--text);}
+.item-ticker{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:2px 7px;}
+.item-type{font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;}
+
+/* ── 점수 배지 (크게) */
+.score-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:700;}
+.score-hi{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.score-md{background:rgba(255,202,40,.12);color:var(--yellow);border:1px solid rgba(255,202,40,.3);}
+.score-lo{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.3);}
+
+/* ── 최종판단 배지 */
+.judge-badge{display:inline-block;padding:3px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;}
+.judge-buy{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.judge-watch{background:rgba(255,202,40,.12);color:var(--yellow);border:1px solid rgba(255,202,40,.3);}
+.judge-no{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.3);}
+
+.item-author{font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:2px 6px;}
+.item-actions{margin-left:auto;display:flex;gap:6px;}
+.btn-icon{background:transparent;border:1px solid var(--bd);color:var(--text3);border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.btn-icon.edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.btn-icon.del:hover{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.08);}
+
+/* ── 요약 그리드 (픽노트 row1-grid 동일) */
+.row1-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 12px;margin-bottom:10px;background:var(--sf3);border-radius:10px;padding:10px 12px;border:1px solid var(--bd2);}
+.info-cell{display:flex;flex-direction:column;gap:2px;}
+.info-label{font-size:9px;font-family:var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--text3);}
+.info-value{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);}
+.info-value.accent{color:var(--accent);}
+.info-value.green{color:var(--green);}
+.info-value.red{color:var(--red);}
+.info-value.yellow{color:var(--yellow);}
+
+/* ── 판정 스탯 바 */
+.stat-bar{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.stat-pill{font-family:var(--mono);font-size:10px;padding:2px 9px;border-radius:3px;}
+.stat-pill.ok{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.stat-pill.warn{background:rgba(255,202,40,.1);color:var(--yellow);border:1px solid rgba(255,202,40,.2);}
+.stat-pill.bad{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2);}
+
+/* ── 비고 */
+.note-area{margin-top:8px;padding:8px 10px;background:var(--sf3);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text2);border-left:2px solid var(--accent);}
+.empty-state{text-align:center;padding:80px 20px;color:var(--text3);}
+.empty-icon{font-size:48px;opacity:.4;margin-bottom:12px;}
+
+/* ── 페이지네이션 (픽노트 동일) */
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin:20px 16px 40px;flex-wrap:wrap;}
+.page-btn{background:var(--sf2);border:1px solid var(--bd);color:var(--text2);border-radius:8px;padding:6px 12px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s;min-width:36px;text-align:center;}
+.page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.05);}
+.page-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:600;}
+.page-btn:disabled{opacity:.3;cursor:not-allowed;}
+.page-ellipsis{color:var(--text3);font-family:var(--mono);font-size:12px;padding:0 4px;}
+
+/* ── 모달 (픽노트 동일 구조) */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--sf);border:1px solid var(--bd2);border-radius:16px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6);transform:translateY(20px);transition:transform .2s;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--accent);}
+.modal-title .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;}
+.btn-close{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:24px;padding:0 6px;}
+.btn-close:hover{color:var(--red);}
+.modal-body{padding:16px 20px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
 .form-group.full{grid-column:1/-1;}
-.form-label{font-size:11px;color:var(--text2);font-weight:500;letter-spacing:.5px;}
-.form-input,.form-select{
-  background:var(--surface);border:1px solid var(--border2);color:var(--text);
-  border-radius:var(--radius);padding:9px 12px;font-family:var(--sans);font-size:13px;outline:none;
-  transition:border .15s;
-}
-.form-input:focus,.form-select:focus{border-color:var(--gold-dk);}
-.form-input::placeholder{color:var(--text3);}
-textarea.form-input{resize:vertical;min-height:60px;}
+label{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);}
+input,textarea,select{background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;font-family:var(--sans);outline:none;width:100%;color-scheme:dark;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+select option{background:var(--sf2);}
+.form-section{margin-top:14px;margin-bottom:8px;font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:1px;color:var(--accent);border-top:1px solid var(--bd);padding-top:12px;}
 
-/* ── 라이브 점수판 */
-.live-scoreboard{
-  background:var(--bg3);border:1px solid var(--border2);border-radius:10px;
-  padding:16px;display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:20px;position:sticky;top:62px;z-index:90;
+/* ── 라이브 점수판 (모달 내) */
+.live-score-strip{
+  background:var(--sf3);border:1px solid var(--bd2);border-radius:10px;
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;position:sticky;top:0;z-index:10;
 }
-.live-score-label{font-size:11px;color:var(--text3);}
-.live-score-num{font-family:var(--display);font-size:48px;color:var(--gold);line-height:1;}
+.live-score-num{font-family:var(--mono);font-size:36px;font-weight:700;line-height:1;}
+.live-score-num.hi{color:var(--green);}
+.live-score-num.md{color:var(--yellow);}
+.live-score-num.lo{color:var(--red);}
+.live-score-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
+.live-guide{font-size:10px;font-family:var(--mono);text-align:right;line-height:1.8;}
 
-/* ── 카테고리 그룹 */
-.cat-block{margin-bottom:20px;}
-.cat-label{
-  font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text3);
-  text-transform:uppercase;padding:6px 0;border-bottom:1px solid var(--border);
-  margin-bottom:10px;
-}
-.check-item{
-  background:var(--surface);border:1px solid var(--border);border-radius:8px;
-  padding:12px;margin-bottom:8px;transition:border .15s;
-}
-.check-item:focus-within{border-color:var(--border2);}
-.check-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
-.check-label{font-weight:700;font-size:13px;color:var(--text);}
-.check-criteria{font-size:11px;color:var(--text3);font-style:italic;flex:1;}
+/* ── 체크리스트 항목 */
+.cat-section{margin-bottom:4px;}
+.cat-title{font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:1px;color:var(--accent);border-top:1px solid var(--bd);padding-top:12px;margin-bottom:8px;margin-top:14px;}
+.check-row{background:var(--sf3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;transition:border-color .15s;}
+.check-row:focus-within{border-color:var(--bd2);}
+.check-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px;}
+.check-label-wrap{flex:1;}
+.check-label{font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:2px;}
+.check-criteria{font-size:10px;color:var(--text3);font-family:var(--mono);}
 .verdict-sel{
-  background:var(--bg2);border:1px solid var(--border2);color:var(--text2);
-  border-radius:6px;padding:5px 10px;font-family:var(--mono);font-size:11px;outline:none;
-  cursor:pointer;min-width:80px;
+  background:var(--sf2);border:1px solid var(--bd2);color:var(--text2);
+  border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:11px;
+  outline:none;cursor:pointer;width:90px;flex-shrink:0;
+  color-scheme:dark;
 }
-.verdict-sel:focus{border-color:var(--gold-dk);}
-.verdict-sel option[value="부합"]{color:var(--green);}
-.verdict-sel option[value="확인필요"]{color:var(--amber);}
-.verdict-sel option[value="미달"]{color:var(--red);}
+.verdict-sel:focus{border-color:var(--accent);}
+.verdict-sel.v-ok{border-color:rgba(0,230,118,.4);color:var(--green);}
+.verdict-sel.v-warn{border-color:rgba(255,202,40,.4);color:var(--yellow);}
+.verdict-sel.v-bad{border-color:rgba(255,82,82,.3);color:var(--red);}
 textarea.actual-input{
-  width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);
-  border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:12px;
-  outline:none;resize:vertical;min-height:48px;line-height:1.5;
+  width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--text2);
+  border-radius:6px;padding:7px 10px;font-family:var(--sans);font-size:12px;
+  outline:none;resize:vertical;min-height:44px;line-height:1.5;
   transition:border .15s;
 }
-textarea.actual-input:focus{border-color:var(--border2);}
+textarea.actual-input:focus{border-color:var(--accent);color:var(--text);}
 textarea.actual-input::placeholder{color:var(--text3);}
-.form-actions{display:flex;gap:10px;padding-top:10px;}
 
-/* ── 상세 */
-.detail-hero{
-  background:var(--bg3);border:1px solid var(--border2);border-radius:10px;
-  padding:20px;margin:16px 0;
-}
-.detail-company{font-size:20px;font-weight:700;display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
-.detail-ticker{font-family:var(--mono);font-size:14px;color:var(--gold);background:rgba(201,168,76,.1);padding:2px 8px;border-radius:4px;}
-.detail-date{font-size:11px;color:var(--text3);margin-bottom:12px;}
-.detail-score-row{display:flex;align-items:center;gap:16px;margin-bottom:10px;}
-.big-score{font-family:var(--display);font-size:60px;color:var(--gold);line-height:1;}
-.score-unit{font-family:var(--sans);font-size:14px;color:var(--text3);}
-.detail-memo{font-size:12px;color:var(--text3);font-style:italic;margin-top:8px;}
-.detail-table{width:100%;border-collapse:collapse;margin-bottom:16px;}
-.detail-table th{
-  text-align:left;padding:8px 10px;font-size:10px;letter-spacing:1px;
-  color:var(--text3);border-bottom:1px solid var(--border2);font-weight:500;
-}
-.detail-table td{
-  padding:9px 10px;font-size:12px;color:var(--text2);
-  border-bottom:1px solid var(--border);vertical-align:top;
-}
-.detail-table tr.cat-row td{
-  background:var(--bg3);color:var(--text3);font-size:10px;letter-spacing:1.5px;
-  font-family:var(--mono);text-transform:uppercase;padding:5px 10px;
-}
-.detail-table .item-label{font-weight:600;color:var(--text);width:120px;}
-.detail-table .criteria-col{color:var(--text3);font-style:italic;width:160px;}
-.detail-table .actual-col{max-width:280px;word-break:break-all;}
-.vtag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono);}
-.v-ok{background:rgba(0,217,126,.1);color:var(--green);}
-.v-warn{background:rgba(245,166,35,.1);color:var(--amber);}
-.v-bad{background:rgba(231,76,60,.1);color:var(--red);}
-.detail-actions{display:flex;gap:10px;padding-top:6px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;}
+.btn-cancel{background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--sans);}
+.btn-cancel:hover{border-color:var(--text2);color:var(--text);}
+.btn-save{background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:700;cursor:pointer;font-family:var(--sans);}
+.btn-save:hover{background:#33ddff;}
+
+/* ── 로그인 모달 */
+.login-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.login-overlay.open{opacity:1;pointer-events:all;}
+.login-modal{background:var(--sf);border:1px solid var(--bd2);border-radius:20px;padding:32px 24px;text-align:center;max-width:320px;width:90%;}
+.login-modal .btn-login{background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+.login-modal .btn-cancel-sm{margin-top:12px;background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:10px;padding:10px 20px;width:100%;cursor:pointer;}
+
+/* ── 상세 모달 (체크리스트 전체 보기) */
+.detail-table{width:100%;border-collapse:collapse;margin-top:4px;}
+.detail-table th{text-align:left;padding:7px 10px;font-size:10px;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--bd2);font-family:var(--mono);}
+.detail-table td{padding:8px 10px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--bd);vertical-align:top;}
+.detail-table tr.cat-tr td{background:var(--sf2);color:var(--accent);font-size:9px;letter-spacing:1.5px;font-family:var(--mono);text-transform:uppercase;padding:5px 10px;}
+.detail-table .td-label{font-weight:600;color:var(--text);width:110px;}
+.detail-table .td-criteria{color:var(--text3);font-family:var(--mono);font-size:10px;width:150px;}
+.detail-table .td-actual{word-break:break-all;max-width:240px;}
+.vtag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;font-family:var(--mono);}
+.vtag.ok{background:rgba(0,230,118,.1);color:var(--green);}
+.vtag.warn{background:rgba(255,202,40,.1);color:var(--yellow);}
+.vtag.bad{background:rgba(255,82,82,.1);color:var(--red);}
 
 /* ── 토스트 */
-.toast{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--surface2);border:1px solid var(--border2);color:var(--text);
-  padding:10px 22px;border-radius:24px;font-size:13px;z-index:9999;
-  opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;
-}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--sf2);border:1px solid var(--bd2);border-radius:40px;padding:8px 20px;font-size:12px;opacity:0;transition:all .2s;z-index:9999;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.toast.toast-err{border-color:rgba(231,76,60,.5);color:var(--red);}
 
-/* ── 구분선 */
-.section-divider{height:1px;background:var(--border);margin:4px 0 16px;}
+@media(max-width:600px){
+  .row1-grid{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
-<div class="app-wrap">
 
-  <!-- 헤더 -->
-  <header class="app-header">
-    <div class="logo-block">
-      <span class="logo-main">MARKET PICKER</span>
-      <span class="logo-sub">GROWTH STOCK CHECKLIST</span>
+<header>
+  <div class="logo"><div class="logo-dot"></div>마켓픽커 / MARKET PICKER</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="sync-badge">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span class="sync-txt loading" id="syncTxt">연결 중...</span>
     </div>
-    <div id="authSection"></div>
-  </header>
-
-  <!-- 탭 네비 -->
-  <nav class="tab-nav">
-    <button class="tab-btn active" onclick="showPage('list');this.closest('.tab-nav').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">📋 분석 목록</button>
-    <button class="tab-btn" onclick="editingId=null;showPage('form');this.closest('.tab-nav').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">✏️ 신규 분석</button>
-  </nav>
-
-  <!-- ══ 목록 페이지 ══ -->
-  <div id="pageList">
-    <div class="search-bar">
-      <input class="search-input" id="searchInput" placeholder="종목명 / 티커 / 날짜 / 메모 검색..." oninput="doSearch()">
-      <select class="filter-sel" id="filterJudge" onchange="doSearch()">
-        <option value="">전체</option>
-        <option value="매수검토">매수검토</option>
-        <option value="관망">관망</option>
-        <option value="매수불가">매수불가</option>
-      </select>
-      <button class="btn-gold" onclick="editingId=null;showPage('form');document.querySelectorAll('.tab-btn').forEach((b,i)=>{b.classList.toggle('active',i===1)})">+ 신규</button>
+    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
+      <span>👤</span>
+      <span id="userEmail">로그인</span>
     </div>
-    <div id="recordList"><div class="empty-state">📭 로그인 후 분석 기록을 불러옵니다</div></div>
+    <button class="btn-add" onclick="checkLoginAndOpen()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      새 분석
+    </button>
   </div>
+</header>
 
-  <!-- ══ 입력 폼 페이지 ══ -->
-  <div id="pageForm" class="hidden">
-    <div class="form-section">
-      <div class="form-title-bar">
-        <span class="form-title" id="editLabel">신규 종목 분석</span>
-        <button class="btn-ghost sm" onclick="showPage('list')">← 목록</button>
-      </div>
+<!-- 필터바 -->
+<div class="filter-bar">
+  <input class="filter-input" type="date" id="filterDate" oninput="resetPage()" style="width:140px;">
+  <input class="filter-input" type="text" id="filterText" oninput="resetPage()" placeholder="종목명·티커·메모 검색..." style="width:180px;">
+  <select class="filter-input" id="filterJudge" onchange="resetPage()" style="width:100px;">
+    <option value="">전체</option>
+    <option value="매수검토">매수검토</option>
+    <option value="관망">관망</option>
+    <option value="매수불가">매수불가</option>
+  </select>
+  <div class="count-chip" id="countChip">총 <span>0</span>건</div>
+</div>
+
+<!-- 피드 -->
+<div class="feed" id="feedList"></div>
+<div class="pagination" id="paginationEl"></div>
+
+<!-- ══ 입력/수정 모달 ══ -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><div class="dot"></div><span id="modalTitle">새 분석 추가</span></div>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
 
       <!-- 기본 정보 -->
       <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">회사명 *</label>
-          <input class="form-input" id="inp_name" placeholder="예) Duolingo">
+        <div class="form-group"><label>날짜 *</label><input type="date" id="fDate"></div>
+        <div class="form-group"><label>유형</label>
+          <select id="fType"><option value="성장주">성장주</option><option value="가치주">가치주</option><option value="배당주">배당주</option><option value="기타">기타</option></select>
         </div>
-        <div class="form-group">
-          <label class="form-label">티커 *</label>
-          <input class="form-input" id="inp_ticker" placeholder="예) DUOL" style="font-family:var(--mono);">
-        </div>
-        <div class="form-group">
-          <label class="form-label">유형</label>
-          <select class="form-select" id="inp_type">
-            <option value="성장주">성장주</option>
-            <option value="가치주">가치주</option>
-            <option value="배당주">배당주</option>
-            <option value="기타">기타</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">분석 날짜 *</label>
-          <input class="form-input" id="inp_date" type="date">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">한줄 메모</label>
-          <textarea class="form-input" id="inp_memo" placeholder="핵심 투자 논리 또는 주의사항" rows="2"></textarea>
-        </div>
+        <div class="form-group"><label>회사명 *</label><input type="text" id="fName" placeholder="예: Duolingo"></div>
+        <div class="form-group"><label>티커 *</label><input type="text" id="fTicker" placeholder="예: DUOL" style="font-family:var(--mono);text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="form-group full"><label>한줄 메모</label><textarea id="fMemo" rows="2" placeholder="핵심 투자 논리 또는 주의사항..."></textarea></div>
       </div>
-
-      <div class="section-divider"></div>
 
       <!-- 라이브 점수판 -->
-      <div class="live-scoreboard">
+      <div class="form-section">실시간 점수</div>
+      <div class="live-score-strip">
         <div>
-          <div class="live-score-label">현재 점수</div>
-          <div class="live-score-num" id="liveScore">0</div>
-          <div class="live-score-label">/100점</div>
+          <div id="liveScoreNum" class="live-score-num lo">0</div>
+          <div class="live-score-sub">/ 100점</div>
         </div>
-        <div style="text-align:right">
-          <div class="live-score-label" style="margin-bottom:6px">판정 기준</div>
-          <div style="font-size:11px;color:var(--green);margin-bottom:3px;">85점↑ 매수검토</div>
-          <div style="font-size:11px;color:var(--amber);margin-bottom:3px;">71~84점 관망</div>
-          <div style="font-size:11px;color:var(--red);">70점↓ 매수불가</div>
+        <div id="liveJudgeBadge" class="judge-badge judge-no">매수불가</div>
+        <div class="live-guide">
+          <div style="color:var(--green);">85점↑ 매수검토</div>
+          <div style="color:var(--yellow);">71~84점 관망</div>
+          <div style="color:var(--red);">70점↓ 매수불가</div>
         </div>
-        <div id="liveJudge" class="badge badge-no big">매수불가</div>
       </div>
 
-      <!-- 체크리스트 -->
-      <div id="checklistForm"></div>
+      <!-- 체크리스트 (JS로 생성) -->
+      <div id="checklistContainer"></div>
 
-      <div class="form-actions">
-        <button class="btn-gold" onclick="saveRecord()" style="flex:1;padding:12px;">💾 저장</button>
-        <button class="btn-ghost" onclick="showPage('list');editingId=null">취소</button>
-      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveRecord()">💾 저장</button>
     </div>
   </div>
+</div>
 
-  <!-- ══ 상세 페이지 ══ -->
-  <div id="pageDetail" class="hidden">
-    <div style="display:flex;justify-content:flex-end;padding:12px 0 4px;">
-      <button class="btn-ghost sm" onclick="showPage('list')">← 목록으로</button>
+<!-- ══ 상세보기 모달 ══ -->
+<div class="overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><div class="dot"></div><span id="detailTitle">분석 상세</span></div>
+      <button class="btn-close" onclick="closeDetail()">×</button>
     </div>
-    <div id="detailContent"></div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDetail()">닫기</button>
+    </div>
   </div>
+</div>
 
+<!-- ══ 로그인 모달 ══ -->
+<div class="login-overlay" id="loginModal" onclick="if(event.target===this)closeLoginModal()">
+  <div class="login-modal">
+    <div style="font-size:48px;margin-bottom:16px;">🔐</div>
+    <h3 style="margin-bottom:8px;">로그인이 필요합니다</h3>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:24px;">분석을 추가·수정·삭제하려면<br>Google 계정으로 로그인해주세요</p>
+    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
+    <button class="btn-cancel-sm" onclick="closeLoginModal()">취소</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
-// 체크리스트 폼 동적 생성 (모듈 밖에서도 접근 위해 window에 등록된 변수 사용)
-// CHECKLIST_ITEMS는 첫 번째 모듈 블록에 정의됨 → 여기서 재정의
+<script>
+// ═══════════════════════════════════════════
+//  데이터 정의
+// ═══════════════════════════════════════════
 const ITEMS = [
-  { id:'c01', cat:'수익성',    label:'영업이익 증가',       criteria:'최근 3년 연속 증가' },
-  { id:'c02', cat:'수익성',    label:'순이익 증가',          criteria:'최근 3년 연속 증가' },
-  { id:'c03', cat:'수익성',    label:'매출 증가',            criteria:'최근 3년 연속 증가' },
-  { id:'c04', cat:'수익성',    label:'매출총이익률 추세',    criteria:'규모 확장과 함께 상승 추세' },
-  { id:'c05', cat:'수익성',    label:'영업이익률',           criteria:'10% 이상' },
-  { id:'c06', cat:'수익성',    label:'순이익률',             criteria:'8% 이상' },
-  { id:'c07', cat:'수익성',    label:'1회성 이익 여부',      criteria:'일회성 이익 없음' },
-  { id:'c08', cat:'밸류에이션',label:'업종 평균 PER 비교',   criteria:'업종 평균 이하' },
-  { id:'c09', cat:'밸류에이션',label:'Forward PER',          criteria:'현재 PER보다 낮음' },
-  { id:'c10', cat:'밸류에이션',label:'EPS 증가',             criteria:'최근 3년 증가' },
-  { id:'c11', cat:'밸류에이션',label:'EPS 정확도',           criteria:'예상치와 큰 괴리 없음' },
-  { id:'c12', cat:'재무건전성',label:'부채비율',             criteria:'100% 이하' },
-  { id:'c13', cat:'재무건전성',label:'당좌비율',             criteria:'1.0 이상' },
-  { id:'c14', cat:'재무건전성',label:'유동비율',             criteria:'1.5 이상' },
-  { id:'c15', cat:'재무건전성',label:'자본 증가',            criteria:'최근 3년 증가' },
-  { id:'c16', cat:'재무건전성',label:'현금흐름',             criteria:'영업CF 플러스' },
-  { id:'c17', cat:'재무건전성',label:'운전자본 안정성',      criteria:'매출 대비 외상매출·매입 안정' },
-  { id:'c18', cat:'재무건전성',label:'주식희석률',           criteria:'과도한 주식 발행 없음' },
-  { id:'c19', cat:'경쟁력',   label:'브랜드 구축',          criteria:'강한 브랜드 인지도' },
-  { id:'c20', cat:'경쟁력',   label:'시장 선도',            criteria:'업종 상위권' },
-  { id:'c21', cat:'경쟁력',   label:'시장 점유율',          criteria:'상위 3위 이내' },
-  { id:'c22', cat:'경쟁력',   label:'고객 충성도',          criteria:'높은 리텐션·재구매율' },
-  { id:'c23', cat:'경쟁력',   label:'배당 성향',            criteria:'0~1% 이하 (재투자 선호)' },
-  { id:'c24', cat:'신뢰도',   label:'내부자 매도',          criteria:'과도한 매도 없음' },
-  { id:'c25', cat:'신뢰도',   label:'사업보고서 리스크',    criteria:'중대 리스크 없음' },
+  {id:'c01',cat:'수익성',    label:'영업이익 증가',     criteria:'최근 3년 연속 증가'},
+  {id:'c02',cat:'수익성',    label:'순이익 증가',        criteria:'최근 3년 연속 증가'},
+  {id:'c03',cat:'수익성',    label:'매출 증가',          criteria:'최근 3년 연속 증가'},
+  {id:'c04',cat:'수익성',    label:'매출총이익률 추세',  criteria:'2년 연속 상승 또는 60% 이상 유지'},
+  {id:'c05',cat:'수익성',    label:'영업이익률',         criteria:'10% 이상'},
+  {id:'c06',cat:'수익성',    label:'순이익률',           criteria:'8% 이상'},
+  {id:'c07',cat:'수익성',    label:'1회성 이익 여부',    criteria:'일회성 이익 없음'},
+  {id:'c08',cat:'밸류에이션',label:'업종 평균 PER',      criteria:'업종 평균 이하'},
+  {id:'c09',cat:'밸류에이션',label:'Forward PER',        criteria:'현재 PER보다 낮음'},
+  {id:'c10',cat:'밸류에이션',label:'EPS 증가',           criteria:'최근 3년 증가'},
+  {id:'c11',cat:'밸류에이션',label:'EPS 정확도',         criteria:'예상치와 큰 괴리 없음'},
+  {id:'c12',cat:'재무건전성',label:'부채비율',           criteria:'100% 이하'},
+  {id:'c13',cat:'재무건전성',label:'당좌비율',           criteria:'1.0 이상'},
+  {id:'c14',cat:'재무건전성',label:'유동비율',           criteria:'1.5 이상'},
+  {id:'c15',cat:'재무건전성',label:'자본 증가',          criteria:'최근 3년 증가'},
+  {id:'c16',cat:'재무건전성',label:'현금흐름',           criteria:'영업CF 플러스'},
+  {id:'c17',cat:'재무건전성',label:'운전자본 안정성',    criteria:'매출 대비 외상매출·매입 안정'},
+  {id:'c18',cat:'재무건전성',label:'주식희석률',         criteria:'연간 희석률 3% 미만'},
+  {id:'c19',cat:'경쟁력',   label:'브랜드 구축',        criteria:'강한 브랜드 인지도'},
+  {id:'c20',cat:'경쟁력',   label:'시장 선도',          criteria:'업종 상위권'},
+  {id:'c21',cat:'경쟁력',   label:'시장 점유율',        criteria:'상위 3위 이내'},
+  {id:'c22',cat:'경쟁력',   label:'고객 충성도',        criteria:'높은 리텐션·재구매율'},
+  {id:'c23',cat:'경쟁력',   label:'배당 성향',          criteria:'0~1% 이하 (재투자 선호)'},
+  {id:'c24',cat:'신뢰도',   label:'내부자 매도',        criteria:'과도한 매도 없음'},
+  {id:'c25',cat:'신뢰도',   label:'사업보고서 리스크',  criteria:'중대 리스크 없음'},
 ];
+const MAX_SCORE = ITEMS.length * 4; // 100점
+const CAT_ORDER = ['수익성','밸류에이션','재무건전성','경쟁력','신뢰도'];
 
-const catOrder = ['수익성','밸류에이션','재무건전성','경쟁력','신뢰도'];
-const grouped = {};
-catOrder.forEach(c=>grouped[c]=[]);
-ITEMS.forEach(item=>grouped[item.cat].push(item));
+const SCORE_MAP = {부합:4, 확인필요:2, 미달:0};
 
-let html = '';
-catOrder.forEach(cat => {
-  html += `<div class="cat-block">
-    <div class="cat-label">— ${cat}</div>`;
-  grouped[cat].forEach(item => {
-    html += `
-    <div class="check-item">
-      <div class="check-header">
-        <span class="check-label">${item.label}</span>
-        <span class="check-criteria">${item.criteria}</span>
-        <select class="verdict-sel" id="chk_${item.id}" onchange="updateLiveScore()">
-          <option value="미달">미달</option>
-          <option value="확인필요">확인필요</option>
-          <option value="부합">부합</option>
-        </select>
-      </div>
-      <textarea class="actual-input" id="act_${item.id}"
-        placeholder="실제값 입력 (수치, 상황, 근거 등 자유롭게)..."></textarea>
-    </div>`;
-  });
-  html += `</div>`;
+function calcScore(checks) {
+  let t = 0;
+  ITEMS.forEach(it => { t += SCORE_MAP[checks[it.id]] || 0; });
+  return Math.round(t / MAX_SCORE * 100);
+}
+function getJudge(score) {
+  if (score >= 85) return {label:'매수검토', cls:'judge-buy', scCls:'hi'};
+  if (score >= 71) return {label:'관망',     cls:'judge-watch', scCls:'md'};
+  return                  {label:'매수불가', cls:'judge-no',  scCls:'lo'};
+}
+function scoreCls(score) { return score>=80?'score-hi':score>=60?'score-md':'score-lo'; }
+function fmtEmail(e) { return e ? e.split('@')[0] : '익명'; }
+function esc(s) { return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]); }
+
+// ═══════════════════════════════════════════
+//  Firebase / Auth
+// ═══════════════════════════════════════════
+const db  = firebase.firestore();
+const COL = 'marketPicker';
+let records = [], currentUser = null, editId = null;
+let currentPage = 1;
+const PER_PAGE = 10;
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  const map = {loading:'연결 중...',live:'● 실시간',saving:'저장 중...',offline:'오프라인'};
+  dot.className = `sync-dot ${s}`;
+  txt.className = `sync-txt ${s}`;
+  txt.textContent = map[s]||'—';
+}
+
+function initSync() {
+  setSyncStatus('loading');
+  db.collection(COL).orderBy('date','desc').onSnapshot(snap => {
+    records = snap.docs.map(d => ({id:d.id,...d.data()}));
+    setSyncStatus('live');
+    resetPage();
+  }, err => { console.error(err); setSyncStatus('offline'); resetPage(); });
+}
+
+function showLoginModal() { document.getElementById('loginModal').classList.add('open'); }
+function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
+
+async function triggerLogin() {
+  try {
+    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    closeLoginModal();
+  } catch(e) { toast('❌ 로그인 실패: '+e.message); }
+}
+
+firebase.auth().onAuthStateChanged(user => {
+  currentUser = user;
+  const el = document.getElementById('userEmail');
+  el.textContent = user ? fmtEmail(user.email) : '로그인';
+  if (user) { toast('✅ '+user.email+' 님 환영합니다!'); initSync(); }
 });
-document.getElementById('checklistForm').innerHTML = html;
+// 비로그인 상태에서도 읽기 가능하게 initSync 최초 실행
+initSync();
+
+function checkLoginAndOpen(id) {
+  if (!currentUser) { showLoginModal(); return; }
+  openModal(id);
+}
+
+// ═══════════════════════════════════════════
+//  체크리스트 폼 DOM 생성
+// ═══════════════════════════════════════════
+(function buildChecklist() {
+  const grouped = {};
+  CAT_ORDER.forEach(c => grouped[c]=[]);
+  ITEMS.forEach(it => grouped[it.cat].push(it));
+  let html = '';
+  CAT_ORDER.forEach(cat => {
+    html += `<div class="cat-section"><div class="cat-title">— ${cat}</div>`;
+    grouped[cat].forEach(it => {
+      html += `
+      <div class="check-row" id="row_${it.id}">
+        <div class="check-top">
+          <div class="check-label-wrap">
+            <span class="check-label">${esc(it.label)}</span>
+            <span class="check-criteria">${esc(it.criteria)}</span>
+          </div>
+          <select class="verdict-sel v-bad" id="chk_${it.id}" onchange="onVerdictChange(this,'${it.id}')">
+            <option value="미달">미달</option>
+            <option value="확인필요">확인필요</option>
+            <option value="부합">부합</option>
+          </select>
+        </div>
+        <textarea class="actual-input" id="act_${it.id}" placeholder="실제값 · 수치 · 근거 자유 입력..." rows="2"></textarea>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('checklistContainer').innerHTML = html;
+})();
+
+function onVerdictChange(sel, id) {
+  sel.className = 'verdict-sel ' + (sel.value==='부합'?'v-ok':sel.value==='확인필요'?'v-warn':'v-bad');
+  updateLiveScore();
+}
+
+function updateLiveScore() {
+  const checks = {};
+  ITEMS.forEach(it => { checks[it.id] = document.getElementById('chk_'+it.id)?.value || '미달'; });
+  const score = calcScore(checks);
+  const judge = getJudge(score);
+  const numEl = document.getElementById('liveScoreNum');
+  numEl.textContent = score;
+  numEl.className = 'live-score-num '+judge.scCls;
+  const jEl = document.getElementById('liveJudgeBadge');
+  jEl.textContent = judge.label;
+  jEl.className = 'judge-badge '+judge.cls;
+}
+
+// ═══════════════════════════════════════════
+//  모달 열기/닫기
+// ═══════════════════════════════════════════
+function openModal(id) {
+  editId = id || null;
+  document.getElementById('modalTitle').textContent = editId ? '분석 수정' : '새 분석 추가';
+
+  // 폼 초기화
+  ITEMS.forEach(it => {
+    const cs = document.getElementById('chk_'+it.id);
+    const at = document.getElementById('act_'+it.id);
+    if (cs) { cs.value='미달'; cs.className='verdict-sel v-bad'; }
+    if (at) at.value = '';
+  });
+
+  if (!editId) {
+    document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+    document.getElementById('fName').value = '';
+    document.getElementById('fTicker').value = '';
+    document.getElementById('fType').value = '성장주';
+    document.getElementById('fMemo').value = '';
+  } else {
+    const r = records.find(x=>x.id===editId);
+    if (!r) return;
+    document.getElementById('fDate').value   = r.date||'';
+    document.getElementById('fName').value   = r.name||'';
+    document.getElementById('fTicker').value = r.ticker||'';
+    document.getElementById('fType').value   = r.stype||'성장주';
+    document.getElementById('fMemo').value   = r.memo||'';
+    ITEMS.forEach(it => {
+      const cs = document.getElementById('chk_'+it.id);
+      const at = document.getElementById('act_'+it.id);
+      const v = r.checks?.[it.id]||'미달';
+      if (cs) { cs.value=v; cs.className='verdict-sel '+(v==='부합'?'v-ok':v==='확인필요'?'v-warn':'v-bad'); }
+      if (at) at.value = r.actuals?.[it.id]||'';
+    });
+  }
+  updateLiveScore();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); editId=null; }
+
+// ═══════════════════════════════════════════
+//  저장 / 삭제
+// ═══════════════════════════════════════════
+async function saveRecord() {
+  if (!currentUser) { showLoginModal(); return; }
+  const name   = document.getElementById('fName').value.trim();
+  const ticker = document.getElementById('fTicker').value.trim();
+  const date   = document.getElementById('fDate').value;
+  if (!name||!ticker||!date) { toast('회사명·티커·날짜는 필수입니다.'); return; }
+
+  const checks={}, actuals={};
+  ITEMS.forEach(it => {
+    checks[it.id]  = document.getElementById('chk_'+it.id)?.value||'미달';
+    actuals[it.id] = document.getElementById('act_'+it.id)?.value.trim()||'';
+  });
+
+  const score = calcScore(checks);
+  const judge = getJudge(score).label;
+  const data  = {
+    uid: currentUser.uid, userEmail: currentUser.email,
+    name, ticker, stype: document.getElementById('fType').value,
+    memo: document.getElementById('fMemo').value.trim(),
+    date, checks, actuals, score, judge,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+
+  setSyncStatus('saving');
+  try {
+    if (editId) await db.collection(COL).doc(editId).update(data);
+    else        await db.collection(COL).add(data);
+    closeModal();
+    toast('✅ 저장 완료!');
+  } catch(e) { toast('❌ 저장 실패: '+e.message); setSyncStatus('offline'); }
+  finally { setSyncStatus('live'); }
+}
+
+async function deleteRecord(id) {
+  if (!currentUser) { showLoginModal(); return; }
+  const r = records.find(x=>x.id===id);
+  if (!r||r.uid!==currentUser.uid) { toast('⚠️ 본인 기록만 삭제할 수 있습니다.'); return; }
+  if (!confirm('이 분석을 삭제하시겠습니까?')) return;
+  try { await db.collection(COL).doc(id).delete(); toast('🗑️ 삭제 완료'); }
+  catch(e) { toast('❌ 삭제 실패: '+e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  상세보기
+// ═══════════════════════════════════════════
+function openDetail(id) {
+  const r = records.find(x=>x.id===id);
+  if (!r) return;
+  const judge = getJudge(r.score);
+  document.getElementById('detailTitle').textContent = `${r.name} (${r.ticker})`;
+
+  const grouped = {};
+  CAT_ORDER.forEach(c=>grouped[c]=[]);
+  ITEMS.forEach(it=>grouped[it.cat].push(it));
+
+  let rows = '';
+  CAT_ORDER.forEach(cat => {
+    rows += `<tr class="cat-tr"><td colspan="4">${cat}</td></tr>`;
+    grouped[cat].forEach(it => {
+      const v   = r.checks?.[it.id]||'미달';
+      const act = r.actuals?.[it.id]||'—';
+      const vc  = v==='부합'?'ok':v==='확인필요'?'warn':'bad';
+      rows += `<tr>
+        <td class="td-label">${esc(it.label)}</td>
+        <td class="td-criteria">${esc(it.criteria)}</td>
+        <td class="td-actual">${esc(act)}</td>
+        <td><span class="vtag ${vc}">${v}</span></td>
+      </tr>`;
+    });
+  });
+
+  const ok   = Object.values(r.checks||{}).filter(v=>v==='부합').length;
+  const warn = Object.values(r.checks||{}).filter(v=>v==='확인필요').length;
+  const bad  = Object.values(r.checks||{}).filter(v=>v==='미달').length;
+
+  document.getElementById('detailBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="font-family:var(--mono);font-size:40px;font-weight:700;color:var(--accent);">${r.score}<span style="font-size:14px;color:var(--text3);">/100</span></div>
+      <span class="judge-badge ${judge.cls}" style="font-size:14px;padding:5px 16px;">${judge.label}</span>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <span class="stat-pill ok">부합 ${ok}</span>
+        <span class="stat-pill warn">확인 ${warn}</span>
+        <span class="stat-pill bad">미달 ${bad}</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;font-family:var(--mono);">${r.date} · ${r.stype||''} · ${fmtEmail(r.userEmail)}</div>
+    ${r.memo?`<div class="note-area" style="margin-bottom:14px;">📌 ${esc(r.memo)}</div>`:''}
+    <table class="detail-table">
+      <thead><tr><th>항목</th><th>기준치</th><th>실제값</th><th>판정</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn-cancel" onclick="closeDetail();checkLoginAndOpen('${r.id}')">✏️ 수정</button>
+      <button class="btn-cancel" style="color:var(--red);border-color:rgba(255,82,82,.3);" onclick="deleteRecord('${r.id}');closeDetail()">🗑️ 삭제</button>
+    </div>`;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════
+//  목록 렌더링
+// ═══════════════════════════════════════════
+function getFiltered() {
+  const dv = document.getElementById('filterDate').value;
+  const tv = document.getElementById('filterText').value.trim().toLowerCase();
+  const jv = document.getElementById('filterJudge').value;
+  return records.filter(r =>
+    (!dv || r.date===dv) &&
+    (!tv || r.name?.toLowerCase().includes(tv) || r.ticker?.toLowerCase().includes(tv) || r.memo?.toLowerCase().includes(tv)) &&
+    (!jv || r.judge===jv)
+  );
+}
+
+function resetPage() { currentPage=1; render(); }
+
+function render() {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length/PER_PAGE)||1;
+  if (currentPage>totalPages) currentPage=totalPages;
+  const slice = filtered.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
+
+  document.getElementById('countChip').innerHTML = `총 <span>${records.length}</span>건`;
+
+  const feed = document.getElementById('feedList');
+  if (!records.length) {
+    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 분석이 없습니다</p></div>`;
+    document.getElementById('paginationEl').innerHTML=''; return;
+  }
+  if (!filtered.length) {
+    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
+    document.getElementById('paginationEl').innerHTML=''; return;
+  }
+
+  // 날짜 그룹핑
+  const groups={};
+  slice.forEach(r=>{ if(!groups[r.date])groups[r.date]=[]; groups[r.date].push(r); });
+
+  let html='';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
+    const items=groups[date];
+    html+=`<div class="date-group"><span class="date-label">${date}</span><div class="line"></div><span class="count-badge">${items.length}건</span></div>`;
+    items.forEach(r=>{
+      const judge=getJudge(r.score);
+      const ok   = Object.values(r.checks||{}).filter(v=>v==='부합').length;
+      const warn = Object.values(r.checks||{}).filter(v=>v==='확인필요').length;
+      const bad  = Object.values(r.checks||{}).filter(v=>v==='미달').length;
+      const memo = r.memo ? (r.memo.length>60 ? r.memo.slice(0,60)+'…' : r.memo) : '';
+      html+=`
+      <div class="feed-item">
+        <div class="item-header">
+          <span class="item-name">${esc(r.name)}</span>
+          <span class="item-ticker">${esc(r.ticker)}</span>
+          <span class="item-type">${esc(r.stype||'')}</span>
+          <span class="score-badge ${scoreCls(r.score)}">${r.score}점</span>
+          <span class="judge-badge ${judge.cls}">${judge.label}</span>
+          <span class="item-author">👤 ${fmtEmail(r.userEmail)}</span>
+          <div class="item-actions">
+            <button class="btn-icon edit" title="수정" onclick="checkLoginAndOpen('${r.id}')">✏️</button>
+            <button class="btn-icon del"  title="삭제" onclick="deleteRecord('${r.id}')">🗑️</button>
+          </div>
+        </div>
+        <div class="row1-grid">
+          <div class="info-cell"><span class="info-label">날짜</span><span class="info-value">${r.date}</span></div>
+          <div class="info-cell"><span class="info-label">유형</span><span class="info-value accent">${esc(r.stype||'—')}</span></div>
+          <div class="info-cell"><span class="info-label">총점</span><span class="info-value ${scoreCls(r.score)}">${r.score}/100</span></div>
+          <div class="info-cell"><span class="info-label">최종판단</span><span class="info-value">${judge.label}</span></div>
+        </div>
+        <div class="stat-bar">
+          <span class="stat-pill ok">● 부합 ${ok}</span>
+          <span class="stat-pill warn">● 확인필요 ${warn}</span>
+          <span class="stat-pill bad">● 미달 ${bad}</span>
+        </div>
+        ${memo?`<div class="note-area">📌 ${esc(memo)}</div>`:''}
+        <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bd);">
+          <button class="btn-cancel" style="font-size:11px;padding:5px 12px;" onclick="openDetail('${r.id}')">📋 상세보기</button>
+        </div>
+      </div>`;
+    });
+  });
+  feed.innerHTML=html;
+
+  // 페이지네이션
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el=document.getElementById('paginationEl');
+  if(totalPages<=1){el.innerHTML='';return;}
+  let h=`<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  const max=5;
+  let s=Math.max(1,currentPage-Math.floor(max/2));
+  let e=Math.min(totalPages,s+max-1);
+  if(e-s+1<max) s=Math.max(1,e-max+1);
+  if(s>1){h+=`<button class="page-btn" onclick="goPage(1)">1</button>`;if(s>2)h+=`<span class="page-ellipsis">...</span>`;}
+  for(let i=s;i<=e;i++) h+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  if(e<totalPages){if(e<totalPages-1)h+=`<span class="page-ellipsis">...</span>`;h+=`<button class="page-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;}
+  h+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
+  el.innerHTML=h;
+}
+
+function goPage(p) {
+  const f=getFiltered();
+  const tp=Math.ceil(f.length/PER_PAGE)||1;
+  if(p<1||p>tp)return;
+  currentPage=p; render();
+}
+
+// ── 토스트
+let _tt;
+function toast(msg,dur=3000){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+// ── 초기화
+document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
 </script>
 </body>
 </html>
