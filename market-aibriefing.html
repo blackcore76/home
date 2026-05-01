@@ -1046,7 +1046,7 @@ async function run() {
         const prompt=buildPrompt(sym+(isKr?` (${yfSym})`:''), quote, indicators, dS, isKr);
 
         const gmRes=await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key=${gmKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
             {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.4,maxOutputTokens:8192}})}
         );
         const gm=await gmRes.json();
