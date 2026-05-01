@@ -354,7 +354,7 @@ const BASE = [
   {id:'c20',cat:'경쟁력',   label:'시장 선도',           criteria:'상위 5위'},
   {id:'c21',cat:'경쟁력',   label:'시장 점유율',         criteria:'상위 5위'},
   {id:'c22',cat:'경쟁력',   label:'고객 충성도',         criteria:'높음'},
-  {id:'c23',cat:'경쟁력',   label:'배당 성향',           criteria:'0~20%'},
+  {id:'c23',cat:'경쟁력',   label:'배당 성향',          criteria:'무배당 또는 5% 미만 (잉여현금 재투자 우선)'},
   {id:'c24',cat:'신뢰도',   label:'내부자 매도',         criteria:'과도하지 않음'},
   {id:'c25',cat:'신뢰도',   label:'사업보고서 리스크',   criteria:'중대 리스크 없음'},
 ];
@@ -362,6 +362,8 @@ const BASE = [
 // override: id 매칭해서 label/criteria만 덮어씀
 const OVERRIDES = {
   제조산업: {
+    c01:{criteria:'3년 중 2년 이상 증가 또는 업종 평균 이상'},
+    c02:{criteria:'3년 중 2년 이상 증가 또는 업종 평균 이상'},
     c04:{criteria:'상승 또는 20~40%'},
     c05:{criteria:'8% 이상'},
     c06:{criteria:'5% 이상'},
