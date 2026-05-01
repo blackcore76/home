@@ -45,8 +45,6 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:80px;}
-
-/* ── 헤더 (픽노트 동일) */
 header{
   position:sticky;top:36px;z-index:50;
   background:rgba(8,12,20,.92);backdrop-filter:blur(16px);
@@ -56,7 +54,6 @@ header{
 .logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;}
 .logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 3s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
-
 .sync-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
 .sync-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 .sync-dot.live{background:var(--green);box-shadow:0 0 5px var(--green);animation:bl 3s infinite;}
@@ -65,93 +62,73 @@ header{
 .sync-dot.saving{background:var(--accent);box-shadow:0 0 5px var(--accent);animation:bl .4s infinite;}
 @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
 .sync-txt.live{color:var(--green);}.sync-txt.loading{color:var(--yellow);}.sync-txt.offline{color:var(--red);}.sync-txt.saving{color:var(--accent);}
-
 .user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;cursor:pointer;}
 .user-badge:hover{border-color:var(--accent);color:var(--accent);}
-
 .btn-add{background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 14px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
 .btn-add:hover{background:#33ddff;}
-
-/* ── 필터바 */
 .filter-bar{padding:10px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
 .filter-input{background:var(--sf2);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--sans);outline:none;color-scheme:dark;}
 .filter-input:focus{border-color:var(--accent);}
 select.filter-input option{background:var(--sf2);}
 .count-chip{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
 .count-chip span{color:var(--accent);font-weight:600;}
-
-/* ── 피드 */
 .feed{padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
 .date-group{display:flex;align-items:center;gap:10px;margin:6px 0 2px;}
 .date-group .date-label{font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;}
 .date-group .line{flex:1;height:1px;background:rgba(0,212,255,.1);}
 .date-group .count-badge{font-family:var(--mono);font-size:10px;color:var(--text3);}
-
-/* ── 카드 (픽노트 동일 구조) */
 .feed-item{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s,background .2s;animation:fadeIn .3s ease both;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .feed-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--accent),transparent);border-radius:3px 0 0 3px;}
 .feed-item:hover{border-color:var(--bd2);background:var(--sf2);}
-
-.item-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.item-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .item-name{font-size:16px;font-weight:700;color:var(--text);}
 .item-ticker{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:2px 7px;}
 .item-type{font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;}
-
-/* ── 점수 배지 (크게) */
+/* 산업군 태그 */
+.industry-tag{font-family:var(--mono);font-size:9px;border-radius:4px;padding:2px 7px;font-weight:600;}
+.ind-tech{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.ind-mfg{background:rgba(255,202,40,.1);color:var(--yellow);border:1px solid rgba(255,202,40,.2);}
+.ind-retail{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.ind-fin{background:rgba(180,120,255,.1);color:#b478ff;border:1px solid rgba(180,120,255,.2);}
 .score-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:700;}
 .score-hi{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
 .score-md{background:rgba(255,202,40,.12);color:var(--yellow);border:1px solid rgba(255,202,40,.3);}
 .score-lo{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.3);}
-
-/* ── 최종판단 배지 */
 .judge-badge{display:inline-block;padding:3px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;}
 .judge-buy{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
 .judge-watch{background:rgba(255,202,40,.12);color:var(--yellow);border:1px solid rgba(255,202,40,.3);}
 .judge-no{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.3);}
-
 .item-author{font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:2px 6px;}
 .item-actions{margin-left:auto;display:flex;gap:6px;}
 .btn-icon{background:transparent;border:1px solid var(--bd);color:var(--text3);border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
 .btn-icon.edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
 .btn-icon.del:hover{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.08);}
-
-/* ── 요약 그리드 (픽노트 row1-grid 동일) */
 .row1-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 12px;margin-bottom:10px;background:var(--sf3);border-radius:10px;padding:10px 12px;border:1px solid var(--bd2);}
 .info-cell{display:flex;flex-direction:column;gap:2px;}
 .info-label{font-size:9px;font-family:var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--text3);}
 .info-value{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);}
-.info-value.accent{color:var(--accent);}
-.info-value.green{color:var(--green);}
-.info-value.red{color:var(--red);}
-.info-value.yellow{color:var(--yellow);}
-
-/* ── 판정 스탯 바 */
+.info-value.accent{color:var(--accent);}.info-value.green{color:var(--green);}.info-value.red{color:var(--red);}.info-value.yellow{color:var(--yellow);}
 .stat-bar{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
 .stat-pill{font-family:var(--mono);font-size:10px;padding:2px 9px;border-radius:3px;}
 .stat-pill.ok{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
 .stat-pill.warn{background:rgba(255,202,40,.1);color:var(--yellow);border:1px solid rgba(255,202,40,.2);}
 .stat-pill.bad{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2);}
-
-/* ── 비고 */
 .note-area{margin-top:8px;padding:8px 10px;background:var(--sf3);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text2);border-left:2px solid var(--accent);}
 .empty-state{text-align:center;padding:80px 20px;color:var(--text3);}
 .empty-icon{font-size:48px;opacity:.4;margin-bottom:12px;}
-
-/* ── 페이지네이션 (픽노트 동일) */
 .pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin:20px 16px 40px;flex-wrap:wrap;}
 .page-btn{background:var(--sf2);border:1px solid var(--bd);color:var(--text2);border-radius:8px;padding:6px 12px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s;min-width:36px;text-align:center;}
 .page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.05);}
 .page-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:600;}
 .page-btn:disabled{opacity:.3;cursor:not-allowed;}
 .page-ellipsis{color:var(--text3);font-family:var(--mono);font-size:12px;padding:0 4px;}
-
-/* ── 모달 (픽노트 동일 구조) */
+/* 모달 */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s;}
 .overlay.open{opacity:1;pointer-events:all;}
 .modal{background:var(--sf);border:1px solid var(--bd2);border-radius:16px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6);transform:translateY(20px);transition:transform .2s;}
 .overlay.open .modal{transform:translateY(0);}
-.modal-header{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--sf);z-index:10;}
 .modal-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--accent);}
 .modal-title .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;}
 .btn-close{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:24px;padding:0 6px;}
@@ -165,21 +142,21 @@ input,textarea,select{background:var(--sf3);border:1px solid var(--bd2);color:va
 input:focus,textarea:focus,select:focus{border-color:var(--accent);}
 select option{background:var(--sf2);}
 .form-section{margin-top:14px;margin-bottom:8px;font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:1px;color:var(--accent);border-top:1px solid var(--bd);padding-top:12px;}
-
-/* ── 라이브 점수판 (모달 내) */
-.live-score-strip{
-  background:var(--sf3);border:1px solid var(--bd2);border-radius:10px;
-  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:14px;position:sticky;top:0;z-index:10;
-}
+/* 산업군 선택 탭 */
+.industry-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.ind-tab{padding:5px 14px;border-radius:20px;border:1px solid var(--bd2);background:transparent;color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;}
+.ind-tab:hover{border-color:var(--accent);color:var(--accent);}
+.ind-tab.active-tech{background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.ind-tab.active-mfg{background:rgba(255,202,40,.12);border-color:var(--yellow);color:var(--yellow);font-weight:700;}
+.ind-tab.active-retail{background:rgba(0,230,118,.12);border-color:var(--green);color:var(--green);font-weight:700;}
+.ind-tab.active-fin{background:rgba(180,120,255,.12);border-color:#b478ff;color:#b478ff;font-weight:700;}
+/* 라이브 점수판 */
+.live-score-strip{background:var(--sf3);border:1px solid var(--bd2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .live-score-num{font-family:var(--mono);font-size:36px;font-weight:700;line-height:1;}
-.live-score-num.hi{color:var(--green);}
-.live-score-num.md{color:var(--yellow);}
-.live-score-num.lo{color:var(--red);}
+.live-score-num.hi{color:var(--green);}.live-score-num.md{color:var(--yellow);}.live-score-num.lo{color:var(--red);}
 .live-score-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
 .live-guide{font-size:10px;font-family:var(--mono);text-align:right;line-height:1.8;}
-
-/* ── 체크리스트 항목 */
+/* 체크리스트 */
 .cat-section{margin-bottom:4px;}
 .cat-title{font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:1px;color:var(--accent);border-top:1px solid var(--bd);padding-top:12px;margin-bottom:8px;margin-top:14px;}
 .check-row{background:var(--sf3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;transition:border-color .15s;}
@@ -188,39 +165,27 @@ select option{background:var(--sf2);}
 .check-label-wrap{flex:1;}
 .check-label{font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:2px;}
 .check-criteria{font-size:10px;color:var(--text3);font-family:var(--mono);}
-.verdict-sel{
-  background:var(--sf2);border:1px solid var(--bd2);color:var(--text2);
-  border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:11px;
-  outline:none;cursor:pointer;width:90px;flex-shrink:0;
-  color-scheme:dark;
-}
+/* 기준치 변경 하이라이트 */
+.check-criteria.changed{color:var(--yellow);}
+.verdict-sel{background:var(--sf2);border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:11px;outline:none;cursor:pointer;width:90px;flex-shrink:0;color-scheme:dark;}
 .verdict-sel:focus{border-color:var(--accent);}
 .verdict-sel.v-ok{border-color:rgba(0,230,118,.4);color:var(--green);}
 .verdict-sel.v-warn{border-color:rgba(255,202,40,.4);color:var(--yellow);}
 .verdict-sel.v-bad{border-color:rgba(255,82,82,.3);color:var(--red);}
-textarea.actual-input{
-  width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--text2);
-  border-radius:6px;padding:7px 10px;font-family:var(--sans);font-size:12px;
-  outline:none;resize:vertical;min-height:44px;line-height:1.5;
-  transition:border .15s;
-}
+textarea.actual-input{width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--text2);border-radius:6px;padding:7px 10px;font-family:var(--sans);font-size:12px;outline:none;resize:vertical;min-height:44px;line-height:1.5;transition:border .15s;}
 textarea.actual-input:focus{border-color:var(--accent);color:var(--text);}
 textarea.actual-input::placeholder{color:var(--text3);}
-
 .modal-footer{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;}
 .btn-cancel{background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--sans);}
 .btn-cancel:hover{border-color:var(--text2);color:var(--text);}
 .btn-save{background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:700;cursor:pointer;font-family:var(--sans);}
 .btn-save:hover{background:#33ddff;}
-
-/* ── 로그인 모달 */
 .login-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
 .login-overlay.open{opacity:1;pointer-events:all;}
 .login-modal{background:var(--sf);border:1px solid var(--bd2);border-radius:20px;padding:32px 24px;text-align:center;max-width:320px;width:90%;}
 .login-modal .btn-login{background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;}
 .login-modal .btn-cancel-sm{margin-top:12px;background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:10px;padding:10px 20px;width:100%;cursor:pointer;}
-
-/* ── 상세 모달 (체크리스트 전체 보기) */
+/* 상세 테이블 */
 .detail-table{width:100%;border-collapse:collapse;margin-top:4px;}
 .detail-table th{text-align:left;padding:7px 10px;font-size:10px;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--bd2);font-family:var(--mono);}
 .detail-table td{padding:8px 10px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--bd);vertical-align:top;}
@@ -232,14 +197,13 @@ textarea.actual-input::placeholder{color:var(--text3);}
 .vtag.ok{background:rgba(0,230,118,.1);color:var(--green);}
 .vtag.warn{background:rgba(255,202,40,.1);color:var(--yellow);}
 .vtag.bad{background:rgba(255,82,82,.1);color:var(--red);}
-
-/* ── 토스트 */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--sf2);border:1px solid var(--bd2);border-radius:40px;padding:8px 20px;font-size:12px;opacity:0;transition:all .2s;z-index:9999;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-
 @media(max-width:600px){
   .row1-grid{grid-template-columns:1fr 1fr;}
   .form-grid{grid-template-columns:1fr;}
+  .industry-tabs{gap:4px;}
+  .ind-tab{padding:4px 10px;font-size:10px;}
 }
 </style>
 </head>
@@ -253,8 +217,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
       <span class="sync-txt loading" id="syncTxt">연결 중...</span>
     </div>
     <div class="user-badge" id="userBadge" onclick="showLoginModal()">
-      <span>👤</span>
-      <span id="userEmail">로그인</span>
+      <span>👤</span><span id="userEmail">로그인</span>
     </div>
     <button class="btn-add" onclick="checkLoginAndOpen()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -263,12 +226,18 @@ textarea.actual-input::placeholder{color:var(--text3);}
   </div>
 </header>
 
-<!-- 필터바 -->
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="resetPage()" style="width:140px;">
-  <input class="filter-input" type="text" id="filterText" oninput="resetPage()" placeholder="종목명·티커·메모 검색..." style="width:180px;">
-  <select class="filter-input" id="filterJudge" onchange="resetPage()" style="width:100px;">
-    <option value="">전체</option>
+  <input class="filter-input" type="text" id="filterText" oninput="resetPage()" placeholder="종목명·티커·메모..." style="width:160px;">
+  <select class="filter-input" id="filterIndustry" onchange="resetPage()" style="width:100px;">
+    <option value="">산업군 전체</option>
+    <option value="기술산업">기술산업</option>
+    <option value="제조산업">제조산업</option>
+    <option value="유통산업">유통산업</option>
+    <option value="금융산업">금융산업</option>
+  </select>
+  <select class="filter-input" id="filterJudge" onchange="resetPage()" style="width:90px;">
+    <option value="">판정 전체</option>
     <option value="매수검토">매수검토</option>
     <option value="관망">관망</option>
     <option value="매수불가">매수불가</option>
@@ -276,32 +245,38 @@ textarea.actual-input::placeholder{color:var(--text3);}
   <div class="count-chip" id="countChip">총 <span>0</span>건</div>
 </div>
 
-<!-- 피드 -->
 <div class="feed" id="feedList"></div>
 <div class="pagination" id="paginationEl"></div>
 
 <!-- ══ 입력/수정 모달 ══ -->
-<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
+<div class="overlay" id="overlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div class="modal-title"><div class="dot"></div><span id="modalTitle">새 분석 추가</span></div>
       <button class="btn-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-
       <!-- 기본 정보 -->
       <div class="form-grid">
         <div class="form-group"><label>날짜 *</label><input type="date" id="fDate"></div>
         <div class="form-group"><label>유형</label>
-          <select id="fType"><option value="성장주">성장주</option><option value="가치주">가치주</option><option value="배당주">배당주</option><option value="기타">기타</option></select>
+          <select id="fType"><option>성장주</option><option>가치주</option><option>배당주</option><option>기타</option></select>
         </div>
         <div class="form-group"><label>회사명 *</label><input type="text" id="fName" placeholder="예: Duolingo"></div>
-        <div class="form-group"><label>티커 *</label><input type="text" id="fTicker" placeholder="예: DUOL" style="font-family:var(--mono);text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="form-group"><label>티커 *</label><input type="text" id="fTicker" placeholder="예: DUOL" oninput="this.value=this.value.toUpperCase()"></div>
         <div class="form-group full"><label>한줄 메모</label><textarea id="fMemo" rows="2" placeholder="핵심 투자 논리 또는 주의사항..."></textarea></div>
       </div>
 
+      <!-- 산업군 선택 -->
+      <div class="form-section">산업군 선택</div>
+      <div class="industry-tabs" id="industryTabs">
+        <button class="ind-tab active-tech" data-ind="기술산업" onclick="selectIndustry('기술산업',this)">💻 기술산업</button>
+        <button class="ind-tab" data-ind="제조산업" onclick="selectIndustry('제조산업',this)">🏭 제조산업</button>
+        <button class="ind-tab" data-ind="유통산업" onclick="selectIndustry('유통산업',this)">🛒 유통산업</button>
+        <button class="ind-tab" data-ind="금융산업" onclick="selectIndustry('금융산업',this)">🏦 금융산업</button>
+      </div>
+
       <!-- 라이브 점수판 -->
-      <div class="form-section">실시간 점수</div>
       <div class="live-score-strip">
         <div>
           <div id="liveScoreNum" class="live-score-num lo">0</div>
@@ -315,9 +290,8 @@ textarea.actual-input::placeholder{color:var(--text3);}
         </div>
       </div>
 
-      <!-- 체크리스트 (JS로 생성) -->
+      <!-- 체크리스트 -->
       <div id="checklistContainer"></div>
-
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
@@ -327,16 +301,14 @@ textarea.actual-input::placeholder{color:var(--text3);}
 </div>
 
 <!-- ══ 상세보기 모달 ══ -->
-<div class="overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
-  <div class="modal">
+<div class="overlay" id="detailOverlay" onclick="closeDetail()">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div class="modal-title"><div class="dot"></div><span id="detailTitle">분석 상세</span></div>
       <button class="btn-close" onclick="closeDetail()">×</button>
     </div>
     <div class="modal-body" id="detailBody"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeDetail()">닫기</button>
-    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeDetail()">닫기</button></div>
   </div>
 </div>
 
@@ -354,44 +326,120 @@ textarea.actual-input::placeholder{color:var(--text3);}
 <div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════
-//  데이터 정의
-// ═══════════════════════════════════════════
-const ITEMS = [
-  {id:'c01',cat:'수익성',    label:'영업이익 증가',     criteria:'최근 3년 연속 증가'},
-  {id:'c02',cat:'수익성',    label:'순이익 증가',        criteria:'최근 3년 연속 증가'},
-  {id:'c03',cat:'수익성',    label:'매출 증가',          criteria:'최근 3년 연속 증가'},
-  {id:'c04',cat:'수익성',    label:'매출총이익률 추세',  criteria:'2년 연속 상승 또는 60% 이상 유지'},
-  {id:'c05',cat:'수익성',    label:'영업이익률',         criteria:'10% 이상'},
-  {id:'c06',cat:'수익성',    label:'순이익률',           criteria:'8% 이상'},
-  {id:'c07',cat:'수익성',    label:'1회성 이익 여부',    criteria:'일회성 이익 없음'},
-  {id:'c08',cat:'밸류에이션',label:'업종 평균 PER',      criteria:'업종 평균 이하'},
-  {id:'c09',cat:'밸류에이션',label:'Forward PER',        criteria:'현재 PER보다 낮음'},
-  {id:'c10',cat:'밸류에이션',label:'EPS 증가',           criteria:'최근 3년 증가'},
-  {id:'c11',cat:'밸류에이션',label:'EPS 정확도',         criteria:'예상치와 큰 괴리 없음'},
-  {id:'c12',cat:'재무건전성',label:'부채비율',           criteria:'100% 이하'},
-  {id:'c13',cat:'재무건전성',label:'당좌비율',           criteria:'1.0 이상'},
-  {id:'c14',cat:'재무건전성',label:'유동비율',           criteria:'1.5 이상'},
-  {id:'c15',cat:'재무건전성',label:'자본 증가',          criteria:'최근 3년 증가'},
-  {id:'c16',cat:'재무건전성',label:'현금흐름',           criteria:'영업CF 플러스'},
-  {id:'c17',cat:'재무건전성',label:'운전자본 안정성',    criteria:'매출 대비 외상매출·매입 안정'},
-  {id:'c18',cat:'재무건전성',label:'주식희석률',         criteria:'연간 희석률 3% 미만'},
-  {id:'c19',cat:'경쟁력',   label:'브랜드 구축',        criteria:'강한 브랜드 인지도'},
-  {id:'c20',cat:'경쟁력',   label:'시장 선도',          criteria:'업종 상위권'},
-  {id:'c21',cat:'경쟁력',   label:'시장 점유율',        criteria:'상위 3위 이내'},
-  {id:'c22',cat:'경쟁력',   label:'고객 충성도',        criteria:'높은 리텐션·재구매율'},
-  {id:'c23',cat:'경쟁력',   label:'배당 성향',          criteria:'0~1% 이하 (재투자 선호)'},
-  {id:'c24',cat:'신뢰도',   label:'내부자 매도',        criteria:'과도한 매도 없음'},
-  {id:'c25',cat:'신뢰도',   label:'사업보고서 리스크',  criteria:'중대 리스크 없음'},
-];
-const MAX_SCORE = ITEMS.length * 4; // 100점
-const CAT_ORDER = ['수익성','밸류에이션','재무건전성','경쟁력','신뢰도'];
+// ════════════════════════════════════════════════
+//  산업군별 체크리스트 데이터
+// ════════════════════════════════════════════════
 
+// 기술산업 (기본 base)
+const BASE = [
+  {id:'c01',cat:'수익성',    label:'영업이익 증가',      criteria:'최근 3년 이상 증가'},
+  {id:'c02',cat:'수익성',    label:'순이익 증가',         criteria:'최근 3년 이상 증가'},
+  {id:'c03',cat:'수익성',    label:'매출 증가',           criteria:'최근 3년 연속 증가'},
+  {id:'c04',cat:'수익성',    label:'매출총이익률 추세',   criteria:'최근 2년 상승 또는 65% 이상 유지'},
+  {id:'c05',cat:'수익성',    label:'영업이익률',          criteria:'15% 이상'},
+  {id:'c06',cat:'수익성',    label:'순이익률',            criteria:'10% 이상'},
+  {id:'c07',cat:'수익성',    label:'1회성 이익 여부',     criteria:'없음'},
+  {id:'c08',cat:'밸류에이션',label:'업종 평균 PER 비교',  criteria:'업종 평균 +20% 이내'},
+  {id:'c09',cat:'밸류에이션',label:'Forward PER',         criteria:'현재 PER보다 낮음'},
+  {id:'c10',cat:'밸류에이션',label:'EPS 증가',            criteria:'최근 2년 증가'},
+  {id:'c11',cat:'밸류에이션',label:'EPS 정확도',          criteria:'괴리 ±10% 이내'},
+  {id:'c12',cat:'재무건전성',label:'부채비율',            criteria:'120% 이하'},
+  {id:'c13',cat:'재무건전성',label:'당좌비율',            criteria:'1.2 이상'},
+  {id:'c14',cat:'재무건전성',label:'유동비율',            criteria:'1.5 이상'},
+  {id:'c15',cat:'재무건전성',label:'자본 증가',           criteria:'최근 2년 증가'},
+  {id:'c16',cat:'재무건전성',label:'현금흐름',            criteria:'영업CF 플러스'},
+  {id:'c17',cat:'재무건전성',label:'운전자본 안정성',     criteria:'업종 평균 이하'},
+  {id:'c18',cat:'재무건전성',label:'주식희석률',          criteria:'연 5% 미만'},
+  {id:'c19',cat:'경쟁력',   label:'브랜드 구축',         criteria:'강함'},
+  {id:'c20',cat:'경쟁력',   label:'시장 선도',           criteria:'상위 5위'},
+  {id:'c21',cat:'경쟁력',   label:'시장 점유율',         criteria:'상위 5위'},
+  {id:'c22',cat:'경쟁력',   label:'고객 충성도',         criteria:'높음'},
+  {id:'c23',cat:'경쟁력',   label:'배당 성향',           criteria:'0~20%'},
+  {id:'c24',cat:'신뢰도',   label:'내부자 매도',         criteria:'과도하지 않음'},
+  {id:'c25',cat:'신뢰도',   label:'사업보고서 리스크',   criteria:'중대 리스크 없음'},
+];
+
+// override: id 매칭해서 label/criteria만 덮어씀
+const OVERRIDES = {
+  제조산업: {
+    c04:{criteria:'상승 또는 20~40%'},
+    c05:{criteria:'8% 이상'},
+    c06:{criteria:'5% 이상'},
+    c08:{criteria:'업종 평균 이하'},
+    c10:{criteria:'최근 2년 증가'},
+    c11:{criteria:'괴리 ±15% 이내'},
+    c12:{criteria:'120% 이하'},
+    c13:{criteria:'1.0 이상'},
+    c14:{criteria:'1.3 이상'},
+    c15:{criteria:'최근 3년 증가'},
+    c18:{criteria:'연 3% 미만'},
+    c19:{criteria:'보통 이상'},
+    c20:{criteria:'상위권'},
+    c21:{criteria:'상위 3위'},
+    c22:{criteria:'보통 이상'},
+    c23:{criteria:'0~40%'},
+  },
+  유통산업: {
+    c04:{criteria:'상승 또는 25% 이상'},
+    c05:{criteria:'5% 이상'},
+    c06:{criteria:'3% 이상'},
+    c08:{criteria:'업종 평균 이하'},
+    c10:{criteria:'최근 2년 증가'},
+    c11:{criteria:'괴리 ±15% 이내'},
+    c12:{criteria:'150% 이하'},
+    c13:{criteria:'0.8 이상'},
+    c14:{criteria:'1.0 이상'},
+    c15:{criteria:'최근 2년 증가'},
+    c18:{criteria:'연 3% 미만'},
+    c19:{criteria:'강함'},
+    c20:{criteria:'상위권'},
+    c21:{criteria:'상위 5위'},
+    c22:{criteria:'높음'},
+    c23:{criteria:'1~50%'},
+  },
+  금융산업: {
+    c04:{label:'자기자본이익률 ROE',  criteria:'8~12% 이상'},
+    c05:{label:'총자산이익률 ROA',    criteria:'0.8% 이상'},
+    c06:{label:'순이익률',            criteria:'업종 평균 이상'},
+    c08:{criteria:'업종 평균 이하'},
+    c12:{label:'BIS비율',             criteria:'12% 이상'},
+    c13:{label:'고정이하여신비율 NPL',criteria:'2% 이하'},
+    c14:{label:'대손충당금 적립률',   criteria:'100% 이상'},
+    c16:{label:'순이자마진 NIM',      criteria:'업종 평균 이상'},
+    c17:{label:'대손충당금',          criteria:'안정'},
+    c18:{criteria:'연 2% 미만'},
+    c20:{criteria:'상위권'},
+    c21:{label:'예수금/보험료/브로커리지 점유율', criteria:'상위 5위'},
+    c23:{criteria:'20~60%'},
+    c25:{label:'규제 리스크',         criteria:'없음'},
+  },
+};
+
+const IND_CLS = {기술산업:'ind-tech', 제조산업:'ind-mfg', 유통산업:'ind-retail', 금융산업:'ind-fin'};
+const IND_ACTIVE = {기술산업:'active-tech', 제조산업:'active-mfg', 유통산업:'active-retail', 금융산업:'active-fin'};
+
+// 산업군 적용된 항목 배열 반환
+function getItems(industry) {
+  const ov = OVERRIDES[industry] || {};
+  return BASE.map(item => {
+    if (!ov[item.id]) return item;
+    return {...item, ...ov[item.id]};
+  });
+}
+
+// 기준치가 기본과 다른지 여부 (하이라이트용)
+function isChanged(id, industry) {
+  if (industry === '기술산업') return false;
+  return !!(OVERRIDES[industry] && OVERRIDES[industry][id]);
+}
+
+const MAX_SCORE = BASE.length * 4;
+const CAT_ORDER = ['수익성','밸류에이션','재무건전성','경쟁력','신뢰도'];
 const SCORE_MAP = {부합:4, 확인필요:2, 미달:0};
 
 function calcScore(checks) {
   let t = 0;
-  ITEMS.forEach(it => { t += SCORE_MAP[checks[it.id]] || 0; });
+  BASE.forEach(it => { t += SCORE_MAP[checks[it.id]] || 0; });
   return Math.round(t / MAX_SCORE * 100);
 }
 function getJudge(score) {
@@ -399,17 +447,17 @@ function getJudge(score) {
   if (score >= 71) return {label:'관망',     cls:'judge-watch', scCls:'md'};
   return                  {label:'매수불가', cls:'judge-no',  scCls:'lo'};
 }
-function scoreCls(score) { return score>=80?'score-hi':score>=60?'score-md':'score-lo'; }
+function scoreCls(s) { return s>=80?'score-hi':s>=60?'score-md':'score-lo'; }
 function fmtEmail(e) { return e ? e.split('@')[0] : '익명'; }
 function esc(s) { return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]); }
 
-// ═══════════════════════════════════════════
-//  Firebase / Auth
-// ═══════════════════════════════════════════
-const db  = firebase.firestore();
+// ════════════════════════════════════════════════
+//  Firebase
+// ════════════════════════════════════════════════
+const db = firebase.firestore();
 const COL = 'marketPicker';
 let records = [], currentUser = null, editId = null;
-let currentPage = 1;
+let currentPage = 1, currentIndustry = '기술산업';
 const PER_PAGE = 10;
 
 function setSyncStatus(s) {
@@ -432,21 +480,15 @@ function initSync() {
 
 function showLoginModal() { document.getElementById('loginModal').classList.add('open'); }
 function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
-
 async function triggerLogin() {
-  try {
-    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    closeLoginModal();
-  } catch(e) { toast('❌ 로그인 실패: '+e.message); }
+  try { await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); closeLoginModal(); }
+  catch(e) { toast('❌ 로그인 실패: '+e.message); }
 }
-
 firebase.auth().onAuthStateChanged(user => {
   currentUser = user;
-  const el = document.getElementById('userEmail');
-  el.textContent = user ? fmtEmail(user.email) : '로그인';
-  if (user) { toast('✅ '+user.email+' 님 환영합니다!'); initSync(); }
+  document.getElementById('userEmail').textContent = user ? fmtEmail(user.email) : '로그인';
+  if (user) toast('✅ '+user.email+' 님 환영합니다!');
 });
-// 비로그인 상태에서도 읽기 가능하게 initSync 최초 실행
 initSync();
 
 function checkLoginAndOpen(id) {
@@ -454,25 +496,51 @@ function checkLoginAndOpen(id) {
   openModal(id);
 }
 
-// ═══════════════════════════════════════════
-//  체크리스트 폼 DOM 생성
-// ═══════════════════════════════════════════
-(function buildChecklist() {
+// ════════════════════════════════════════════════
+//  산업군 선택 → 체크리스트 렌더
+// ════════════════════════════════════════════════
+function selectIndustry(ind, btn) {
+  currentIndustry = ind;
+  // 탭 active 클래스 교체
+  document.querySelectorAll('.ind-tab').forEach(t => {
+    t.classList.remove('active-tech','active-mfg','active-retail','active-fin');
+  });
+  btn.classList.add(IND_ACTIVE[ind]);
+  // 체크리스트 기준치만 업데이트 (입력값 유지)
+  updateCriteriaDisplay(ind);
+}
+
+function updateCriteriaDisplay(industry) {
+  const items = getItems(industry);
+  items.forEach(item => {
+    const criteriaEl = document.getElementById('crit_'+item.id);
+    const labelEl    = document.getElementById('lbl_'+item.id);
+    if (criteriaEl) {
+      criteriaEl.textContent = item.criteria;
+      criteriaEl.className = 'check-criteria' + (isChanged(item.id, industry) ? ' changed' : '');
+    }
+    if (labelEl) labelEl.textContent = item.label;
+  });
+}
+
+function buildChecklist(industry) {
+  const items = getItems(industry);
   const grouped = {};
   CAT_ORDER.forEach(c => grouped[c]=[]);
-  ITEMS.forEach(it => grouped[it.cat].push(it));
+  items.forEach(it => grouped[it.cat].push(it));
   let html = '';
   CAT_ORDER.forEach(cat => {
     html += `<div class="cat-section"><div class="cat-title">— ${cat}</div>`;
     grouped[cat].forEach(it => {
+      const changed = isChanged(it.id, industry);
       html += `
       <div class="check-row" id="row_${it.id}">
         <div class="check-top">
           <div class="check-label-wrap">
-            <span class="check-label">${esc(it.label)}</span>
-            <span class="check-criteria">${esc(it.criteria)}</span>
+            <span class="check-label" id="lbl_${it.id}">${esc(it.label)}</span>
+            <span class="check-criteria${changed?' changed':''}" id="crit_${it.id}">${esc(it.criteria)}</span>
           </div>
-          <select class="verdict-sel v-bad" id="chk_${it.id}" onchange="onVerdictChange(this,'${it.id}')">
+          <select class="verdict-sel v-bad" id="chk_${it.id}" onchange="onVerdictChange(this)">
             <option value="미달">미달</option>
             <option value="확인필요">확인필요</option>
             <option value="부합">부합</option>
@@ -484,16 +552,16 @@ function checkLoginAndOpen(id) {
     html += `</div>`;
   });
   document.getElementById('checklistContainer').innerHTML = html;
-})();
+}
 
-function onVerdictChange(sel, id) {
-  sel.className = 'verdict-sel ' + (sel.value==='부합'?'v-ok':sel.value==='확인필요'?'v-warn':'v-bad');
+function onVerdictChange(sel) {
+  sel.className = 'verdict-sel '+(sel.value==='부합'?'v-ok':sel.value==='확인필요'?'v-warn':'v-bad');
   updateLiveScore();
 }
 
 function updateLiveScore() {
   const checks = {};
-  ITEMS.forEach(it => { checks[it.id] = document.getElementById('chk_'+it.id)?.value || '미달'; });
+  BASE.forEach(it => { checks[it.id] = document.getElementById('chk_'+it.id)?.value || '미달'; });
   const score = calcScore(checks);
   const judge = getJudge(score);
   const numEl = document.getElementById('liveScoreNum');
@@ -504,27 +572,33 @@ function updateLiveScore() {
   jEl.className = 'judge-badge '+judge.cls;
 }
 
-// ═══════════════════════════════════════════
-//  모달 열기/닫기
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════
+//  모달
+// ════════════════════════════════════════════════
 function openModal(id) {
   editId = id || null;
   document.getElementById('modalTitle').textContent = editId ? '분석 수정' : '새 분석 추가';
 
-  // 폼 초기화
-  ITEMS.forEach(it => {
-    const cs = document.getElementById('chk_'+it.id);
-    const at = document.getElementById('act_'+it.id);
-    if (cs) { cs.value='미달'; cs.className='verdict-sel v-bad'; }
-    if (at) at.value = '';
+  // 산업군 초기화
+  const ind = editId ? (records.find(x=>x.id===editId)?.industry || '기술산업') : '기술산업';
+  currentIndustry = ind;
+
+  // 체크리스트 DOM 생성
+  buildChecklist(ind);
+
+  // 탭 active 초기화
+  document.querySelectorAll('.ind-tab').forEach(t => {
+    t.classList.remove('active-tech','active-mfg','active-retail','active-fin');
+    if (t.dataset.ind === ind) t.classList.add(IND_ACTIVE[ind]);
   });
 
+  // 폼 값 채우기
   if (!editId) {
-    document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
-    document.getElementById('fName').value = '';
-    document.getElementById('fTicker').value = '';
-    document.getElementById('fType').value = '성장주';
-    document.getElementById('fMemo').value = '';
+    document.getElementById('fDate').value  = new Date().toISOString().slice(0,10);
+    document.getElementById('fName').value  = '';
+    document.getElementById('fTicker').value= '';
+    document.getElementById('fType').value  = '성장주';
+    document.getElementById('fMemo').value  = '';
   } else {
     const r = records.find(x=>x.id===editId);
     if (!r) return;
@@ -533,10 +607,10 @@ function openModal(id) {
     document.getElementById('fTicker').value = r.ticker||'';
     document.getElementById('fType').value   = r.stype||'성장주';
     document.getElementById('fMemo').value   = r.memo||'';
-    ITEMS.forEach(it => {
+    BASE.forEach(it => {
       const cs = document.getElementById('chk_'+it.id);
       const at = document.getElementById('act_'+it.id);
-      const v = r.checks?.[it.id]||'미달';
+      const v  = r.checks?.[it.id]||'미달';
       if (cs) { cs.value=v; cs.className='verdict-sel '+(v==='부합'?'v-ok':v==='확인필요'?'v-warn':'v-bad'); }
       if (at) at.value = r.actuals?.[it.id]||'';
     });
@@ -545,11 +619,14 @@ function openModal(id) {
   document.getElementById('overlay').classList.add('open');
 }
 
-function closeModal() { document.getElementById('overlay').classList.remove('open'); editId=null; }
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+}
 
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════
 //  저장 / 삭제
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════
 async function saveRecord() {
   if (!currentUser) { showLoginModal(); return; }
   const name   = document.getElementById('fName').value.trim();
@@ -558,7 +635,7 @@ async function saveRecord() {
   if (!name||!ticker||!date) { toast('회사명·티커·날짜는 필수입니다.'); return; }
 
   const checks={}, actuals={};
-  ITEMS.forEach(it => {
+  BASE.forEach(it => {
     checks[it.id]  = document.getElementById('chk_'+it.id)?.value||'미달';
     actuals[it.id] = document.getElementById('act_'+it.id)?.value.trim()||'';
   });
@@ -567,8 +644,10 @@ async function saveRecord() {
   const judge = getJudge(score).label;
   const data  = {
     uid: currentUser.uid, userEmail: currentUser.email,
-    name, ticker, stype: document.getElementById('fType').value,
-    memo: document.getElementById('fMemo').value.trim(),
+    name, ticker,
+    stype:    document.getElementById('fType').value,
+    industry: currentIndustry,
+    memo:     document.getElementById('fMemo').value.trim(),
     date, checks, actuals, score, judge,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -593,18 +672,19 @@ async function deleteRecord(id) {
   catch(e) { toast('❌ 삭제 실패: '+e.message); }
 }
 
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════
 //  상세보기
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════
 function openDetail(id) {
   const r = records.find(x=>x.id===id);
   if (!r) return;
   const judge = getJudge(r.score);
+  const items = getItems(r.industry||'기술산업');
   document.getElementById('detailTitle').textContent = `${r.name} (${r.ticker})`;
 
   const grouped = {};
   CAT_ORDER.forEach(c=>grouped[c]=[]);
-  ITEMS.forEach(it=>grouped[it.cat].push(it));
+  items.forEach(it=>grouped[it.cat].push(it));
 
   let rows = '';
   CAT_ORDER.forEach(cat => {
@@ -625,11 +705,13 @@ function openDetail(id) {
   const ok   = Object.values(r.checks||{}).filter(v=>v==='부합').length;
   const warn = Object.values(r.checks||{}).filter(v=>v==='확인필요').length;
   const bad  = Object.values(r.checks||{}).filter(v=>v==='미달').length;
+  const indCls = IND_CLS[r.industry||'기술산업']||'ind-tech';
 
   document.getElementById('detailBody').innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
       <div style="font-family:var(--mono);font-size:40px;font-weight:700;color:var(--accent);">${r.score}<span style="font-size:14px;color:var(--text3);">/100</span></div>
       <span class="judge-badge ${judge.cls}" style="font-size:14px;padding:5px 16px;">${judge.label}</span>
+      <span class="industry-tag ${indCls}">${r.industry||'기술산업'}</span>
       <div style="margin-left:auto;display:flex;gap:6px;">
         <span class="stat-pill ok">부합 ${ok}</span>
         <span class="stat-pill warn">확인 ${warn}</span>
@@ -650,16 +732,18 @@ function openDetail(id) {
 }
 function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
 
-// ═══════════════════════════════════════════
-//  목록 렌더링
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════
+//  목록 렌더
+// ════════════════════════════════════════════════
 function getFiltered() {
   const dv = document.getElementById('filterDate').value;
   const tv = document.getElementById('filterText').value.trim().toLowerCase();
+  const iv = document.getElementById('filterIndustry').value;
   const jv = document.getElementById('filterJudge').value;
   return records.filter(r =>
     (!dv || r.date===dv) &&
-    (!tv || r.name?.toLowerCase().includes(tv) || r.ticker?.toLowerCase().includes(tv) || r.memo?.toLowerCase().includes(tv)) &&
+    (!tv || r.name?.toLowerCase().includes(tv)||r.ticker?.toLowerCase().includes(tv)||r.memo?.toLowerCase().includes(tv)) &&
+    (!iv || r.industry===iv) &&
     (!jv || r.judge===jv)
   );
 }
@@ -671,20 +755,18 @@ function render() {
   const totalPages = Math.ceil(filtered.length/PER_PAGE)||1;
   if (currentPage>totalPages) currentPage=totalPages;
   const slice = filtered.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
-
   document.getElementById('countChip').innerHTML = `총 <span>${records.length}</span>건`;
 
   const feed = document.getElementById('feedList');
   if (!records.length) {
-    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 분석이 없습니다</p></div>`;
+    feed.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 분석이 없습니다</p></div>`;
     document.getElementById('paginationEl').innerHTML=''; return;
   }
   if (!filtered.length) {
-    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
+    feed.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
     document.getElementById('paginationEl').innerHTML=''; return;
   }
 
-  // 날짜 그룹핑
   const groups={};
   slice.forEach(r=>{ if(!groups[r.date])groups[r.date]=[]; groups[r.date].push(r); });
 
@@ -693,28 +775,30 @@ function render() {
     const items=groups[date];
     html+=`<div class="date-group"><span class="date-label">${date}</span><div class="line"></div><span class="count-badge">${items.length}건</span></div>`;
     items.forEach(r=>{
-      const judge=getJudge(r.score);
+      const judge   = getJudge(r.score);
+      const indCls  = IND_CLS[r.industry||'기술산업']||'ind-tech';
       const ok   = Object.values(r.checks||{}).filter(v=>v==='부합').length;
       const warn = Object.values(r.checks||{}).filter(v=>v==='확인필요').length;
       const bad  = Object.values(r.checks||{}).filter(v=>v==='미달').length;
-      const memo = r.memo ? (r.memo.length>60 ? r.memo.slice(0,60)+'…' : r.memo) : '';
+      const memo = r.memo?(r.memo.length>60?r.memo.slice(0,60)+'…':r.memo):'';
       html+=`
       <div class="feed-item">
         <div class="item-header">
           <span class="item-name">${esc(r.name)}</span>
           <span class="item-ticker">${esc(r.ticker)}</span>
+          <span class="industry-tag ${indCls}">${esc(r.industry||'기술산업')}</span>
           <span class="item-type">${esc(r.stype||'')}</span>
           <span class="score-badge ${scoreCls(r.score)}">${r.score}점</span>
           <span class="judge-badge ${judge.cls}">${judge.label}</span>
           <span class="item-author">👤 ${fmtEmail(r.userEmail)}</span>
           <div class="item-actions">
-            <button class="btn-icon edit" title="수정" onclick="checkLoginAndOpen('${r.id}')">✏️</button>
-            <button class="btn-icon del"  title="삭제" onclick="deleteRecord('${r.id}')">🗑️</button>
+            <button class="btn-icon edit" onclick="checkLoginAndOpen('${r.id}')">✏️</button>
+            <button class="btn-icon del"  onclick="deleteRecord('${r.id}')">🗑️</button>
           </div>
         </div>
         <div class="row1-grid">
           <div class="info-cell"><span class="info-label">날짜</span><span class="info-value">${r.date}</span></div>
-          <div class="info-cell"><span class="info-label">유형</span><span class="info-value accent">${esc(r.stype||'—')}</span></div>
+          <div class="info-cell"><span class="info-label">산업군</span><span class="info-value accent">${esc(r.industry||'기술산업')}</span></div>
           <div class="info-cell"><span class="info-label">총점</span><span class="info-value ${scoreCls(r.score)}">${r.score}/100</span></div>
           <div class="info-cell"><span class="info-label">최종판단</span><span class="info-value">${judge.label}</span></div>
         </div>
@@ -731,8 +815,6 @@ function render() {
     });
   });
   feed.innerHTML=html;
-
-  // 페이지네이션
   renderPagination(totalPages);
 }
 
@@ -752,21 +834,18 @@ function renderPagination(totalPages) {
 }
 
 function goPage(p) {
-  const f=getFiltered();
-  const tp=Math.ceil(f.length/PER_PAGE)||1;
-  if(p<1||p>tp)return;
+  const f=getFiltered(), tp=Math.ceil(f.length/PER_PAGE)||1;
+  if(p<1||p>tp) return;
   currentPage=p; render();
 }
 
-// ── 토스트
 let _tt;
 function toast(msg,dur=3000){
   const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('show');
-  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),dur);
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('show'),dur);
 }
 
-// ── 초기화
 document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
 </script>
 </body>
