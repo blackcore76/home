@@ -1179,20 +1179,19 @@ $symIn.addEventListener('input', () => {
         return;
     }
 
-    /* ③ 영문 → 미국 종목 검색 */
-    $drop.style.display = 'block';
-    $drop.innerHTML = '<div class="drop-loading">🔍 검색 중...</div>';
-    dropTimer = setTimeout(async () => {
-        try{
-            const items = await searchUSSymbol(q);
-            $drop.style.display = 'block';
-            $drop.innerHTML = items.length
-                ? '<div class="drop-section">🇺🇸 미국 종목</div>' + buildDropHtml(items, false)
-                : '<div class="drop-loading">검색 결과 없음</div>';
-        }catch{
-            $drop.innerHTML = '<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
-        }
-    }, 350);
+// ③ 영문 → 미국 종목 검색
+$drop.style.display = 'block';
+$drop.innerHTML = '<div class="drop-section">🇺🇸 미국 종목</div><div class="drop-loading">🔍 검색 중...</div>';
+dropTimer = setTimeout(async () => {
+    try{
+        const items = await searchUSSymbol(q);
+        $drop.innerHTML = items.length
+            ? '<div class="drop-section">🇺🇸 미국 종목</div>' + buildDropHtml(items, false)
+            : '<div class="drop-loading">검색 결과 없음</div>';
+    }catch{
+        $drop.innerHTML = '<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
+    }
+}, 350);
 });
 
 $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
