@@ -1141,58 +1141,86 @@ $symIn.addEventListener('input', () => {
     /* ① 6자리 숫자: 드롭다운 없이 직접 분석 허용 */
     if(/^\d{6}$/.test(q)){ closeDrop(); return; }
 
-    /* ② 한글 or 숫자 1~5자리 → 한국 종목 검색 */
+    /* ② 한글 or 숫자 1~5자리 → Firebase + 로컬 DB */
     if(isKrText(q) || /^\d{1,5}$/.test(q)){
-        // 즉시 로컬 DB 결과 먼저 표시
-        const localItems = searchLocalKR(q);
         $drop.style.display = 'block';
-        $drop.innerHTML =
+        
+        // 로컬 DB 즉시 표시
+        const localItems = searchLocalKR(q);
+        $drop.innerHTML = 
             (localItems.length
-                ? '<div class="drop-section">🇰🇷 한국 종목 (로컬 DB)</div>' + buildDropHtml(localItems, true, 'LOCAL')
+                ? '<div class="drop-section">🇰🇷 한국 종목 (로컬)</div>' + buildDropHtml(localItems, true, 'LOCAL')
                 : '') +
-            '<div class="drop-loading" id="naverStatus" style="color:var(--ac)">🔍 네이버 검색 중...</div>';
+            '<div class="drop-loading" id="krStatus" style="color:var(--ac)">🔍 Firebase 검색 중...</div>';
 
-        // 비동기로 네이버 API 결과 추가
+        // Firebase + 네이버 비동기 검색
         dropTimer = setTimeout(async () => {
             try {
-                const items = await searchNaverKR(q);
-                // 로컬 DB 결과와 중복 제거 후 병합
-                const localCodes = new Set(localItems.map(i => i.code));
-                const naverOnly = items.filter(i => !localCodes.has(i.code));
-                const merged = [...items, ...localItems.filter(i => !items.find(n => n.code === i.code))];
+                const fbItems = await searchFirebaseKR(q);
+                const naverItems = await searchNaverKR(q);
+                
+                const merged = [...fbItems, ...naverItems].filter((item, idx, arr) => 
+                    arr.findIndex(x => x.code === item.code) === idx
+                );
 
                 $drop.style.display = 'block';
                 if(merged.length){
-                    const isNaverResult = items.length > 0;
-                    $drop.innerHTML =
-                        `<div class="drop-section">🇰🇷 한국 종목 ${isNaverResult ? '(네이버)' : '(로컬 DB)'}</div>` +
-                        buildDropHtml(merged.slice(0,8), true, isNaverResult ? 'NAVER' : 'LOCAL');
+                    $drop.innerHTML = 
+                        '<div class="drop-section">🇰🇷 한국 종목</div>' +
+                        buildDropHtml(merged.slice(0, 8), true);
+                } else if(localItems.length){
+                    // Firebase/네이버 결과 없으면 로컬만 유지
                 } else {
                     $drop.innerHTML = '<div class="drop-loading">검색 결과 없음</div>';
                 }
             } catch {
-                // 이미 로컬 DB 결과가 표시되어 있으므로 상태만 갱신
-                const status = document.getElementById('naverStatus');
-                if(status) status.textContent = '⚠️ 네이버 API 연결 실패 (로컬 DB 결과 사용)';
+                const status = document.getElementById('krStatus');
+                if(status) status.textContent = '⚠️ 검색 완료 (로컬 결과 사용)';
             }
         }, 300);
         return;
     }
 
-// ③ 영문 → 미국 종목 검색
-$drop.style.display = 'block';
-$drop.innerHTML = '<div class="drop-section">🇺🇸 미국 종목</div><div class="drop-loading">🔍 검색 중...</div>';
-dropTimer = setTimeout(async () => {
-    try{
-        const items = await searchUSSymbol(q);
-        $drop.innerHTML = items.length
-            ? '<div class="drop-section">🇺🇸 미국 종목</div>' + buildDropHtml(items, false)
-            : '<div class="drop-loading">검색 결과 없음</div>';
-    }catch{
-        $drop.innerHTML = '<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
-    }
-}, 350);
+    /* ③ 영문 → 미국 종목 검색 */
+    $drop.style.display = 'block';
+    $drop.innerHTML = '<div class="drop-section">🇺🇸 미국 종목</div><div class="drop-loading">🔍 검색 중...</div>';
+    dropTimer = setTimeout(async () => {
+        try{
+            const items = await searchUSSymbol(q);
+            $drop.innerHTML = items.length
+                ? '<div class="drop-section">🇺🇸 미국 종목</div>' + buildDropHtml(items, false)
+                : '<div class="drop-loading">검색 결과 없음</div>';
+        }catch{
+            $drop.innerHTML = '<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
+        }
+    }, 350);
 });
+
+async function searchFirebaseKR(query) {
+    if(!currentUser) return [];
+    
+    try {
+        const q = query.toLowerCase().replace(/\s/g,'');
+        const snapshot = await db.collection('kr_stocks').get();
+        
+        const results = snapshot.docs
+            .map(doc => ({
+                code: doc.id,
+                name: doc.data().name,
+                market: doc.data().market || 'KOSPI'
+            }))
+            .filter(item => 
+                item.name.toLowerCase().replace(/\s/g,'').includes(q) ||
+                item.code.includes(query)
+            )
+            .slice(0, 8);
+        
+        return results;
+    } catch(e) {
+        console.error('Firebase 검색 오류:', e);
+        return [];
+    }
+}
 
 $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
 document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop')) closeDrop(); });
