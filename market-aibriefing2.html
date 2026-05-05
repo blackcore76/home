@@ -897,31 +897,35 @@ $symIn.addEventListener('input', () => {
                 : '') +
             '<div class="drop-loading" id="krStatus" style="color:var(--ac)">🔍 Firebase 검색 중...</div>';
 
-        // Firebase + 네이버 비동기 검색
-        dropTimer = setTimeout(async () => {
-            try {
-                const fbItems = await searchFirebaseKR(q);
+// Firebase 검색 부분 (수정 제안)
+dropTimer = setTimeout(async () => {
+    try {
+        const fbItems = await searchFirebaseKR(q); // Firebase에서 가져온 데이터
 
-                
-                const merged = [...fbItems, ...naverItems].filter((item, idx, arr) => 
-                    arr.findIndex(x => x.code === item.code) === idx
-                );
+        // 네이버(naverItems)를 빼고 fbItems만 사용하도록 수정!
+        const merged = fbItems.filter((item, idx, arr) => 
+            arr.findIndex(x => x.code === item.code) === idx
+        );
 
-                $drop.style.display = 'block';
-                if(merged.length){
-                    $drop.innerHTML = 
-                        '<div class="drop-section">🇰🇷 한국 종목</div>' +
-                        buildDropHtml(merged.slice(0, 8), true);
-                } else if(localItems.length){
-                    // Firebase/네이버 결과 없으면 로컬만 유지
-                } else {
-                    $drop.innerHTML = '<div class="drop-loading">검색 결과 없음</div>';
-                }
-            } catch {
-                const status = document.getElementById('krStatus');
-                if(status) status.textContent = '⚠️ 검색 완료 (로컬 결과 사용)';
-            }
-        }, 300);
+        $drop.style.display = 'block';
+        if(merged.length){
+            $drop.innerHTML = 
+                '<div class="drop-section">🇰🇷 한국 종목</div>' +
+                buildDropHtml(merged.slice(0, 8), true);
+            
+            // ⭐ 중요: HTML을 새로 넣은 후에는 클릭 이벤트를 다시 연결하거나 
+            // buildDropHtml 함수 안에서 클릭 시 어떤 동작을 할지 명시되어 있어야 해!
+        } else if(localItems.length){
+            // 로컬 결과가 있으면 그대로 유지
+        } else {
+            $drop.innerHTML = '<div class="drop-loading">검색 결과 없음</div>';
+        }
+    } catch (err) {
+        console.error(err); // 에러가 뭔지 개발자 도구(F12)에서 확인용
+        const status = document.getElementById('krStatus');
+        if(status) status.textContent = '⚠️ 검색 중 오류 발생';
+    }
+}, 300);
         return;
     }
 
