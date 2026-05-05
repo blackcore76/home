@@ -897,34 +897,40 @@ $symIn.addEventListener('input', () => {
                 : '') +
             '<div class="drop-loading" id="krStatus" style="color:var(--ac)">🔍 Firebase 검색 중...</div>';
 
-// 수정된 핵심 로직
 dropTimer = setTimeout(async () => {
     try {
-        // 1. Firebase에서 데이터 가져오기
-        const fbItems = await searchFirebaseKR(q); 
+        // 1. Firestore에서 데이터를 가져옴 (결과가 없을 것에 대비해 빈 배열 [] 기본값 설정)
+        const res = await searchFirebaseKR(q); 
+        const fbItems = res || []; // 만약 결과가 없으면 에러 대신 빈 바구니를 씀
 
-        // 2. 네이버(naverItems) 삭제하고 fbItems만 안전하게 처리
-        // filter를 통해 데이터가 비어있는(undefined) 항목은 아예 제거해버릴게!
-        const merged = fbItems.filter(item => item && item.code);
+        // 2. 데이터가 있을 때만 합치고 필터링 (naverItems는 과감히 삭제!)
+        const merged = fbItems.filter(item => item && item.name && item.code);
 
         $drop.style.display = 'block';
 
-        if(merged.length){
-            // 3. buildDropHtml을 실행할 때 'LOCAL' 태그 유무에 따라 처리
+        if (merged.length > 0) {
+            // 3. 정상적인 데이터가 있을 때만 화면에 그림
             $drop.innerHTML = 
                 '<div class="drop-section">🇰🇷 한국 종목</div>' +
-                buildDropHtml(merged.slice(0, 8), true); 
-        } else if(localItems.length){
-            // 로컬 데이터는 이미 위에서 그렸으니 유지
+                buildDropHtml(merged.slice(0, 8), true, 'FIRESTORE'); // 출처를 FIRESTORE로 명시
+        } else if (localItems.length > 0) {
+            // Firestore 결과 없으면 로컬 데이터라도 보여줌
+            $drop.innerHTML = 
+                '<div class="drop-section">🇰🇷 한국 종목 (로컬)</div>' + 
+                buildDropHtml(localItems, true, 'LOCAL');
         } else {
             $drop.innerHTML = '<div class="drop-loading">검색 결과 없음</div>';
         }
     } catch (err) {
-        console.error("지은이 알림 - 에러 발생:", err);
-        const status = document.getElementById('krStatus');
-        if(status) status.textContent = '⚠️ 검색 완료 (결과 확인 필요)';
-    }
-}, 300);
+        console.error("지은이 긴급 진단:", err);
+        // 에러가 나도 화면이 굳지 않게 처리
+        if (localItems.length > 0) {
+            $drop.innerHTML = buildDropHtml(localItems, true, 'LOCAL');
+        } else {
+            $drop.innerHTML = '<div class="drop-loading">⚠️ 검색 중 오류가 발생했어요</div>';
+            }
+          }
+        }, 300);
         return;
     }
 
