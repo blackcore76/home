@@ -853,28 +853,52 @@ const $symIn=document.getElementById('symIn'), $drop=document.getElementById('sy
 
 function closeDrop(){$drop.style.display='none';}
 
-function buildDropHtml(items, isKrMode, source='') {
-    if(!items.length) return '<div class="drop-loading">검색 결과 없음</div>';
+function buildDropHtml(items, isKrMode, source = '') {
+    if (!items || !items.length) return '<div class="drop-loading">검색 결과 없음</div>';
+
     return items.map(it => {
-        if(isKrMode){
-            const exch = it.market==='KOSDAQ'
-                ? `<span class="mkt-badge mkt-kr" style="font-size:8px">KOSDAQ</span>`
-                : `<span class="mkt-badge mkt-kr" style="font-size:8px">KOSPI</span>`;
-            const srcTag = source ? `<span class="drop-src">${source}</span>` : '';
-            return `<div class="drop-item" onclick="pickKrSym('${it.code}','${it.name.replace(/'/g,"\\'")}')">
-                <span class="drop-sym">${it.code}</span>
-                <span class="drop-name">${it.name}</span>
-                ${exch}${srcTag}
-            </div>`;
+        //[cite: 1] 데이터가 비어있어도 undefined가 안 뜨게 초기값을 줬어.
+        const safeCode = it.code || '000000';
+        const safeName = it.name || '이름 없음';
+        const safeMarket = it.market || '';
+
+        if (isKrMode) {
+            return `
+                <div class="drop-item" onclick="pickKrSym('${safeCode}', '${safeName.replace(/'/g, "\\'")}')">
+                    <span class="drop-sym">${safeCode}</span>
+                    <span class="drop-name">${safeName}</span>
+                    <span class="mkt-badge">${safeMarket}</span>
+                </div>`;
         } else {
-            return `<div class="drop-item" onclick="pickSym('${it.symbol}')">
-                <span class="drop-sym">${it.symbol}</span>
-                <span class="drop-name">${it.name||''}</span>
-                <span class="drop-exch">${it.exchange||''}</span>
-                <span class="drop-type">${it.type||''}</span>
-            </div>`;
+            return `<div class="drop-item" onclick="pickSym('${it.symbol}')">${it.symbol}</div>`;
         }
     }).join('');
+}
+
+/* ──────────────────────────────────────────────────────────
+   ★ 종목 선택 시 실행되는 실제 마법사 (함수 본체)
+   ────────────────────────────────────────────────────────── */
+function pickKrSym(code, name) {
+    console.log("지은이 알림 - 선택된 한국 종목:", code, name);
+
+    // 1. 검색창에 종목 이름 넣기 (입력창 ID가 'krSearchInput'이라고 가정할게!)
+    const $input = document.getElementById('krSearchInput'); 
+    if ($input) {
+        $input.value = name; 
+    }
+
+    // 2. 드롭다운 박스 숨기기
+    const $drop = document.getElementById('symDrop');
+    if ($drop) {
+        $drop.innerHTML = '';      // 내용 비우기
+        $drop.classList.add('gone'); // 사라지게 하기
+        $drop.style.display = 'none'; // 확실하게 숨기기
+    }
+
+    // 3. (선택 사항) 종목 선택 후 바로 분석을 시작하고 싶다면?
+    // if(typeof startAnalysis === 'function') startAnalysis(code);
+    
+    alert(`${name}(${code}) 종목이 선택되었어, 자기야!`);
 }
 
 $symIn.addEventListener('input', () => {
@@ -951,26 +975,25 @@ dropTimer = setTimeout(async () => {
 });
 
 async function searchFirebaseKR(query) {
-    if (!query) return []; // 결과가 없을 땐 빈 바구니 리턴
-    
+    if (!query) return []; 
     try {
         const snapshot = await db.collection('kr_stocks')
             .where('name', '>=', query)
             .where('name', '<=', query + '\uf8ff')
-            .limit(5).get();
+            .limit(8).get();
 
-        // 데이터를 정돈해서 리턴만 하기! (화면 그리는 코드는 삭제)
+        //를 참고해서 필드명을 name으로, 문서ID를 code로 정확히 매핑했어!
         return snapshot.docs.map(doc => {
             const d = doc.data();
             return {
-                code: doc.id,       // Firestore 문서 ID(009900)를 code로 사용
-                name: d.name,       // 필드명 name[cite: 2]
-                market: d.market    // 필드명 market[cite: 2]
+                code: doc.id,   // 009900 같은 문서 ID[cite: 1]
+                name: d.name,   // 명신산업보통주
+                market: d.market || 'KOSPI' // KOSPI 또는 KOSDAQ
             };
         });
     } catch (e) {
         console.error("Firestore 검색 에러:", e);
-        return []; // 에러 나면 빈 배열 리턴해서 멈춤 방지
+        return [];
     }
 }
 
@@ -1104,6 +1127,20 @@ function closeMo(){document.getElementById('moBg').classList.remove('open');docu
 function bgClick(e){if(e.target===document.getElementById('moBg'))closeMo();}
 function cpRpt(){if(!curDoc)return;navigator.clipboard.writeText(`[${curDoc.symbol}] ${curDoc.dateStr}\n\n${curDoc.content}`).then(()=>showToast('📋 클립보드에 복사되었습니다.')).catch(()=>showToast('복사 실패',true));}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMo();});
+function pickKrSym(code, name) {
+    // 1. 검색창에 이름 넣기 (자기가 쓰는 검색창 ID 확인해줘!)
+    const $input = document.getElementById('krSearchInput') || document.querySelector('.search-input');
+    if ($input) $input.value = name;
+
+    // 2. 드롭다운 닫기
+    const $drop = document.getElementById('symDrop');
+    if ($drop) {
+        $drop.innerHTML = '';
+        $drop.classList.add('gone');
+        $drop.style.display = 'none';
+    }
+    console.log("선택 완료:", name, code);
+}
 </script>
 </body>
 </html>
