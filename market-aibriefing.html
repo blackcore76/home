@@ -189,7 +189,7 @@
 <body>
 
 <header>
-    <div class="logo"><div class="logo-dot"></div>AI 주식 분석 브리핑 <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">gemini-2.5-flash</span></div>
+    <div class="logo"><div class="logo-dot"></div>AI 주식 분석 브리핑 <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">gemini-3-flash-preview</span></div>
     <div style="display:flex;align-items:center;gap:8px">
         <span id="userInfo" style="font-family:var(--mono);font-size:10px;color:var(--text3);display:none"></span>
         <button id="authBtn" onclick="toggleAuth()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--text2);border-radius:6px;padding:5px 11px;font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .2s;white-space:nowrap">로그인</button>
@@ -312,7 +312,7 @@
             <p class="fn">
                 * 분석 데이터는 참고용이며 투자 책임은 본인에게 있습니다.<br>
                 * 현재가: Finnhub(미국) / Yahoo Finance(한국) | 캔들·지표: Yahoo Finance (JS 직접 계산)<br>
-                * AI: Gemini 2.5 Flash | 완료 시 Firestore 자동 저장
+                * AI: Gemini-3-Flash-preview | 완료 시 Firestore 자동 저장
             </p>
         </div>
 
@@ -697,7 +697,7 @@ async function run(){
         const now=new Date(),dS=`${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
         const prompt=buildPrompt(sym+(isKr?` (${yfSym})`:''),quote,indicators,dS,isKr);
         const gmRes=await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${gmKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview-05-20:generateContent?key=${gmKey}`,
             {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.4,maxOutputTokens:8192}})}
         );
         const gm=await gmRes.json();
