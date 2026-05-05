@@ -697,7 +697,7 @@ async function run(){
         const now=new Date(),dS=`${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
         const prompt=buildPrompt(sym+(isKr?` (${yfSym})`:''),quote,indicators,dS,isKr);
         const gmRes=await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview-05-20:generateContent?key=${gmKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
             {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.4,maxOutputTokens:8192}})}
         );
         const gm=await gmRes.json();
