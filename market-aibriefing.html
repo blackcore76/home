@@ -586,74 +586,7 @@ function searchLocalKR(query) {
    — 다중 URL 시도 + 타임아웃 단축 + 로컬 DB 폴백
    ══════════════════════════════════════════════════════════ */
 
-/* 네이버 증권 API URL 목록 (우선순위 순) */
-const NAVER_SEARCH_URLS = [
-    /* ① 네이버 증권 프론트 API (모바일용, JSON 응답) */
-    q => `https://m.stock.naver.com/front-api/v1/search/all?keyword=${encodeURIComponent(q)}&page=1&pageSize=10`,
-    /* ② 기존 자동완성 API */
-    q => `https://ac.stock.naver.com/ac?q=${encodeURIComponent(q)}&target=stock,index`,
-    /* ③ 네이버 증권 검색 API */
-    q => `https://finance.naver.com/search/searchList.nhn?query=${encodeURIComponent(q)}`,
-];
 
-/* 응답 파싱 — URL별 응답 포맷이 다름 */
-function parseNaverResponse(text, urlIdx) {
-    let data;
-    try { data = JSON.parse(text); } catch { return []; }
-
-    // ① m.stock.naver.com/front-api 응답
-    if (urlIdx === 0) {
-        const items = data?.result?.stocks || data?.result?.items || data?.items || [];
-        return items.slice(0, 8).map(it => ({
-            code: it.itemCode || it.code || it.stockCode || '',
-            name: it.itemName || it.name || it.stockName || '',
-            market: (it.market||it.marketName||'').toUpperCase().includes('KOSDAQ') ? 'KOSDAQ' : 'KOSPI',
-        })).filter(it => /^\d{6}$/.test(it.code));
-    }
-
-    // ② ac.stock.naver.com 응답
-    // 포맷: {"items":[[code, name, market, ...], ...],"q":"..."}
-    if (urlIdx === 1) {
-        const items = data?.items || (Array.isArray(data) ? data : []);
-        return items.slice(0, 8).map(it => {
-            if (!Array.isArray(it) || it.length < 2) return null;
-            return {
-                code: it[0] || '',
-                name: it[1] || '',
-                market: String(it[2]||'').toUpperCase().includes('KOSDAQ') ? 'KOSDAQ' : 'KOSPI',
-            };
-        }).filter(it => it && /^\d{6}$/.test(it.code));
-    }
-
-    return [];
-}
-
-async function searchNaverKR(query) {
-    const localResults = searchLocalKR(query);
-
-    /* 각 프록시 × 각 URL 조합을 타임아웃 5초로 시도 */
-    for (const urlMaker of NAVER_SEARCH_URLS.slice(0, 2)) { // 처음 2개 URL만
-        for (const px of PROXIES.slice(0, 2)) { // 처음 2개 프록시만
-            try {
-                const targetUrl = urlMaker(query);
-                const proxyUrl = px(targetUrl);
-                const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
-                if (!res.ok) continue;
-                const text = await res.text();
-                if (!text || text.startsWith('<')) continue; // HTML 에러 페이지
-                const urlIdx = NAVER_SEARCH_URLS.indexOf(urlMaker);
-                const parsed = parseNaverResponse(text, urlIdx);
-                if (parsed.length > 0) return parsed;
-            } catch (e) {
-                // 이 조합 실패 → 다음 시도
-                continue;
-            }
-        }
-    }
-
-    /* 모든 API 실패 → 로컬 DB 폴백 */
-    return localResults;
-}
 
 /* ══ Yahoo Finance 캔들 ══ */
 async function fetchYFCandles(yfSym, days=110) {
@@ -1156,7 +1089,7 @@ $symIn.addEventListener('input', () => {
         dropTimer = setTimeout(async () => {
             try {
                 const fbItems = await searchFirebaseKR(q);
-                const naverItems = await searchNaverKR(q);
+
                 
                 const merged = [...fbItems, ...naverItems].filter((item, idx, arr) => 
                     arr.findIndex(x => x.code === item.code) === idx
