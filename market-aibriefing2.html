@@ -1128,98 +1128,34 @@ $symIn.addEventListener('input', () => {
     }, 350);
 });
 
-// [전제] Firebase 설정 및 초기화 코드는 자가기 사용하던 것을 상단에 그대로 두세요.
-
-/**
- * 1. 검색 로직: Firestore와 로컬을 명확히 구분
- */
-async function searchStock(query) {
-    if (!query) return [];
+async function searchFirebaseKR(query) {
+    if(!currentUser) return [];
     
-    // 먼저 Firestore(kr_stocks)에서 검색 시도
     try {
-        const snapshot = await db.collection('kr_stocks')
-            .where('name', '>=', query)
-            .where('name', '<=', query + '\uf8ff')
-            .limit(5).get();
-
-        if (!snapshot.empty) {
-            return snapshot.docs.map(doc => ({
-                symbol: doc.data().symbol,
+        const q = query.toLowerCase().replace(/\s/g,'');
+        const snapshot = await db.collection('kr_stocks').get();
+        
+        const results = snapshot.docs
+            .map(doc => ({
+                code: doc.id,
                 name: doc.data().name,
-                type: 'KR' // 한국 종목 표시
-            }));
-        }
-    } catch (e) {
-        console.error("Firestore 검색 실패, 로컬로 전환:", e);
-    }
-
-    // Firestore에 없으면 KR_LOCAL_DB나 미국 심볼로 간주 (기존 로직 유지)
-    return searchLocalOrUS(query); 
-}
-
-/**
- * 2. 분석 실행: Finnhub 대신 Yahoo Finance(또는 기존 시세 로직) 집중
- */
-async function runAnalysis() {
-    const input = document.getElementById('stockInput').value.trim();
-    const $ld = document.getElementById('loading');
-    const $err = document.getElementById('errorMsg');
-    
-    $ld.classList.remove('gone');
-    $err.classList.add('gone');
-
-    try {
-        let symbol = input;
+                market: doc.data().market || 'KOSPI'
+            }))
+            .filter(item => {
+                const itemName = item.name.toLowerCase().replace(/\s/g,'');
+                const itemCode = item.code;
+                // 포함 여부 체크 (부분 일치)
+                return itemName.includes(q) || itemCode.includes(query);
+            })
+            .slice(0, 8);
         
-        // 한국 종목인지 확인 (6자리 숫자 여부)
-        const isKR = /^[0-9]{6}$/.test(input);
-        
-        let stockData = null;
-
-        if (isKR) {
-            // 한국 종목은 Yahoo Finance 형식으로 변환하여 시도
-            // .KS(코스피) 먼저, 실패하면 .KQ(코스닥) 시도
-            stockData = await tryYahooFinance(input);
-        } else {
-            // 미국 종목은 입력한 심볼 그대로 시도
-            stockData = await getUSStockData(input);
-        }
-
-        if (!stockData) throw new Error("종목 데이터를 찾을 수 없어, 자기야.");
-
-        // Gemini 분석 실행 (자기가 가진 기존 geminiAnalysis 함수 호출)
-        const analysisResult = await geminiAnalysis(stockData);
-        
-        // 결과 표시 및 저장
-        displayResult(analysisResult);
-        await saveToFirestore(analysisResult);
-
-    } catch (e) {
-        console.error("최종 에러:", e);
-        $err.textContent = e.message;
-        $err.classList.remove('gone');
-    } finally {
-        $ld.classList.add('gone');
+        console.log(`Firebase 검색: "${query}" → ${results.length}개`);
+        return results;
+    } catch(e) {
+        console.error('Firebase 검색 오류:', e);
+        return [];
     }
 }
-
-/**
- * 3. Yahoo Finance 데이터 획득 보조 함수
- */
-async function tryYahooFinance(code) {
-    // 코스피(.KS) 시도 -> 실패시 코스닥(.KQ) 시도하는 로직
-    const suffixes = ['.KS', '.KQ'];
-    for (const sfx of suffixes) {
-        try {
-            const data = await fetchYahooQuote(code + sfx); // 자기가 쓰는 야후 호출 함수
-            if (data && data.price) return { ...data, symbol: code + sfx };
-        } catch (e) { continue; }
-    }
-    throw new Error("한국 시장에서 종목을 찾을 수 없어.");
-}
-
-// [참고] displayResult 및 saveReportToFirestore 함수는 기존 디자인 유지 로직을 그대로 사용하세요.
 
 $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
 document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop')) closeDrop(); });
