@@ -239,6 +239,7 @@
             <label class="s-label">미국: 심볼(AAPL)이나 종목명 기준 '영어'로 입력해주세요</label>
             <label class="s-label">한국: 6자리 코드(005930)나 종목명 기준 '한글'로 입력해주세요</label>
             <label class="s-label">한국 종목 및 ETF 약 3,980개 로딩(KRX Data Marketplace)</label>
+            <label class="s-label">한국 종목은 입력-드롭다운-선택-분석하다 에러 뿜을때도 있어요</label>
             <br>
             <div class="s-box" style="position:relative">
                 <div style="flex:1;position:relative">
@@ -468,6 +469,11 @@ $fh.addEventListener('input',saveK);$gm.addEventListener('input',saveK);
 /* ══ 한국 종목 감지 ══ */
 function isKrCode(s){return /^\d{6}$/.test(s.trim());}
 function isKrText(s){return /[가-힣]/.test(s);}
+
+
+/* 로컬 DB 검색 */
+
+/* ══════════════════════════════════════════════════════════
 
 
 
@@ -762,9 +768,10 @@ async function run() {
     if(!gmKey){alert('⚙️ Gemini API 키를 먼저 입력하세요.');return;}
     if(!rawIn){alert('종목을 입력하세요.');return;}
 
-    const isKr=isKrCode(rawIn)||isKrText(rawIn);
-    const sym=isKrCode(rawIn)?rawIn.toUpperCase():rawIn;
-    let yfSym=isKr?(isKrCode(rawIn)?sym+'.KS':sym+'.KS'):sym;
+    // isKr: 6자리 코드 OR 한글 입력 모두 KR 처리
+    const isKr = isKrCode(rawIn) || isKrText(rawIn);
+    const sym = rawIn.toUpperCase();
+    let yfSym = isKr ? sym + '.KS' : sym;
 
     const $ld=document.getElementById('ldArea'),$rs=document.getElementById('rsArea'),$err=document.getElementById('errArea');
     $ld.classList.remove('gone');$rs.classList.add('gone');$err.classList.add('gone');
@@ -956,7 +963,7 @@ $symIn.addEventListener('input', () => {
     /* ① 6자리 숫자: 드롭다운 없이 직접 분석 허용 */
     if(/^\d{6}$/.test(q)){ closeDrop(); return; }
 
-    /* ② 한글 or 숫자 1~5자리 → Firebase KRX 검색 */
+    /* ② 한글 or 숫자 1~5자리 → Firebase KRX 검색 (3,980개) */
     if(isKrText(q) || /^\d{1,5}$/.test(q)){
         $drop.style.display = 'block';
         if(!currentUser){
@@ -979,21 +986,6 @@ $symIn.addEventListener('input', () => {
         return;
     }
 
-    /* ③ 영문 → 미국 종목 검색 */
-    $drop.style.display = 'block';
-    $drop.innerHTML = '<div class="drop-section">🇺🇸 미국 종목</div><div class="drop-loading">🔍 검색 중...</div>';
-    dropTimer = setTimeout(async () => {
-        try{
-            const items = await searchUSSymbol(q);
-            $drop.innerHTML = items.length
-                ? '<div class="drop-section">🇺🇸 미국 종목</div>' + buildDropHtml(items, false)
-                : '<div class="drop-loading">검색 결과 없음</div>';
-        }catch{
-            $drop.innerHTML = '<div class="drop-loading" style="color:var(--red)">검색 실패</div>';
-        }
-    }, 350);
-});
-
 async function searchFirebaseKR(query) {
     if(!currentUser) return [];
     try {
@@ -1001,13 +993,13 @@ async function searchFirebaseKR(query) {
         let snap;
         if(isCode){
             snap = await db.collection('kr_stocks')
-                .where(firebase.firestore.FieldPath.documentId(),'>=',query)
-                .where(firebase.firestore.FieldPath.documentId(),'<=',query+'\uf8ff')
+                .where(firebase.firestore.FieldPath.documentId(), '>=', query)
+                .where(firebase.firestore.FieldPath.documentId(), '<=', query + '\uf8ff')
                 .limit(8).get();
         } else {
             snap = await db.collection('kr_stocks')
-                .where('name','>=',query)
-                .where('name','<=',query+'\uf8ff')
+                .where('name', '>=', query)
+                .where('name', '<=', query + '\uf8ff')
                 .limit(8).get();
         }
         const results = snap.docs.map(doc => ({
@@ -1015,7 +1007,7 @@ async function searchFirebaseKR(query) {
             name: doc.data().name,
             market: doc.data().market || 'KOSPI'
         }));
-        console.log(`Firebase KRX 검색: "${query}" → ${results.length}개`);
+        console.log(`Firebase KRX: "${query}" → ${results.length}개`);
         return results;
     } catch(e) {
         console.error('Firebase 검색 오류:', e);
