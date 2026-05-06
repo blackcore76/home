@@ -444,6 +444,7 @@ let chartIns = null, allDocs = [], filtered = [], curPg = 1, curDoc = null;
 const PROXIES = [
     u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`,
 ];
 
 /* ══ 유틸 ══ */
@@ -592,7 +593,7 @@ async function searchUSSymbol(query) {
                 .map(r => ({symbol:r.symbol, name:r.description||'', exchange:'US', type:r.type||''})));
         } catch {}
     }
-    // Yahoo Finance (부족 시 보충)
+    // Yahoo Finance (Finnhub 없거나 부족할 때 보충)
     if (results.length < 4) {
         try {
             const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en&region=US&quotesCount=8&newsCount=0&listsCount=0&enableFuzzyQuery=true`;
@@ -831,7 +832,8 @@ async function run() {
     // 한국 여부: 6자리 숫자 코드 OR 한글 포함
     const isKr = isKrCode(rawIn) || isKrText(rawIn);
     // sym: 저장용 (한국=원본, 미국=대문자)
-    const sym = isKr ? rawIn : rawIn.toUpperCase();
+    // ★ 중요: isKrCode(6자리) 우선순위 높게 (드롭다운 코드 정확히 처리)
+    const sym = isKrCode(rawIn) ? rawIn : (isKrText(rawIn) ? rawIn : rawIn.toUpperCase());
     // yfSym: Yahoo Finance 요청용 (코드.KS 또는 한글명.KS — 실패시 .KQ 재시도)
     let yfSym = isKr ? rawIn + '.KS' : sym;
 
@@ -872,7 +874,10 @@ async function run() {
             // 미국: Finnhub 키 없어도 Yahoo Finance로 동작
             let meta;
             try { meta = await fetchYFQuote(sym); }
-            catch (e) { throw new Error(`현재가 수신 실패 (${sym}) — Yahoo Finance 응답 없음`); }
+            catch (e) {
+                // CORS 프록시 모두 실패 → 상세 에러
+                throw new Error(`현재가 수신 실패 (${sym}) — 모든 프록시 응답 없음. Finnhub API 키 추가 시도 권장`);
+            }
             const c  = meta.regularMarketPrice;
             const pc = meta.chartPreviousClose || meta.previousClose || c;
             const h  = meta.regularMarketDayHigh || c;
@@ -1084,7 +1089,7 @@ $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
 document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop')) closeDrop(); });
 
 // 드롭다운 선택 → 6자리 코드 입력 후 run()
-function pickKrSym(code, name) { $symIn.value=code; closeDrop(); run(); }
+function pickKrSym(code, name) { $symIn.value=code.trim(); closeDrop(); run(); }
 function pickSym(sym) { $symIn.value=sym; closeDrop(); run(); }
 
 document.getElementById('runBtn').addEventListener('click', run);
