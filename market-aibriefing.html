@@ -155,8 +155,6 @@
         .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
         .toast.err{background:rgba(255,82,82,.15);border-color:rgba(255,82,82,.4);color:var(--red);}
         .gone{display:none!important;}
-
-        /* ── 드롭다운 ── */
         .drop-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--bd);}
         .drop-item:last-child{border-bottom:none;}
         .drop-item:hover{background:var(--sf3);}
@@ -168,8 +166,6 @@
         .drop-section{padding:5px 14px 3px;font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;background:var(--sf3);border-bottom:1px solid var(--bd);}
         .src-tag{font-family:var(--mono);font-size:8px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;}
         .drop-src{font-family:var(--mono);font-size:8px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:3px;padding:1px 4px;flex-shrink:0;}
-
-        /* ── 기술 점수 뱃지 (리포트 카드) ── */
         .tech-score-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf3);border:1px solid var(--bd);border-radius:10px;margin-bottom:14px;}
         .ts-score-num{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;}
         .ts-score-num.bull{color:var(--green);}
@@ -187,8 +183,6 @@
         .ts-bar-fill.neut{background:linear-gradient(to right,#b07800,var(--yel));}
         .ts-bar-fill.bear{background:linear-gradient(to right,#800000,var(--red));}
         .ts-bar-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:3px;}
-
-        /* ── 히스토리 리스트 점수 뱃지 ── */
         .r-score-badge{font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:4px;font-weight:700;}
         .r-score-badge.bull{background:rgba(0,230,118,.12);color:var(--green);}
         .r-score-badge.neut{background:rgba(255,202,40,.12);color:var(--yel);}
@@ -262,7 +256,6 @@
         </div>
 
         <div id="rsArea" class="gone">
-            <!-- 종목 정보 배너 -->
             <div id="stockInfoBar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:10px 14px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span id="stockMktBadge" class="mkt-badge mkt-us">🇺🇸 US</span>
@@ -305,7 +298,6 @@
                         <div class="w52-labels"><span id="w52Lo">-</span><span id="w52Cur">현재</span><span id="w52Hi">-</span></div>
                     </div>
                 </div>
-                <!-- ★ 거래량: 5일 평균 + 당일 비율 -->
                 <div class="icell" id="iVol">
                     <div class="ilbl">거래량 <span class="src-tag">YF</span></div>
                     <div class="ival none" id="vVol">-</div><div class="isub" id="sVol"></div>
@@ -323,7 +315,6 @@
                 <div class="chart-lbl" style="margin-top:8px"><span>저가</span><span>현재가</span><span>고가</span></div>
             </div>
 
-            <!-- ★ 기술 점수 뱃지 -->
             <div class="tech-score-bar gone" id="techScoreBar">
                 <div>
                     <div class="ts-score-num" id="tsNum">-</div>
@@ -346,7 +337,7 @@
             <p class="fn">
                 * 분석 데이터는 참고용이며 투자 책임은 본인에게 있습니다.<br>
                 * 현재가: Finnhub(미국) / Yahoo Finance(한국) | 캔들·지표: Yahoo Finance (JS 직접 계산)<br>
-                * AI: Gemini-3-Flash-preview | 분석 완료 시 Firestore 자동 저장
+                * AI: -3-Flash-preview | 분석 완료 시 Firestore 자동 저장
             </p>
         </div>
 
@@ -394,7 +385,6 @@
                     <div class="pcell"><div class="plbl">변동률</div><div class="pval" id="moChgVal">-</div></div>
                     <div class="pcell"><div class="plbl">변동폭</div><div class="pval" id="moRng">-</div></div>
                 </div>
-                <!-- ★ 모달 기술 점수 뱃지 -->
                 <div class="tech-score-bar gone" id="moTechScoreBar" style="margin-bottom:8px">
                     <div>
                         <div class="ts-score-num" id="moTsNum">-</div>
@@ -428,26 +418,33 @@ let currentUser=null;
 auth.onAuthStateChanged(user=>{
     currentUser=user;
     const btn=document.getElementById('authBtn'),info=document.getElementById('userInfo');
-    if(user){info.textContent=user.displayName||user.email||'로그인됨';info.style.display='block';btn.textContent='로그아웃';btn.style.color='var(--green)';if(document.getElementById('pH').classList.contains('active'))loadHist();}
-    else{info.style.display='none';btn.textContent='로그인';btn.style.color='var(--text2)';}
+    if(user){
+        info.textContent=user.displayName||user.email||'로그인됨';
+        info.style.display='block';
+        btn.textContent='로그아웃';
+        btn.style.color='var(--green)';
+        if(document.getElementById('pH').classList.contains('active')) loadHist();
+    } else {
+        info.style.display='none';
+        btn.textContent='로그인';
+        btn.style.color='var(--text2)';
+        // ✅ 비로그인 상태에서 히스토리 탭이 열려있으면 공개 데이터 로드
+        if(document.getElementById('pH').classList.contains('active')) loadHist();
+    }
 });
 function toggleAuth(){if(currentUser)auth.signOut();else{const p=new firebase.auth.GoogleAuthProvider();auth.signInWithPopup(p).catch(e=>showToast('로그인 실패: '+e.message,true));}}
 </script>
 
-
 <script>
-/* ══ 상수 / 상태 ══ */
 const PG = 10;
 let chartIns = null, allDocs = [], filtered = [], curPg = 1, curDoc = null;
 
-/* ══ CORS 프록시 ══ */
 const PROXIES = [
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
     u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
-/* ══ 유틸 ══ */
 function go(t) {
     ['a','h'].forEach(x => {
         document.getElementById('t'+x.toUpperCase()).classList.toggle('active', t===x);
@@ -471,7 +468,6 @@ function ldStep(n) {
     }
 }
 
-/* ══ API 키 ══ */
 const $fh = document.getElementById('fhKey');
 const $gm = document.getElementById('gmKey');
 const $ksB = document.getElementById('ksBadge');
@@ -491,14 +487,9 @@ document.getElementById('apiToggle').addEventListener('click', () => {
 $fh.addEventListener('input', saveK);
 $gm.addEventListener('input', saveK);
 
-/* ══ 한국/미국 구분 ══ */
 function isKrCode(s) { return /^\d{6}$/.test(s.trim()); }
 function isKrText(s) { return /[가-힣]/.test(s); }
 
-/* ══════════════════════════════════════════════════
-   Yahoo Finance — 현재가
-   .KS 실패 시 .KQ 자동 재시도
-   ══════════════════════════════════════════════════ */
 async function fetchYFQuote(yfSym) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=1d&range=1d`;
     const tryOne = async px => {
@@ -511,9 +502,6 @@ async function fetchYFQuote(yfSym) {
     return await Promise.any(PROXIES.map(p => tryOne(p)));
 }
 
-/* ══════════════════════════════════════════════════
-   Yahoo Finance — 캔들 (일봉)
-   ══════════════════════════════════════════════════ */
 async function fetchYFCandles(yfSym, days=110) {
     const to = Math.floor(Date.now()/1000), from = to - days*86400;
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=1d&period1=${from}&period2=${to}&includePrePost=false`;
@@ -537,11 +525,6 @@ async function fetchYFCandles(yfSym, days=110) {
     return raw;
 }
 
-/* ══════════════════════════════════════════════════
-   Firebase KRX 검색 (3,980개)
-   — 코드: documentId 범위 쿼리
-   — 한글명: name 필드 전방일치 쿼리
-   ══════════════════════════════════════════════════ */
 async function searchFirebaseKR(query) {
     if (!currentUser) return [];
     try {
@@ -569,9 +552,6 @@ async function searchFirebaseKR(query) {
     }
 }
 
-/* ══════════════════════════════════════════════════
-   미국 종목 검색 — Finnhub(키 있을 때) + Yahoo Finance
-   ══════════════════════════════════════════════════ */
 async function searchUSSymbol(query) {
     const fhKey = $fh.value.trim();
     const results = [], seen = new Set();
@@ -582,7 +562,6 @@ async function searchUSSymbol(query) {
             results.push(it);
         }
     };
-    // Finnhub (키 있을 때)
     if (fhKey) {
         try {
             const res = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${fhKey}`, {signal: AbortSignal.timeout(6000)});
@@ -593,7 +572,6 @@ async function searchUSSymbol(query) {
                 .map(r => ({symbol:r.symbol, name:r.description||'', exchange:'US', type:r.type||''})));
         } catch {}
     }
-    // Yahoo Finance (Finnhub 없거나 부족할 때 보충)
     if (results.length < 4) {
         try {
             const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en&region=US&quotesCount=8&newsCount=0&listsCount=0&enableFuzzyQuery=true`;
@@ -608,7 +586,6 @@ async function searchUSSymbol(query) {
     return results.slice(0,8);
 }
 
-/* ══ 기술지표 계산 ══ */
 function calcMA(closes, n) {
     if (closes.length < n) return null;
     const avg = closes.slice(-n).reduce((a,b)=>a+b,0) / n;
@@ -660,7 +637,6 @@ function calcVolStats(candles) {
     };
 }
 
-/* ══ 포맷 ══ */
 function fmtP(v, isKr) { return isKr ? v.toLocaleString('ko-KR')+'원' : '$'+v.toFixed(2); }
 function fmtV(v, isKr) {
     if (v==null) return null;
@@ -670,7 +646,6 @@ function fmtV(v, isKr) {
 function tsToDate(ts) { if(!ts)return null; const d=new Date(ts*1000),p=v=>String(v).padStart(2,'0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`; }
 function dateDiff(ts) { if(!ts)return null; return Math.floor((Date.now()-ts*1000)/86400000); }
 
-/* ══ 기술지표 UI 렌더 ══ */
 function renderIndicators(ind, cur, isKr) {
     const {ma20,ma50,rsi,macd,high52,low52,avg5,avg20,todayVol} = ind;
     const setMA = (sfx, val) => {
@@ -746,7 +721,6 @@ function renderIndicators(ind, cur, isKr) {
     document.getElementById('iScore').classList.add('has-data');
 }
 
-/* ══ 기술 점수 파싱/렌더 ══ */
 function parseTechScore(t) {
     if (!t) return null;
     let m;
@@ -779,7 +753,6 @@ function renderTechScore(score, verdict, barId, numId, verdictId, wrapId) {
     document.getElementById(verdictId).className = `ts-verdict ${cls}`;
 }
 
-/* ══ Gemini 프롬프트 ══ */
 function buildPrompt(sym, quote, ind, dS, isKr) {
     const {c,d,dp,h,l,todayVol} = quote;
     const {ma20,ma50,rsi,macd,high52,low52,avg5,avg20} = ind;
@@ -820,46 +793,33 @@ function buildPrompt(sym, quote, ind, dS, isKr) {
 마지막 문구: 본 분석은 참고용이며 투자 판단의 책임은 투자자 본인에게 있습니다.`;
 }
 
-/* ══════════════════════════════════════════════════
-   ★★★ run() — 분석 메인
-   한국: isKrCode(6자리숫자) 또는 isKrText(한글) → YF .KS → 실패시 .KQ
-   미국: 그 외 영문 → Finnhub + YF
-   ══════════════════════════════════════════════════ */
 async function run() {
     const fhKey = $fh.value.trim(), gmKey = $gm.value.trim();
     const rawIn = document.getElementById('symIn').value.trim();
     if (!gmKey) { alert('⚙️ Gemini API 키를 먼저 입력하세요.'); return; }
     if (!rawIn) { alert('종목을 입력하세요.'); return; }
 
-    // 한국 여부: 6자리 숫자 코드 OR 한글 포함
     const isKr = isKrCode(rawIn) || isKrText(rawIn);
 
-    // ★ 한글 종목명 직접 입력 시 Firebase에서 6자리 코드로 변환
-    let krCode = rawIn; // 기본값: 그대로 사용
+    let krCode = rawIn;
     if (isKrText(rawIn)) {
-        // 한글 입력 → Firebase에서 코드 조회
         try {
             const snap = await db.collection('kr_stocks')
                 .where('name', '>=', rawIn)
                 .where('name', '<=', rawIn + '\uf8ff')
                 .limit(1).get();
             if (!snap.empty) {
-                krCode = snap.docs[0].id; // 6자리 코드
-                console.log(`한글 → 코드 변환: ${rawIn} → ${krCode}`);
+                krCode = snap.docs[0].id;
             } else {
-                // Firebase에서 못 찾으면 에러
                 throw new Error(`"${rawIn}" 종목을 찾을 수 없습니다. 드롭다운에서 선택하거나 6자리 코드로 입력해주세요.`);
             }
         } catch(e) {
             if (e.message.includes('종목을 찾을 수 없습니다')) throw e;
-            // Firebase 오류 시 계속 진행 (코드 없이 시도)
             console.warn('Firebase 코드 조회 실패:', e.message);
         }
     }
 
-    // sym: 저장용 심볼
     const sym = isKr ? krCode : rawIn.toUpperCase();
-    // yfSym: Yahoo Finance 요청용 — 반드시 6자리 코드 + 시장 suffix
     let yfSym = isKr ? krCode + '.KS' : sym;
 
     const $ld  = document.getElementById('ldArea');
@@ -874,20 +834,18 @@ async function run() {
     document.getElementById('techScoreBar').classList.add('gone');
 
     try {
-        /* STEP 1 — 현재가 */
         ldStep(1);
         let quote, stockName='', dataTs=null;
 
         if (isKr) {
             document.getElementById('ls1t').textContent = '현재가 수신 (Yahoo Finance KR)';
             let meta;
-            // .KS 시도 → 실패 시 .KQ
             try {
-                meta = await fetchYFQuote(yfSym);        // krCode.KS
+                meta = await fetchYFQuote(yfSym);
             } catch {
                 try {
                     yfSym = krCode + '.KQ';
-                    meta = await fetchYFQuote(yfSym);    // krCode.KQ
+                    meta = await fetchYFQuote(yfSym);
                 } catch {
                     throw new Error(`현재가 수신 실패 (${sym}) — ${krCode}.KS / ${krCode}.KQ 모두 응답 없음`);
                 }
@@ -906,7 +864,6 @@ async function run() {
             document.getElementById('ls1t').textContent = '현재가 수신 (미국 주식)';
             let gotQuote = false;
 
-            // ① Finnhub (키 있을 때 — 실시간 가장 정확)
             if (fhKey && !gotQuote) {
                 try {
                     const fhRes = await fetch(
@@ -922,7 +879,6 @@ async function run() {
                 } catch(e) { console.warn('Finnhub 실패:', e.message); }
             }
 
-            // ② Yahoo Finance via CORS 프록시 (Finnhub 없거나 실패 시)
             if (!gotQuote) {
                 try {
                     const yfMeta = await fetchYFQuote(sym);
@@ -945,7 +901,6 @@ async function run() {
                     : `현재가 수신 실패 (${sym}) — Finnhub API 키를 입력하면 더 안정적으로 동작합니다.`
             );
 
-            // stockName 보완
             if (!stockName) {
                 try {
                     const yfMeta = await fetchYFQuote(sym);
@@ -955,23 +910,19 @@ async function run() {
             }
         }
 
-        /* STEP 2 — 캔들 */
         ldStep(2);
         const candles = await fetchYFCandles(yfSym, 110);
         const closes  = candles.map(c=>c.c);
 
-        /* STEP 3 — 지표 계산 */
         ldStep(3);
         const ma20 = calcMA(closes,20), ma50 = calcMA(closes,50);
         const rsi  = calcRSI(closes,14), macd  = calcMACD(closes);
 
-        /* STEP 4 — 52주 + 거래량 */
         ldStep(4);
         const {high52, low52} = calc52W(candles);
         const {avg5, avg20}   = calcVolStats(candles);
         const indicators = {ma20,ma50,rsi,macd,high52,low52,avg5,avg20,todayVol:quote.todayVol||null};
 
-        /* ── UI 업데이트 ── */
         const {c,d,dp,h,l} = quote;
         document.getElementById('vCur').textContent = fmtP(c, isKr);
         const vChgEl = document.getElementById('vChg');
@@ -985,7 +936,6 @@ async function run() {
         document.getElementById('stockCodeEl').textContent = sym;
         document.getElementById('stockNameEl').textContent = stockName ? `· ${stockName}` : '';
 
-        // 데이터 날짜 표시
         const dateStr = tsToDate(dataTs), diffDays = dateDiff(dataTs);
         let dlColor='var(--text3)', dlIcon='📅';
         if (diffDays!=null) { if(diffDays>=5){dlColor='var(--red)';dlIcon='⚠️';} else if(diffDays>=2){dlColor='var(--yel)';dlIcon='🕐';} else{dlColor='var(--green)';dlIcon='✅';} }
@@ -1002,7 +952,6 @@ async function run() {
 
         renderIndicators(indicators, c, isKr);
 
-        // 차트
         const ctx = document.getElementById('myChart').getContext('2d');
         if (chartIns) chartIns.destroy();
         const datasets = [{label:'가격',data:[l,c,h],borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.07)',borderWidth:2.5,pointBackgroundColor:['#10b981','#fbbf24','#ef4444'],pointBorderColor:'#fff',pointRadius:5,pointHoverRadius:7,tension:.1,fill:true}];
@@ -1010,7 +959,6 @@ async function run() {
         if (ma50!=null) datasets.push({label:'MA50',data:[ma50,ma50,ma50],borderColor:'rgba(77,166,255,.7)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[6,3],pointRadius:0,tension:0});
         chartIns = new Chart(ctx, {type:'line',data:{labels:['저가','현재가','고가'],datasets},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:true,labels:{color:'#7a91a8',font:{size:10},boxWidth:20}},tooltip:{callbacks:{label:ctx=>isKr?` ${ctx.raw.toLocaleString('ko-KR')}원`:` $${ctx.raw.toFixed(2)}`}}},scales:{y:{min:l*.993,max:h*1.007,grid:{color:'#1e2d45'},ticks:{color:'#7a91a8',font:{size:10},callback:v=>isKr?v.toLocaleString('ko-KR'):'$'+v.toFixed(1)}},x:{grid:{display:false},ticks:{color:'#7a91a8'}}}}});
 
-        /* STEP 5 — Gemini AI */
         ldStep(5);
         const now = new Date(), dS = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
         const prompt = buildPrompt(sym+(isKr?` (${yfSym})`:''), quote, indicators, dS, isKr);
@@ -1041,7 +989,6 @@ async function run() {
     }
 }
 
-/* ══ Firestore 저장 ══ */
 async function saveRpt(sym, stockName, content, quote, indicators, isKr, yfSym, dataTs, techScore, techVerdict) {
     const st = document.getElementById('saveSt');
     if (!currentUser) { st.style.color='var(--yel)'; st.textContent='⚠️ 로그인 후 저장 가능'; showToast('⚠️ 저장하려면 로그인하세요.',true); return; }
@@ -1060,11 +1007,6 @@ async function saveRpt(sym, stockName, content, quote, indicators, isKr, yfSym, 
     } catch(e) { st.style.color='var(--red)'; st.textContent='⚠️ 저장 실패'; showToast('⚠️ 저장 실패: '+e.message,true); }
 }
 
-/* ══════════════════════════════════════════════════
-   드롭다운 자동완성
-   한국: Firebase KRX 3,980개 (로그인 필요)
-   미국: Finnhub + Yahoo Finance
-   ══════════════════════════════════════════════════ */
 let dropTimer = null;
 const $symIn = document.getElementById('symIn');
 const $drop  = document.getElementById('symDrop');
@@ -1099,10 +1041,8 @@ $symIn.addEventListener('input', () => {
     const q = $symIn.value.trim();
     if (!q) { closeDrop(); return; }
 
-    // ① 6자리 숫자: 드롭다운 없이 직접 분석
     if (/^\d{6}$/.test(q)) { closeDrop(); return; }
 
-    // ② 한글 or 숫자 1~5자리 → Firebase KRX
     if (isKrText(q) || /^\d{1,5}$/.test(q)) {
         $drop.style.display = 'block';
         if (!currentUser) {
@@ -1125,7 +1065,6 @@ $symIn.addEventListener('input', () => {
         return;
     }
 
-    // ③ 영문 → 미국 종목
     $drop.style.display = 'block';
     $drop.innerHTML = '<div class="drop-section">🇺🇸 미국 종목</div><div class="drop-loading">🔍 검색 중...</div>';
     dropTimer = setTimeout(async () => {
@@ -1143,7 +1082,6 @@ $symIn.addEventListener('input', () => {
 $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
 document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop')) closeDrop(); });
 
-// 드롭다운 선택 → 6자리 코드 입력 후 run()
 function pickKrSym(code, name) { $symIn.value=code.trim(); closeDrop(); run(); }
 function pickSym(sym) { $symIn.value=sym; closeDrop(); run(); }
 
@@ -1152,12 +1090,7 @@ $symIn.addEventListener('keypress', e => { if(e.key==='Enter') { closeDrop(); ru
 
 /* ══ 히스토리 ══ */
 async function loadHist() {
-    if (!currentUser) {
-        document.getElementById('ll').classList.add('gone');
-        document.getElementById('emptyBox').classList.remove('gone');
-        document.getElementById('emptyBox').innerHTML = '<div class="ei">🔐</div><p>저장된 리포트를 보려면<br>우상단 <strong style="color:var(--ac)">로그인</strong> 버튼을 눌러주세요.</p>';
-        return;
-    }
+    // ✅ 비로그인도 공개 리포트 열람 가능 (Firestore 규칙: allow read: if true)
     document.getElementById('ll').classList.remove('gone');
     document.getElementById('rList').classList.add('gone');
     document.getElementById('emptyBox').classList.add('gone');
@@ -1168,6 +1101,7 @@ async function loadHist() {
         doFilter();
     } catch(e) { document.getElementById('ll').innerHTML=`<p style="color:var(--red)">⚠️ 로드 실패: ${e.message}</p>`; }
 }
+
 function doFilter() {
     const kw = document.getElementById('filt').value.trim().toUpperCase();
     filtered = kw ? allDocs.filter(d=>(d.symbol||'').includes(kw)) : allDocs;
@@ -1192,12 +1126,15 @@ function renderList() {
         const isKrDoc = doc.market==='KR';
         const priceStr = isKrDoc ? parseFloat(doc.price||0).toLocaleString('ko-KR')+'원' : '$'+parseFloat(doc.price||0).toFixed(2);
         const prev = (doc.content||'').replace(/\n/g,' ').slice(0,90)+'…';
-        // techScore: Firestore 저장값 우선, 없으면 content에서 파싱
         const sc = doc.techScore ?? parseTechScore(doc.content);
         const sv = doc.techVerdict ?? parseTechVerdict(doc.content);
         let badge = '';
         if (sc!=null) { const c2=verdictClass(sv,sc); badge=`<span class="r-score-badge ${c2}">${sc}점 ${sv||''}</span>`; }
         const el = document.createElement('div'); el.className='r-item';
+        // ✅ 삭제 버튼: 로그인한 사용자에게만 표시
+        const delBtn = currentUser
+            ? `<button class="btn-del" title="삭제" onclick="delDoc(event,'${doc.id}')">🗑</button>`
+            : '';
         el.innerHTML = `<div class="r-body">
             <div class="r-top">
                 <span class="r-sym">${doc.symbol||'-'}</span>
@@ -1209,7 +1146,7 @@ function renderList() {
                 <span class="r-date">${doc.dateStr||'-'}</span>
             </div>
             <div class="r-prev">${prev}</div>
-        </div><button class="btn-del" title="삭제" onclick="delDoc(event,'${doc.id}')">🗑</button>`;
+        </div>${delBtn}`;
         el.addEventListener('click', e => { if(!e.target.closest('.btn-del')) openMo(doc); });
         $rl.appendChild(el);
     });
@@ -1218,10 +1155,10 @@ function renderList() {
     document.getElementById('pgNext').disabled = curPg>=pages;
     document.getElementById('pgBar').style.visibility = pages>1?'visible':'hidden';
 }
+
 function pg(dir) { const pages=Math.ceil(filtered.length/PG); curPg=Math.max(1,Math.min(pages,curPg+dir)); renderList(); window.scrollTo({top:0,behavior:'smooth'}); }
 async function delDoc(e,id) { e.stopPropagation(); if(!confirm('이 리포트를 삭제할까요?'))return; try{ await db.collection(COL).doc(id).delete(); allDocs=allDocs.filter(d=>d.id!==id); doFilter(); showToast('🗑 삭제되었습니다.'); }catch(err){ showToast('⚠️ 삭제 실패: '+err.message,true); } }
 
-/* ══ 모달 ══ */
 function openMo(doc) {
     curDoc = doc;
     const pct=parseFloat(doc.chgPct)||0, sign=pct>=0?'+':'';
