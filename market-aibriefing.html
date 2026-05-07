@@ -811,8 +811,10 @@ function buildPrompt(sym, quote, ind, dS, isKr) {
 ## 5. 투자 전략
 ### 보유자 / 신규 진입자 / 리스크 관리
 ## 6. 기술 점수
+아래 기준으로 100점 만점 평가 (추세 30점 + 모멘텀 30점 + 변동성 20점 + 거래량 20점)
+⚠️ 반드시 아래 형식을 그대로 출력 (시스템 파싱에 사용됨, 변형 금지):
 강세 점수: XX / 100
-판단: 강세 (70+) / 중립 (40~69) / 약세 (39-)
+판단: 강세 (70점 이상) / 중립 (40~69점) / 약세 (39점 이하)
 
 제목: [${sym}] ${dS} 기술적 분석 리포트
 마지막 문구: 본 분석은 참고용이며 투자 판단의 책임은 투자자 본인에게 있습니다.`;
@@ -1190,7 +1192,9 @@ function renderList() {
         const isKrDoc = doc.market==='KR';
         const priceStr = isKrDoc ? parseFloat(doc.price||0).toLocaleString('ko-KR')+'원' : '$'+parseFloat(doc.price||0).toFixed(2);
         const prev = (doc.content||'').replace(/\n/g,' ').slice(0,90)+'…';
-        const sc=doc.techScore, sv=doc.techVerdict;
+        // techScore: Firestore 저장값 우선, 없으면 content에서 파싱
+        const sc = doc.techScore ?? parseTechScore(doc.content);
+        const sv = doc.techVerdict ?? parseTechVerdict(doc.content);
         let badge = '';
         if (sc!=null) { const c2=verdictClass(sv,sc); badge=`<span class="r-score-badge ${c2}">${sc}점 ${sv||''}</span>`; }
         const el = document.createElement('div'); el.className='r-item';
