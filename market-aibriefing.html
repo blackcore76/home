@@ -440,11 +440,11 @@ function toggleAuth(){if(currentUser)auth.signOut();else{const p=new firebase.au
 const PG = 10;
 let chartIns = null, allDocs = [], filtered = [], curPg = 1, curDoc = null;
 
-/* ══ CORS 프록시 (allorigins → corsproxy 순으로 race) ══ */
+/* ══ CORS 프록시 ══ */
 const PROXIES = [
-    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u => `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`,
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
 /* ══ 유틸 ══ */
@@ -856,9 +856,24 @@ async function run() {
         if (isKr) {
             document.getElementById('ls1t').textContent = '현재가 수신 (Yahoo Finance KR)';
             let meta;
-            // .KS 시도 → 실패 시 .KQ
-            try { meta = await fetchYFQuote(yfSym); }
-            catch { yfSym = rawIn + '.KQ'; meta = await fetchYFQuote(yfSym); }
+            // .KS 시도 → 실패 시 .KQ → 실패 시 종목명으로 재시도
+            try {
+                meta = await fetchYFQuote(yfSym);
+            } catch {
+                try {
+                    yfSym = rawIn + '.KQ';
+                    meta = await fetchYFQuote(yfSym);
+                } catch {
+                    // 마지막 시도: 검색 후 가져온 종목명으로 시도
+                    if (isKrCode(rawIn)) {
+                        // 6자리 코드는 시도 다 끝남
+                        throw new Error(`현재가 수신 실패 (${rawIn}) — Yahoo Finance에 데이터 없음`);
+                    } else {
+                        // 한글명으로 재시도하기 전에 일단 에러
+                        throw new Error(`현재가 수신 실패 (${rawIn}) — Yahoo Finance 응답 없음. 6자리 코드로 다시 시도해주세요.`);
+                    }
+                }
+            }
             const c  = meta.regularMarketPrice;
             const pc = meta.chartPreviousClose || meta.previousClose || c;
             const h  = meta.regularMarketDayHigh || c;
@@ -870,32 +885,54 @@ async function run() {
             quote = {c, d, dp, h, l, todayVol: meta.regularMarketVolume||null};
 
         } else {
-            document.getElementById('ls1t').textContent = '현재가 수신 (Yahoo Finance US)';
-            // 미국: Finnhub 키 없어도 Yahoo Finance로 동작
-            let meta;
-            try { meta = await fetchYFQuote(sym); }
-            catch (e) {
-                // CORS 프록시 모두 실패 → 상세 에러
-                throw new Error(`현재가 수신 실패 (${sym}) — 모든 프록시 응답 없음. Finnhub API 키 추가 시도 권장`);
-            }
-            const c  = meta.regularMarketPrice;
-            const pc = meta.chartPreviousClose || meta.previousClose || c;
-            const h  = meta.regularMarketDayHigh || c;
-            const l  = meta.regularMarketDayLow  || c;
-            const d  = parseFloat((c-pc).toFixed(2));
-            const dp = parseFloat(((d/pc)*100).toFixed(2));
-            stockName = meta.longName || meta.shortName || '';
-            dataTs    = meta.regularMarketTime || null;
-            quote = {c, d, dp, h, l, todayVol: meta.regularMarketVolume||null};
-            // Finnhub 키 있으면 보조로 조회 (더 정확한 실시간가)
-            if (fhKey) {
+            document.getElementById('ls1t').textContent = '현재가 수신 (미국 주식)';
+            let gotQuote = false;
+
+            // ① Finnhub (키 있을 때 — 실시간 가장 정확)
+            if (fhKey && !gotQuote) {
                 try {
-                    const fhRes  = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${fhKey}`);
-                    const fhData = await fhRes.json();
-                    if (fhData.c && fhData.c>0) {
-                        quote = {c:fhData.c, d:fhData.d, dp:fhData.dp, h:fhData.h, l:fhData.l, todayVol:quote.todayVol};
-                        if (fhData.t) dataTs = fhData.t;
+                    const fhRes = await fetch(
+                        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${fhKey}`,
+                        {signal: AbortSignal.timeout(8000)}
+                    );
+                    const fh = await fhRes.json();
+                    if (!fh.error && fh.c > 0) {
+                        quote = {c:fh.c, d:fh.d, dp:fh.dp, h:fh.h, l:fh.l, todayVol:fh.v||null};
+                        dataTs = fh.t || null;
+                        gotQuote = true;
                     }
+                } catch(e) { console.warn('Finnhub 실패:', e.message); }
+            }
+
+            // ② Yahoo Finance via CORS 프록시 (Finnhub 없거나 실패 시)
+            if (!gotQuote) {
+                try {
+                    const yfMeta = await fetchYFQuote(sym);
+                    const c2  = yfMeta.regularMarketPrice;
+                    const pc2 = yfMeta.chartPreviousClose || yfMeta.previousClose || c2;
+                    const h2  = yfMeta.regularMarketDayHigh || c2;
+                    const l2  = yfMeta.regularMarketDayLow  || c2;
+                    const d2  = parseFloat((c2-pc2).toFixed(2));
+                    const dp2 = parseFloat(((d2/pc2)*100).toFixed(2));
+                    stockName = yfMeta.longName || yfMeta.shortName || '';
+                    dataTs    = yfMeta.regularMarketTime || null;
+                    quote = {c:c2, d:d2, dp:dp2, h:h2, l:l2, todayVol:yfMeta.regularMarketVolume||null};
+                    gotQuote = true;
+                } catch(e) { console.warn('Yahoo Finance 실패:', e.message); }
+            }
+
+            if (!gotQuote) throw new Error(
+                fhKey
+                    ? `현재가 수신 실패 (${sym}) — Finnhub과 Yahoo Finance 모두 응답 없음. 심볼을 확인하세요.`
+                    : `현재가 수신 실패 (${sym}) — Finnhub API 키를 입력하면 더 안정적으로 동작합니다.`
+            );
+
+            // stockName 보완
+            if (!stockName) {
+                try {
+                    const yfMeta = await fetchYFQuote(sym);
+                    stockName = yfMeta.longName || yfMeta.shortName || '';
+                    if (!dataTs) dataTs = yfMeta.regularMarketTime || null;
                 } catch {}
             }
         }
