@@ -4,6 +4,9 @@
   ─────────────────────────────── */
   var INDEX_URL = 'index.html';
 
+(function () {
+  var INDEX_URL = 'index.html';
+
   var css = `
     #bc-home-bar {
       position: fixed;
@@ -52,7 +55,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    /* 우측 버튼 그룹 */
+    /* 우측 버튼 및 시간 그룹 */
     #bc-home-bar .bc-right-group {
       margin-left: auto;
       display: flex;
@@ -60,7 +63,20 @@
       gap: 6px;
       flex-shrink: 0;
     }
-    /* HOME 링크 버튼 */
+    /* 시간 표시 스타일 (오렌지색 테두리) */
+    .bc-time-box {
+      color: #ff9f43 !important; /* 오렌지색 폰트 */
+      font-size: 9px;
+      border: 1px solid rgba(255, 159, 67, 0.3);
+      border-radius: 5px;
+      padding: 2px 8px;
+      display: flex;
+      gap: 5px;
+      background: rgba(255, 159, 67, 0.05);
+    }
+    .bc-time-unit { display: flex; gap: 4px; }
+    .bc-time-label { opacity: 0.7; font-weight: bold; }
+
     #bc-home-bar .bc-home-btn {
       color: #4a607a !important;
       font-size: 10px;
@@ -81,31 +97,8 @@
       border-color: rgba(61,139,255,0.4);
       background: rgba(61,139,255,0.08);
     }
-    /* 로그아웃 버튼 — 홈바 안으로 통합 */
-    #auth-logout-btn {
-      position: static !important;
-      background: rgba(255,255,255,0.06) !important;
-      color: #6a8099 !important;
-      border: 1px solid rgba(255,255,255,0.1) !important;
-      padding: 2px 8px !important;
-      border-radius: 5px !important;
-      font-size: 10px !important;
-      cursor: pointer;
-      font-family: 'JetBrains Mono', monospace;
-      letter-spacing: 0.05em;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-    #auth-logout-btn:hover {
-      color: #ff6b6b !important;
-      border-color: rgba(255,107,107,0.4) !important;
-      background: rgba(255,107,107,0.08) !important;
-    }
-    /* 바 높이만큼 body 상단 여백 추가 */
     body { padding-top: 36px !important; }
-    header {
-      top: 36px !important;
-    }
+    header { top: 36px !important; }
   `;
 
   var FILE_LABELS = {
@@ -125,6 +118,25 @@
 
   if (filename === 'index.html' || filename === '') return;
 
+  function updateTimes() {
+    var now = new Date();
+    
+    // 한국 시간 (KST)
+    var kstStr = now.toLocaleString('en-US', { 
+      timeZone: 'Asia/Seoul', 
+      month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true 
+    });
+
+    // 미국 동부 시간 (ET)
+    var etStr = now.toLocaleString('en-US', { 
+      timeZone: 'America/New_York', 
+      month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true 
+    });
+
+    document.getElementById('kst-display').textContent = kstStr.replace(',', '');
+    document.getElementById('et-display').textContent = etStr.replace(',', '');
+  }
+
   function inject() {
     var style = document.createElement('style');
     style.textContent = css;
@@ -140,16 +152,27 @@
       '</a>' +
       '<span class="bc-sep">›</span>' +
       '<span class="bc-cur">' + pageLabel + '</span>' +
-      '<div class="bc-right-group" id="bc-right-group">' +
+      '<div class="bc-right-group">' +
+        // 미국 시간 박스
+        '<div class="bc-time-box">' +
+          '<span class="bc-time-label">ET</span>' +
+          '<span id="et-display">--/-- --:--</span>' +
+        '</div>' +
+        // 한국 시간 박스
+        '<div class="bc-time-box">' +
+          '<span class="bc-time-label">KST</span>' +
+          '<span id="kst-display">--/-- --:--</span>' +
+        '</div>' +
         '<a href="' + INDEX_URL + '" class="bc-home-btn">⌂ HOME</a>' +
       '</div>';
 
     document.body.insertBefore(bar, document.body.firstChild);
+    
+    // 시간 업데이트 시작
+    updateTimes();
+    setInterval(updateTimes, 10000); // 10초마다 갱신
   }
 
-  if (document.body) {
-    inject();
-  } else {
-    document.addEventListener('DOMContentLoaded', inject);
-  }
+  if (document.body) { inject(); } 
+  else { document.addEventListener('DOMContentLoaded', inject); }
 })();
