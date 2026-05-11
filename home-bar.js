@@ -146,11 +146,10 @@
   var FILE_LABELS = {
     'market-aibriefing.html': '🤖 AI 차트 분석',
     'market-dashboard.html':  '📊 마켓 대시보드',
-    'dashboard.html':         '🪟 4분할 차트보기',
-    'daily-pick.html':        '📈 관심 주식 픽',
+    'market-picker.html':     '📈 관심 주식 픽',
     'stocklens.html':         '💼 StockLens',
     'daily-feed.html':        '📝 데일리 피드',
-    'blood-pressure.html':    '❤️ 혈압 기록부',
+    'blood_fb_auth.html':     '❤️ 혈압 기록부',
     'lotto.html':             '🎰 로또 6/45',
     'bookmarks.html':         '🌐 즐겨찾기',
   };

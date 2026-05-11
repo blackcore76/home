@@ -3,7 +3,7 @@
   const GOOGLE_PROVIDER = new firebase.auth.GoogleAuthProvider();
   
   // daily-feed2.html 체크 (오버레이 제외할 페이지 목록)
-  const NO_OVERLAY_PAGES = ['daily-feed2.html', 'daily-feed.html'];
+  const NO_OVERLAY_PAGES = ['daily-feed.html'];
   const isNoOverlayPage = NO_OVERLAY_PAGES.some(page => window.location.pathname.includes(page));
 
   // 로그인 오버레이 생성

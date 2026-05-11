@@ -8,6 +8,7 @@ firebase.initializeApp({
   apiKey: "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
   authDomain: "my-bp-tracker-3d595.firebaseapp.com",
   projectId: "my-bp-tracker-3d595",
+  storageBucket: "my-bp-tracker-3d595.firebasestorage.app",
   messagingSenderId: "1016360206319",
   appId: "1:1016360206319:web:5f5df2e2c45b30694a401a"
 });
