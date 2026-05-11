@@ -424,6 +424,52 @@ header {
 @media (max-width: 480px) {
     .ball-slots, .pension-slots { gap: 6px; }
 }
+
+/* ── 실제 당첨번호 조회 ── */
+.result-row { border: 1px solid var(--bd); border-radius: 12px; margin-bottom: 8px; overflow: hidden; transition: border-color .2s; }
+.result-row:hover { border-color: var(--bd2); }
+.result-row-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--sf2);
+    cursor: pointer; transition: background .15s; flex-wrap: wrap;
+}
+.result-row-header:hover { background: var(--sf3); }
+.result-meta { display: flex; flex-direction: column; gap: 2px; min-width: 82px; }
+.result-round { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); }
+.result-date { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.result-balls { display: flex; align-items: center; gap: 4px; flex: 1; flex-wrap: wrap; }
+.result-chevron { font-size: 18px; color: var(--text3); transition: transform .2s; margin-left: auto; line-height: 1; }
+.result-row.open .result-chevron { transform: rotate(90deg); }
+.result-detail { display: none; padding: 12px 14px; background: var(--sf); border-top: 1px solid var(--bd); }
+.result-row.open .result-detail { display: block; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.detail-item { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; background: var(--sf2); border-radius: 8px; }
+.detail-label { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .05em; text-transform: uppercase; }
+.detail-value { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+.detail-value.prize-val { color: var(--gold); }
+.results-loading, .results-error { text-align: center; padding: 24px 20px; font-family: var(--mono); font-size: 11px; color: var(--text3); line-height: 1.8; }
+.results-error { color: var(--red); }
+.r-mini-ball {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans); font-weight: 800; font-size: 12px;
+    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    position: relative; flex-shrink: 0;
+}
+.r-mini-ball::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 28%, rgba(255,255,255,.35), transparent 55%); }
+.r-mini-ball.bonus-ball { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bonus-sep { color: var(--text3); font-size: 12px; margin: 0 1px; }
+.r-pension-jo {
+    background: rgba(255,202,40,.15); border: 1px solid rgba(255,202,40,.4);
+    color: var(--yellow); padding: 4px 8px; border-radius: 8px;
+    font-size: 12px; font-weight: 700; font-family: var(--sans); flex-shrink: 0;
+}
+.r-pension-digit {
+    width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.25);
+    color: var(--accent); font-size: 12px; font-weight: 700; font-family: var(--mono);
+}
 </style>
 </head>
 <body>
@@ -469,6 +515,16 @@ header {
                 <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
             </div>
         </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">🏆</span>
+                <h3>최근 5회 실제 당첨번호</h3>
+            </div>
+            <div id="lotto-results-list">
+                <div class="results-loading">⏳ 당첨번호 불러오는 중...</div>
+            </div>
+        </div>
     </div>
 
     <!-- 연금복권 탭 콘텐츠 (드롭다운 버전) -->
@@ -498,6 +554,16 @@ header {
             </div>
             <div id="pension-history-list">
                 <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">🏆</span>
+                <h3>최근 5회 실제 당첨번호</h3>
+            </div>
+            <div id="pension-results-list">
+                <div class="results-loading">⏳ 당첨번호 불러오는 중...</div>
             </div>
         </div>
     </div>
@@ -966,10 +1032,188 @@ function switchTab(tab) {
 }
 
 // ============================================================
+// 실제 당첨번호 자동 조회
+// ============================================================
+function fmtKrNum(n) { return Number(n).toLocaleString('ko-KR'); }
+
+async function fetchLottoJson(url) {
+    const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    ];
+    for (const p of proxies) {
+        try {
+            const r = await fetch(p, { signal: AbortSignal.timeout(8000) });
+            if (!r.ok) continue;
+            const j = await r.json();
+            if (j && j.contents !== undefined) return JSON.parse(j.contents);
+            return j;
+        } catch(e) {}
+    }
+    return null;
+}
+
+async function fetchPensionHtml(url) {
+    // corsproxy.io → read as ArrayBuffer → decode EUC-KR
+    try {
+        const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(10000) });
+        if (r.ok) {
+            const buf = await r.arrayBuffer();
+            try { return new TextDecoder('euc-kr').decode(buf); } catch(e) {}
+            return new TextDecoder('utf-8').decode(buf);
+        }
+    } catch(e) {}
+    // allorigins fallback
+    try {
+        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(10000) });
+        if (r.ok) { const j = await r.json(); return j.contents || null; }
+    } catch(e) {}
+    return null;
+}
+
+function calcApproxLottoRound() {
+    return Math.floor((Date.now() - new Date('2002-12-07').getTime()) / (7 * 86400000)) + 1;
+}
+
+function calcApproxPensionRound() {
+    return Math.floor((Date.now() - new Date('2011-04-06').getTime()) / (7 * 86400000)) + 1;
+}
+
+// ── 로또 6/45 실제 당첨번호 ──────────────────────────────────
+async function fetchOneLottoResult(round) {
+    const d = await fetchLottoJson(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`);
+    return (d && d.returnValue === 'success') ? d : null;
+}
+
+async function loadLottoResults() {
+    const container = document.getElementById('lotto-results-list');
+    if (!container) return;
+    const approx = calcApproxLottoRound();
+    // fetch 7 candidates in parallel to cover possible off-by-one
+    const candidates = await Promise.all(
+        Array.from({length: 7}, (_, i) => fetchOneLottoResult(approx - i))
+    );
+    const valid = candidates.filter(Boolean).slice(0, 5);
+    if (!valid.length) {
+        container.innerHTML = '<div class="results-error">⚠️ 데이터를 불러올 수 없습니다</div>';
+        return;
+    }
+    container.innerHTML = '';
+    valid.forEach(d => {
+        const nums = [d.drwtNo1, d.drwtNo2, d.drwtNo3, d.drwtNo4, d.drwtNo5, d.drwtNo6];
+        const bonus = d.bnusNo;
+        const prize = d.firstWinamnt ? fmtKrNum(d.firstWinamnt) + '원' : '-';
+        const winners = d.firstPrzwnerCo != null ? d.firstPrzwnerCo + '명' : '-';
+        const ballsHtml =
+            nums.map(n => `<div class="r-mini-ball" style="background:${getBallColor(n)};box-shadow:${getBallShadow(n)}">${n}</div>`).join('') +
+            `<span class="bonus-sep">+</span>` +
+            `<div class="r-mini-ball bonus-ball" style="background:${getBallColor(bonus)};box-shadow:${getBallShadow(bonus)}">${bonus}</div>`;
+        const row = document.createElement('div');
+        row.className = 'result-row';
+        row.innerHTML = `
+            <div class="result-row-header" onclick="this.closest('.result-row').classList.toggle('open')">
+                <div class="result-meta">
+                    <span class="result-round">제 ${d.drwNo}회</span>
+                    <span class="result-date">${d.drwNoDate}</span>
+                </div>
+                <div class="result-balls">${ballsHtml}</div>
+                <div class="result-chevron">›</div>
+            </div>
+            <div class="result-detail">
+                <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">1등 당첨금</span><span class="detail-value prize-val">${prize}</span></div>
+                    <div class="detail-item"><span class="detail-label">1등 당첨자</span><span class="detail-value">${winners}</span></div>
+                </div>
+            </div>`;
+        container.appendChild(row);
+    });
+}
+
+// ── 연금복권 720+ 실제 당첨번호 ──────────────────────────────
+function parsePensionPage(html, roundNum) {
+    try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const txt = (doc.body || doc.documentElement).textContent || '';
+
+        const roundM = txt.match(/제\s*(\d+)\s*회/);
+        const round = roundM ? parseInt(roundM[1]) : roundNum;
+
+        const dateM = txt.match(/(\d{4})[년.\-\/]\s*(\d{1,2})[월.\-\/]\s*(\d{1,2})/);
+        const date = dateM
+            ? `${dateM[1]}.${String(dateM[2]).padStart(2,'0')}.${String(dateM[3]).padStart(2,'0')}`
+            : '';
+
+        let jo = null, digits = null;
+        // Pattern A: "N조 D D D D D D" (space-separated per digit)
+        const pA = txt.match(/([1-5])\s*조\s+(\d)\s+(\d)\s+(\d)\s+(\d)\s+(\d)\s+(\d)/);
+        if (pA) { jo = parseInt(pA[1]); digits = pA[2]+pA[3]+pA[4]+pA[5]+pA[6]+pA[7]; }
+        // Pattern B: "N조 DDDDDD"
+        if (!jo) {
+            const pB = txt.match(/([1-5])\s*조\s*(\d{6})/);
+            if (pB) { jo = parseInt(pB[1]); digits = pB[2]; }
+        }
+        if (jo === null || !digits) return null;
+
+        const winnersM = txt.match(/1\s*등[^0-9]{0,30}(\d+)\s*명/);
+        const winners = winnersM ? parseInt(winnersM[1]) : null;
+
+        return { round, date, jo, digits, winners };
+    } catch(e) { return null; }
+}
+
+async function fetchOnePensionResult(round) {
+    const html = await fetchPensionHtml(`https://www.dhlottery.co.kr/gameResult.do?method=win720&Round=${round}`);
+    if (!html) return null;
+    return parsePensionPage(html, round);
+}
+
+async function loadPensionResults() {
+    const container = document.getElementById('pension-results-list');
+    if (!container) return;
+    const approx = calcApproxPensionRound();
+    const candidates = await Promise.all(
+        Array.from({length: 7}, (_, i) => fetchOnePensionResult(approx - i))
+    );
+    const valid = candidates.filter(Boolean).slice(0, 5);
+    if (!valid.length) {
+        container.innerHTML = '<div class="results-error">⚠️ 연금복권 데이터를 불러올 수 없습니다<br><span style="font-size:10px;color:var(--text3)">사이트 접근 제한으로 일부 환경에서 조회가 제한될 수 있습니다</span></div>';
+        return;
+    }
+    container.innerHTML = '';
+    valid.forEach(d => {
+        const digits = d.digits.split('');
+        const joHtml = `<div class="r-pension-jo">${d.jo}조</div>`;
+        const sep = `<span class="h-divider" style="margin:0 3px">—</span>`;
+        const digitsHtml = digits.map(n => `<div class="r-pension-digit">${n}</div>`).join('');
+        const winners = d.winners !== null ? d.winners + '명' : '-';
+        const row = document.createElement('div');
+        row.className = 'result-row';
+        row.innerHTML = `
+            <div class="result-row-header" onclick="this.closest('.result-row').classList.toggle('open')">
+                <div class="result-meta">
+                    <span class="result-round">제 ${d.round}회</span>
+                    <span class="result-date">${d.date}</span>
+                </div>
+                <div class="result-balls">${joHtml}${sep}${digitsHtml}</div>
+                <div class="result-chevron">›</div>
+            </div>
+            <div class="result-detail">
+                <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">1등 당첨금</span><span class="detail-value prize-val">월 700만원×20년</span></div>
+                    <div class="detail-item"><span class="detail-label">1등 당첨자</span><span class="detail-value">${winners}</span></div>
+                </div>
+            </div>`;
+        container.appendChild(row);
+    });
+}
+
+// ============================================================
 // 초기화
 // ============================================================
 buildLottoSlots();
 buildPensionSlots();
+loadLottoResults();
+loadPensionResults();
 </script>
 </body>
 </html>
