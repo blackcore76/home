@@ -798,7 +798,7 @@ async function run(krNameHint = '') {
     if (!rawIn) { alert('종목을 입력하세요.'); return; }
 
     const isKr = isKrCode(rawIn) || isKrText(rawIn);
-    let krName = krNameHint;
+    let krName = krNameHint || $symIn.dataset.krName || '';
 
     let krCode = rawIn;
     if (isKrText(rawIn)) {
@@ -1047,6 +1047,7 @@ function buildDropHtml(items, isKrMode) {
 
 $symIn.addEventListener('input', () => {
     clearTimeout(dropTimer);
+    $symIn.dataset.krName = '';
     const q = $symIn.value.trim();
     if (!q) { closeDrop(); return; }
 
@@ -1091,8 +1092,8 @@ $symIn.addEventListener('input', () => {
 $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
 document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop')) closeDrop(); });
 
-function pickKrSym(code, name) { $symIn.value=code.trim(); closeDrop(); run(name); }
-function pickSym(sym) { $symIn.value=sym; closeDrop(); run(); }
+function pickKrSym(code, name) { $symIn.value=code.trim(); $symIn.dataset.krName=name; closeDrop(); }
+function pickSym(sym) { $symIn.value=sym; $symIn.dataset.krName=''; closeDrop(); }
 
 document.getElementById('runBtn').addEventListener('click', run);
 $symIn.addEventListener('keypress', e => { if(e.key==='Enter') { closeDrop(); run(); } });
