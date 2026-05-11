@@ -793,13 +793,14 @@ function buildPrompt(sym, quote, ind, dS, isKr) {
 마지막 문구: 본 분석은 참고용이며 투자 판단의 책임은 투자자 본인에게 있습니다.`;
 }
 
-async function run() {
+async function run(krNameHint = '') {
     const fhKey = $fh.value.trim(), gmKey = $gm.value.trim();
     const rawIn = document.getElementById('symIn').value.trim();
     if (!gmKey) { alert('⚙️ Gemini API 키를 먼저 입력하세요.'); return; }
     if (!rawIn) { alert('종목을 입력하세요.'); return; }
 
     const isKr = isKrCode(rawIn) || isKrText(rawIn);
+    let krName = krNameHint;
 
     let krCode = rawIn;
     if (isKrText(rawIn)) {
@@ -810,6 +811,7 @@ async function run() {
                 .limit(1).get();
             if (!snap.empty) {
                 krCode = snap.docs[0].id;
+                if (!krName) krName = snap.docs[0].data().name || '';
             } else {
                 throw new Error(`"${rawIn}" 종목을 찾을 수 없습니다. 드롭다운에서 선택하거나 6자리 코드로 입력해주세요.`);
             }
@@ -817,6 +819,14 @@ async function run() {
             if (e.message.includes('종목을 찾을 수 없습니다')) throw e;
             console.warn('Firebase 코드 조회 실패:', e.message);
         }
+    }
+
+    // 코드 직접 입력 시 Firebase에서 한글 종목명 조회
+    if (isKrCode(rawIn) && !krName && currentUser) {
+        try {
+            const snap = await db.collection('kr_stocks').doc(rawIn).get();
+            if (snap.exists) krName = snap.data().name || '';
+        } catch {}
     }
 
     const sym = isKr ? krCode : rawIn.toUpperCase();
@@ -856,7 +866,7 @@ async function run() {
             const l  = meta.regularMarketDayLow  || c;
             const d  = parseFloat((c-pc).toFixed(2));
             const dp = parseFloat(((d/pc)*100).toFixed(2));
-            stockName = meta.longName || meta.shortName || '';
+            stockName = krName || meta.longName || meta.shortName || '';
             dataTs    = meta.regularMarketTime || null;
             quote = {c, d, dp, h, l, todayVol: meta.regularMarketVolume||null};
 
@@ -961,7 +971,8 @@ async function run() {
 
         ldStep(5);
         const now = new Date(), dS = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
-        const prompt = buildPrompt(sym+(isKr?` (${yfSym})`:''), quote, indicators, dS, isKr);
+        const promptSym = isKr ? (stockName ? `${stockName} (${sym})` : `${sym} (${yfSym})`) : sym;
+        const prompt = buildPrompt(promptSym, quote, indicators, dS, isKr);
         const gmRes = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
             {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.4,maxOutputTokens:8192}})}
@@ -1082,7 +1093,7 @@ $symIn.addEventListener('input', () => {
 $symIn.addEventListener('keydown', e => { if(e.key==='Escape') closeDrop(); });
 document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.target.closest('#symDrop')) closeDrop(); });
 
-function pickKrSym(code, name) { $symIn.value=code.trim(); closeDrop(); run(); }
+function pickKrSym(code, name) { $symIn.value=code.trim(); closeDrop(); run(name); }
 function pickSym(sym) { $symIn.value=sym; closeDrop(); run(); }
 
 document.getElementById('runBtn').addEventListener('click', run);
@@ -1164,7 +1175,7 @@ function openMo(doc) {
     const pct=parseFloat(doc.chgPct)||0, sign=pct>=0?'+':'';
     const isKrDoc = doc.market==='KR';
     const fp = v => isKrDoc ? parseFloat(v||0).toLocaleString('ko-KR')+'원' : '$'+parseFloat(v||0).toFixed(2);
-    document.getElementById('mSym').textContent  = doc.symbol||'-';
+    document.getElementById('mSym').textContent  = (isKrDoc && doc.stockName) ? doc.stockName : (doc.symbol||'-');
     document.getElementById('mDate').textContent = doc.dateStr||'-';
     document.getElementById('mPrice').textContent= fp(doc.price);
     document.getElementById('mChg').textContent  = `${sign}${pct.toFixed(2)}%`;
