@@ -326,9 +326,10 @@ header {
 }
 .history-row {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 10px;
     padding: 10px 14px;
     background: var(--sf2);
     border: 1px solid var(--bd);
@@ -930,18 +931,21 @@ function renderPensionHistory() {
         idx.className = 'history-index';
         idx.textContent = `#${i+1}`;
         row.appendChild(idx);
+        const ballWrap = document.createElement('div');
+        ballWrap.className = 'history-balls';
         res.forEach((num, j) => {
             const mini = document.createElement('div');
             mini.className = j === 0 ? 'pension-mini m-jo' : 'pension-mini m-digit';
             mini.textContent = num;
-            row.appendChild(mini);
+            ballWrap.appendChild(mini);
             if (j === 0) {
                 const d = document.createElement('span');
                 d.className = 'h-divider';
                 d.textContent = '—';
-                row.appendChild(d);
+                ballWrap.appendChild(d);
             }
         });
+        row.appendChild(ballWrap);
         list.appendChild(row);
     });
 }
