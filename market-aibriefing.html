@@ -1103,7 +1103,7 @@ async function loadHist() {
     document.getElementById('ll').classList.remove('gone');
     document.getElementById('rList').classList.add('gone');
     document.getElementById('emptyBox').classList.add('gone');
-    document.getElementById('pgBar').style.visibility = 'hidden';
+    document.getElementById('pgBar').innerHTML = '';
     try {
         const snap = await db.collection(COL).orderBy('createdAt','desc').get();
         allDocs = snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -1125,7 +1125,7 @@ function renderList() {
     if (!total) {
         document.getElementById('emptyBox').classList.remove('gone');
         document.getElementById('rList').classList.add('gone');
-        document.getElementById('pgBar').style.visibility='hidden';
+        document.getElementById('pgBar').innerHTML = '';
         return;
     }
     document.getElementById('emptyBox').classList.add('gone');
