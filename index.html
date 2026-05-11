@@ -93,9 +93,6 @@ body::before{
   pointer-events:none;
   z-index:1;
 }
-/* canvas 숨김 (사진 쓰니까) */
-#heroChart{ display:none; }
-.hero-glow{ display:none; }
 .hero-inner{
   position:relative;
   z-index:2;
@@ -423,8 +420,6 @@ footer{
 <!-- ── HERO ── -->
 <section class="hero">
   <div class="hero-bg"></div>
-  <canvas id="heroChart"></canvas>
-  <div class="hero-glow"></div>
 
   <div class="hero-inner">
     <p class="hero-label">Personal Command Center<br>Show me the money</p>
@@ -487,7 +482,7 @@ footer{
       </div>
       <span class="tool-arrow">↗</span>
     </a>
-     
+
     <!-- 4. AI 차트 분석 -->
     <a class="tool-card" href="market-aibriefing.html">
       <span class="tool-num">04</span>
@@ -516,7 +511,7 @@ footer{
       <span class="tool-arrow">↗</span>
     </a>
 
-    <!-- 6. 하루의 생각 -->
+    <!-- 6. 데일리 피드 -->
 <a class="tool-card" href="daily-feed.html">
   <span class="tool-num">06</span>
   <span class="tool-icon">📝</span>
