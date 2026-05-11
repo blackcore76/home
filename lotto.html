@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
 <meta name="theme-color" content="#080c14">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="로또&연금복권">
@@ -1037,36 +1038,52 @@ function switchTab(tab) {
 function fmtKrNum(n) { return Number(n).toLocaleString('ko-KR'); }
 
 async function fetchLottoJson(url) {
+    const enc = encodeURIComponent(url);
     const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+        { u: `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${enc}`, wrap: false },
+        { u: `https://corsproxy.io/?${enc}`, wrap: false },
+        { u: `https://api.allorigins.win/get?url=${enc}`, wrap: true },
+        { u: `https://api.codetabs.com/v1/proxy?quest=${enc}`, wrap: false },
     ];
-    for (const p of proxies) {
+    for (const { u, wrap } of proxies) {
         try {
-            const r = await fetch(p, { signal: AbortSignal.timeout(8000) });
+            const r = await fetch(u, { signal: AbortSignal.timeout(8000) });
             if (!r.ok) continue;
             const j = await r.json();
-            if (j && j.contents !== undefined) return JSON.parse(j.contents);
-            return j;
+            if (wrap && j && j.contents !== undefined) {
+                const parsed = JSON.parse(j.contents);
+                if (parsed) return parsed;
+                continue;
+            }
+            if (j && j.returnValue) return j;
+            if (!wrap && j) return j;
         } catch(e) {}
     }
     return null;
 }
 
 async function fetchPensionHtml(url) {
-    // corsproxy.io → read as ArrayBuffer → decode EUC-KR
-    try {
-        const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(10000) });
-        if (r.ok) {
+    const enc = encodeURIComponent(url);
+    // raw proxies: return ArrayBuffer → decode EUC-KR
+    const rawProxies = [
+        `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${enc}`,
+        `https://corsproxy.io/?${enc}`,
+        `https://api.codetabs.com/v1/proxy?quest=${enc}`,
+    ];
+    for (const p of rawProxies) {
+        try {
+            const r = await fetch(p, { signal: AbortSignal.timeout(10000) });
+            if (!r.ok) continue;
             const buf = await r.arrayBuffer();
-            try { return new TextDecoder('euc-kr').decode(buf); } catch(e) {}
-            return new TextDecoder('utf-8').decode(buf);
-        }
-    } catch(e) {}
-    // allorigins fallback
+            try { const s = new TextDecoder('euc-kr').decode(buf); if (s && s.length > 100) return s; } catch(e) {}
+            const s = new TextDecoder('utf-8').decode(buf);
+            if (s && s.length > 100) return s;
+        } catch(e) {}
+    }
+    // allorigins: returns JSON wrapper with contents as string
     try {
-        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(10000) });
-        if (r.ok) { const j = await r.json(); return j.contents || null; }
+        const r = await fetch(`https://api.allorigins.win/get?url=${enc}`, { signal: AbortSignal.timeout(10000) });
+        if (r.ok) { const j = await r.json(); if (j.contents && j.contents.length > 100) return j.contents; }
     } catch(e) {}
     return null;
 }
