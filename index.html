@@ -388,8 +388,7 @@ footer{
   transform:rotate(-7deg);
   opacity:.85;
   transition:transform .4s ease, opacity .3s;
-  mix-blend-mode:multiply;
-  filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.6));
 }
 .footer-stamp:hover{
   transform:rotate(0deg) scale(1.08);
@@ -632,6 +631,32 @@ footer{
 <script>
 // 연도
 document.getElementById('yr').textContent = new Date().getFullYear();
+
+// 스탬프 흰 배경 제거 (알파 없는 PNG → Canvas로 투명 처리)
+(function() {
+  const img = document.querySelector('.footer-stamp');
+  if (!img) return;
+  function removeWhite() {
+    const canvas = document.createElement('canvas');
+    canvas.width  = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d  = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const brightness = (d[i] + d[i+1] + d[i+2]) / 3;
+      if (brightness > 200) {
+        // 200~255 구간을 알파 255→0 으로 부드럽게 페이드 (안티앨리어싱 자연스럽게)
+        d[i+3] = Math.round((255 - brightness) / 55 * 255);
+      }
+    }
+    ctx.putImageData(id, 0, 0);
+    img.src = canvas.toDataURL('image/png');
+  }
+  if (img.complete && img.naturalWidth) removeWhite();
+  else img.onload = removeWhite;
+})();
 
 // 히어로 이미지 scale 전환
 setTimeout(()=>document.querySelector('.hero-bg').classList.add('loaded'), 100);
