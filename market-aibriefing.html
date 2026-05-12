@@ -530,7 +530,7 @@ async function fetchYFCandles(yfSym, days=110) {
     const raw = [];
     for (let i=0; i<ts.length; i++) {
         const c = q.close[i];
-        if (c != null) raw.push({t:ts[i], c, h:q.high[i]??c, l:q.low[i]??c, v:q.volume[i]??0});
+        if (c != null && isFinite(c)) raw.push({t:ts[i], c, h:q.high[i]??c, l:q.low[i]??c, v:q.volume[i]??0});
     }
     if (raw.length < 5) throw new Error('캔들 데이터 부족');
     return raw;
