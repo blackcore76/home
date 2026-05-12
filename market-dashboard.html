@@ -28,6 +28,14 @@
   .rbtn:hover{border-color:var(--accent);color:var(--accent)}
   .rbtn:active{transform:scale(.95)}
   #pxStat{font-size:9px;color:var(--muted)}
+  #mktStat{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:3px}
+  .mkt-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.07em;white-space:nowrap}
+  .mkt-badge.open{background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.55);color:#ff8c00;animation:mktgl 2s ease-in-out infinite}
+  .mkt-badge.pre,.mkt-badge.post{background:rgba(107,132,160,.07);border:1px solid rgba(107,132,160,.2);color:var(--muted2)}
+  .mkt-badge.closed{background:transparent;border:1px solid var(--border);color:var(--muted);opacity:.45}
+  .mkt-dot{width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0}
+  .mkt-badge.open .mkt-dot{animation:bl 1.5s infinite}
+  @keyframes mktgl{0%,100%{box-shadow:0 0 5px rgba(255,140,0,.18)}50%{box-shadow:0 0 13px rgba(255,140,0,.45)}}
   .sec{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:20px 0 10px}
   .sec span{flex-shrink:0}
   .sec::after{content:'';flex:1;height:1px;background:var(--bord2)}
@@ -192,7 +200,8 @@
   <div class="hdr-r">
     <div class="srow"><div class="ldot" id="ldot"></div><span id="stxt">초기화 중...</span><button class="rbtn" onclick="bootstrap()">↻ 갱신</button></div>
     <div>업데이트&nbsp;<span id="lastUp">--:--:--</span></div>
-    <div>다음&nbsp;<span id="cd">--</span>s&nbsp;<span id="mktStat" style="color:var(--muted)"></span></div>
+    <div>다음&nbsp;<span id="cd">--</span>s</div>
+    <div id="mktStat"></div>
     <div id="pxStat"></div>
   </div>
 </header>
@@ -584,6 +593,41 @@ const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
 
 let crumb=null, winPx=null, dbgLines=[];
 let fngHistory=[], fngRange=14;
+let usMarketState=null, krMarketState=null;
+
+// ── DST-aware 세션 계산 (초기 표시·갱신 주기용)
+function getMarketSessions(){
+  const now=new Date();
+  const et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const etD=et.getDay(),etM=et.getHours()*60+et.getMinutes();
+  const kstD=kst.getDay(),kstM=kst.getHours()*60+kst.getMinutes();
+  let us='CLOSED';
+  if(etD>=1&&etD<=5){
+    if(etM>=240&&etM<570)       us='PRE';      // 4:00–9:30 AM ET
+    else if(etM>=570&&etM<960)  us='REGULAR';  // 9:30 AM–4:00 PM ET
+    else if(etM>=960&&etM<1200) us='POST';     // 4:00–8:00 PM ET
+  }
+  let kr='CLOSED';
+  if(kstD>=1&&kstD<=5){
+    if(kstM>=480&&kstM<540)     kr='PRE';      // 8:00–9:00 KST (NXT 장전)
+    else if(kstM>=540&&kstM<930)kr='REGULAR';  // 9:00–15:30 KST
+    else if(kstM>=930&&kstM<1080)kr='POST';    // 15:30–18:00 KST (NXT 장후)
+  }
+  const anyOpen=(us!=='CLOSED')||(kr!=='CLOSED');
+  return{us,kr,secs:anyOpen?30:300};
+}
+
+// ── 마켓 세션 뱃지 렌더
+function renderMarketBadges(){
+  const US_LBL={PRE:'US 프리마켓',REGULAR:'US 정규장',POST:'US 애프터마켓',PREPRE:'US 심야',POSTPOST:'US 심야',CLOSED:'US 휴장'};
+  const KR_LBL={PRE:'KR NXT 장전',REGULAR:'KR 정규장',POST:'KR NXT 장후',CLOSED:'KR 휴장'};
+  const ST_CLS={PRE:'pre',REGULAR:'open',POST:'post',PREPRE:'closed',POSTPOST:'closed',CLOSED:'closed'};
+  const b=(lbl,st)=>`<span class="mkt-badge ${ST_CLS[st]||'closed'}"><span class="mkt-dot"></span>${lbl}</span>`;
+  const html=(usMarketState?b(US_LBL[usMarketState]||'US '+usMarketState,usMarketState):'')+
+             (krMarketState?b(KR_LBL[krMarketState]||'KR '+krMarketState,krMarketState):'');
+  document.getElementById('mktStat').innerHTML=html;
+}
 
 function dlog(m){
   const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -801,6 +845,8 @@ async function updateCard(inst){
   const card=document.getElementById(`card-${inst.id}`);
   if(!data){pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;}
   const r=data.chart.result[0],m=r.meta;
+  if(inst.id==='nasdaq'&&m.marketState){usMarketState=m.marketState;}
+  if(inst.id==='kospi'&&m.marketState){krMarketState=m.marketState;}
   const px=m.regularMarketPrice;
   const prv=m.chartPreviousClose??m.previousClose;
   const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
@@ -831,33 +877,25 @@ function setStat(txt,state){
 
 async function bootstrap(){
   resetCd();winPx=null;
+  // 즉시 DST-aware 계산값으로 초기 뱃지 표시
+  const init=getMarketSessions();
+  usMarketState=init.us; krMarketState=init.kr;
+  renderMarketBadges();
   setStat('crumb 연결 중...','load');
   crumb=await getCrumb();
   setStat('데이터 로딩 중...','load');
   document.getElementById('pxStat').textContent='';
   await Promise.all([...INSTR.map(updateCard),updateFng()]);
   document.getElementById('lastUp').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  renderMarketBadges(); // YF 공식 데이터로 갱신
   if(winPx!==null){setStat('Live','live');document.getElementById('pxStat').textContent=`프록시 #${winPx+1} 사용 중`;}
   else{setStat('연결 실패','err');document.getElementById('pxStat').textContent='⚠️ 디버그 로그 확인';}
   resetCd();
 }
 
-function getRefreshSecs(){
-  const now=new Date();const kst=new Date(now.getTime()+9*60*60*1000);
-  const day=kst.getUTCDay();const hm=kst.getUTCHours()*60+kst.getUTCMinutes();
-  const isWeekday=day>=1&&day<=5;
-  const krOpen=isWeekday&&hm>=9*60&&hm<15*60+30;
-  const usOpen=(isWeekday&&hm>=22*60+30)||((day>=2&&day<=6)&&hm<5*60);
-  if(krOpen&&usOpen)return{secs:30,label:'KR·US 개장'};
-  if(krOpen)return{secs:30,label:'KR 개장'};
-  if(usOpen)return{secs:30,label:'US 개장'};
-  return{secs:300,label:'전 시장 휴장'};
-}
-
 let cdV=60,cdT=null;
 function resetCd(){
-  clearInterval(cdT);const{secs,label}=getRefreshSecs();cdV=secs;
-  document.getElementById('mktStat').textContent=`[${label}]`;
+  clearInterval(cdT);const{secs}=getMarketSessions();cdV=secs;
   document.getElementById('cd').textContent=cdV;
   cdT=setInterval(()=>{cdV--;document.getElementById('cd').textContent=cdV;if(cdV<=0)bootstrap();},1000);
 }
