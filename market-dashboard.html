@@ -28,6 +28,8 @@
   .rbtn:hover{border-color:var(--accent);color:var(--accent)}
   .rbtn:active{transform:scale(.95)}
   #pxStat{font-size:9px;color:var(--muted)}
+  #pxStat:not(:empty)::before{content:'·';opacity:.4;margin-right:6px}
+  .hsep{color:var(--muted);opacity:.4}
   #mktStat{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:3px}
   .mkt-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.07em;white-space:nowrap}
   .mkt-badge.open{background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.55);color:#ff8c00;animation:mktgl 2s ease-in-out infinite}
@@ -198,11 +200,17 @@
 <header>
   <div class="logo"><div class="logo-dot"></div>Market Dashboard</div>
   <div class="hdr-r">
-    <div class="srow"><div class="ldot" id="ldot"></div><span id="stxt">초기화 중...</span><button class="rbtn" onclick="bootstrap()">↻ 갱신</button></div>
-    <div>업데이트&nbsp;<span id="lastUp">--:--:--</span></div>
-    <div>다음&nbsp;<span id="cd">--</span>s</div>
+    <div class="srow">
+      <div class="ldot" id="ldot"></div>
+      <span id="stxt">초기화 중...</span>
+      <span class="hsep">·</span>
+      <span>업데이트&nbsp;<span id="lastUp">--:--:--</span></span>
+      <span class="hsep">·</span>
+      <span>다음&nbsp;<span id="cd">--</span>s</span>
+      <span id="pxStat"></span>
+      <button class="rbtn" onclick="bootstrap()">↻ 갱신</button>
+    </div>
     <div id="mktStat"></div>
-    <div id="pxStat"></div>
   </div>
 </header>
 
