@@ -27,16 +27,7 @@
   .rbtn{background:transparent;border:1px solid var(--bord2);color:var(--muted2);font-family:inherit;font-size:10px;padding:3px 10px;border-radius:4px;cursor:pointer;transition:all .2s}
   .rbtn:hover{border-color:var(--accent);color:var(--accent)}
   .rbtn:active{transform:scale(.95)}
-  .src-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 7px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.09em;margin-top:3px;white-space:nowrap}
-  .src-badge.fh{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:#00e676}
-  .src-badge.yf{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#f59e0b}
-  .src-badge.mix{background:rgba(61,139,255,.1);border:1px solid rgba(61,139,255,.25);color:var(--accent)}
-  .src-badge.err{background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.25);color:var(--down)}
-  .src-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-  .src-badge.fh .src-dot{background:#00e676;box-shadow:0 0 5px #00e676;animation:bl 2s infinite}
-  .src-badge.yf .src-dot{background:#f59e0b}
-  .src-badge.mix .src-dot{background:var(--accent);box-shadow:0 0 5px var(--accent);animation:bl 2s infinite}
-  .src-badge.err .src-dot{background:var(--down)}
+  #pxStat{font-size:9px;color:var(--muted)}
   .sec{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:20px 0 10px}
   .sec span{flex-shrink:0}
   .sec::after{content:'';flex:1;height:1px;background:var(--bord2)}
@@ -569,15 +560,15 @@ async function loadAlertConditions() {
 // ══════════════════════════════════════════
 
 const INSTR=[
-  {id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', fhSym:'^IXIC',         market:'us',  sec:'us', fmt:'int', pre:''},
-  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', fhSym:'^GSPC',         market:'us',  sec:'us', fmt:'int', pre:''},
-  {id:'dow',    name:'DOW',      sym:'^DJI',  fhSym:'^DJI',          market:'us',  sec:'us', fmt:'int', pre:''},
-  {id:'vix',    name:'VIX',      sym:'^VIX',  fhSym:'^VIX',          market:'vix', sec:'us', fmt:'d2',  pre:''},
-  {id:'kospi',  name:'KOSPI',    sym:'^KS11',                         market:'kr',  sec:'kr', fmt:'d2',  pre:''},
-  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11',                         market:'kr',  sec:'kr', fmt:'d2',  pre:''},
-  {id:'gold',   name:'금 현물',  sym:'GC=F',  fhSym:'OANDA:XAU_USD', market:'us',  sec:'us', fmt:'d2',  pre:'$'},
-  {id:'usdkrw', name:'환율',     sym:'KRW=X', fhSym:'OANDA:USD_KRW', market:'us',  sec:'us', fmt:'d2',  pre:'₩'},
-  {id:'wti',    name:'WTI 원유', sym:'CL=F',  fhSym:'CL=F',          market:'vix', sec:'us', fmt:'d2',  pre:'$'},
+  {id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', market:'us',  sec:'us', fmt:'int', pre:''},
+  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', market:'us',  sec:'us', fmt:'int', pre:''},
+  {id:'dow',    name:'DOW',      sym:'^DJI',  market:'us',  sec:'us', fmt:'int', pre:''},
+  {id:'vix',    name:'VIX',      sym:'^VIX',  market:'vix', sec:'us', fmt:'d2',  pre:''},
+  {id:'kospi',  name:'KOSPI',    sym:'^KS11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  {id:'gold',   name:'금 현물',  sym:'GC=F',  market:'us',  sec:'us', fmt:'d2',  pre:'$'},
+  {id:'usdkrw', name:'환율',     sym:'KRW=X', market:'us',  sec:'us', fmt:'d2',  pre:'₩'},
+  {id:'wti',    name:'WTI 원유', sym:'CL=F',  market:'vix', sec:'us', fmt:'d2',  pre:'$'},
 ];
 
 const PX=[
@@ -593,28 +584,6 @@ const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
 
 let crumb=null, winPx=null, dbgLines=[];
 let fngHistory=[], fngRange=14;
-let fhKey=localStorage.getItem('fh_k')||'';
-let srcFH=0, srcYF=0;
-
-function setSrcBadge(){
-  const fhTotal=INSTR.filter(i=>i.fhSym).length;
-  let cls,txt;
-  if(!fhKey||srcFH===0){cls='yf';txt='YF 지연 데이터';}
-  else if(srcFH>=fhTotal){cls='fh';txt='FINNHUB LIVE';}
-  else{cls='mix';txt=`FH ${srcFH} · YF지연 ${srcYF}`;}
-  document.getElementById('pxStat').innerHTML=`<span class="src-badge ${cls}"><span class="src-dot"></span>${txt}</span>`;
-}
-
-async function fetchFH(fhSym){
-  if(!fhKey) return null;
-  try{
-    const res=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(fhSym)}&token=${fhKey}`,{signal:ctrl(6000).signal});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const d=await res.json();
-    if(!d.c||d.c<=0) return null;
-    return d;
-  }catch(e){dlog(`FH ${fhSym} 실패: ${e.message.slice(0,40)}`);return null;}
-}
 
 function dlog(m){
   const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -825,39 +794,17 @@ if(market==='vix'||market==='wti') color=isUp?'var(--kr-down)':'var(--down)';
 }
 
 async function updateCard(inst){
+  const data=await fetchYF(inst.sym);
   const pEl=document.getElementById(`p-${inst.id}`);
   const cEl=document.getElementById(`c-${inst.id}`);
   const sEl=document.getElementById(`s-${inst.id}`);
   const card=document.getElementById(`card-${inst.id}`);
-
-  let px,chg,pct,up,cls=[];
-
-  if(inst.fhSym&&fhKey){
-    const [fh,yfData]=await Promise.all([fetchFH(inst.fhSym),fetchYF(inst.sym)]);
-    if(fh){
-      px=fh.c; chg=fh.d??0; pct=fh.dp??0; up=chg>=0;
-      srcFH++;
-      dlog(`✅ FH ${inst.id}: ${px}`);
-    }else if(yfData){
-      const m=yfData.chart.result[0].meta;
-      px=m.regularMarketPrice;
-      const prv=m.chartPreviousClose??m.previousClose;
-      chg=px-prv; pct=prv?(chg/prv)*100:0; up=chg>=0;
-      srcYF++;
-    }else{
-      pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;
-    }
-    if(yfData) cls=yfData.chart.result[0].indicators?.quote?.[0]?.close??[];
-  }else{
-    const data=await fetchYF(inst.sym);
-    if(!data){pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;}
-    const m=data.chart.result[0].meta;
-    px=m.regularMarketPrice;
-    const prv=m.chartPreviousClose??m.previousClose;
-    chg=px-prv; pct=prv?(chg/prv)*100:0; up=chg>=0;
-    cls=data.chart.result[0].indicators?.quote?.[0]?.close??[];
-  }
-
+  if(!data){pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;}
+  const r=data.chart.result[0],m=r.meta;
+  const px=m.regularMarketPrice;
+  const prv=m.chartPreviousClose??m.previousClose;
+  const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
+  const cls=r.indicators?.quote?.[0]?.close??[];
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
   const colorClass=(inst.market==='vix'||inst.id==='wti')?(up?'kr-down':'down'):(up?'kr-up':'kr-down');
   pEl.className=`cp ${colorClass}`;
@@ -869,9 +816,11 @@ async function updateCard(inst){
   if(inst.market==='kr')card.classList.add(up?'flku':'flkd');
   else if(inst.market==='vix')card.classList.add(up?'fld':'flu');
   else card.classList.add(up?'flu':'fld');
-
-  const alertKeys=['nasdaq','sp500','kospi','kosdaq','gold','usdkrw'];
-  if(alertKeys.includes(inst.id)){latestPrices[inst.id]=px;renderAlertTable();}
+  const alertKeys = ['nasdaq','sp500','kospi','kosdaq','gold','usdkrw'];
+  if(alertKeys.includes(inst.id)){
+    latestPrices[inst.id] = px;
+    renderAlertTable();
+  }
 }
 
 function setStat(txt,state){
@@ -881,16 +830,15 @@ function setStat(txt,state){
 }
 
 async function bootstrap(){
-  resetCd();winPx=null;srcFH=0;srcYF=0;
+  resetCd();winPx=null;
   setStat('crumb 연결 중...','load');
   crumb=await getCrumb();
   setStat('데이터 로딩 중...','load');
-  document.getElementById('pxStat').innerHTML='';
+  document.getElementById('pxStat').textContent='';
   await Promise.all([...INSTR.map(updateCard),updateFng()]);
   document.getElementById('lastUp').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  if(winPx!==null||srcFH>0){setStat('Live','live');}
-  else{setStat('연결 실패','err');document.getElementById('pxStat').innerHTML='<span class="src-badge err"><span class="src-dot"></span>데이터 수신 실패</span>';return;}
-  setSrcBadge();
+  if(winPx!==null){setStat('Live','live');document.getElementById('pxStat').textContent=`프록시 #${winPx+1} 사용 중`;}
+  else{setStat('연결 실패','err');document.getElementById('pxStat').textContent='⚠️ 디버그 로그 확인';}
   resetCd();
 }
 
