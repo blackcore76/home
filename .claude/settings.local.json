@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(powershell -Command 'Select-String -Path '\\\\''C:\\\\Users\\\\BlackCore\\\\dropbox\\\\github.pages\\\\home$f'\\\\'' -Pattern '\\\\''<head>|<link|<meta name=\"theme|<meta name=\"application'\\\\'' | Select-Object -First 10 | ForEach-Object { $_.Line }')",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
