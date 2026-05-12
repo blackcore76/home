@@ -441,6 +441,7 @@ const PG = 10;
 let chartIns = null, allDocs = [], filtered = [], curPg = 1, curDoc = null;
 
 const PROXIES = [
+    u => `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
     u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
