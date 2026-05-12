@@ -560,18 +560,19 @@ async function loadAlertConditions() {
 // ══════════════════════════════════════════
 
 const INSTR=[
-  {id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', market:'us', sec:'us', fmt:'int', pre:''},
-  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', market:'us', sec:'us', fmt:'int', pre:''},
-  {id:'dow',    name:'DOW',      sym:'^DJI',  market:'us', sec:'us', fmt:'int', pre:''},
-  {id:'vix',    name:'VIX',      sym:'^VIX',  market:'vix', sec:'us', fmt:'d2',  pre:''},
-  {id:'kospi',  name:'KOSPI',    sym:'^KS11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
-  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11', market:'kr',  sec:'kr', fmt:'d2',  pre:''},
-  {id:'gold',   name:'금 현물',  sym:'GC=F',  market:'us',  sec:'us', fmt:'d2',  pre:'$'},
-  {id:'usdkrw', name:'환율',     sym:'KRW=X', market:'us',  sec:'us', fmt:'d2',  pre:'₩'},
-  {id:'wti',    name:'WTI 원유', sym:'CL=F',  market:'vix', sec:'us', fmt:'d2',  pre:'$'},
+  {id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', fhSym:'^IXIC',         market:'us',  sec:'us', fmt:'int', pre:''},
+  {id:'sp500',  name:'S&P 500',  sym:'^GSPC', fhSym:'^GSPC',         market:'us',  sec:'us', fmt:'int', pre:''},
+  {id:'dow',    name:'DOW',      sym:'^DJI',  fhSym:'^DJI',          market:'us',  sec:'us', fmt:'int', pre:''},
+  {id:'vix',    name:'VIX',      sym:'^VIX',  fhSym:'^VIX',          market:'vix', sec:'us', fmt:'d2',  pre:''},
+  {id:'kospi',  name:'KOSPI',    sym:'^KS11',                         market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  {id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11',                         market:'kr',  sec:'kr', fmt:'d2',  pre:''},
+  {id:'gold',   name:'금 현물',  sym:'GC=F',  fhSym:'OANDA:XAU_USD', market:'us',  sec:'us', fmt:'d2',  pre:'$'},
+  {id:'usdkrw', name:'환율',     sym:'KRW=X', fhSym:'OANDA:USD_KRW', market:'us',  sec:'us', fmt:'d2',  pre:'₩'},
+  {id:'wti',    name:'WTI 원유', sym:'CL=F',  fhSym:'CL=F',          market:'vix', sec:'us', fmt:'d2',  pre:'$'},
 ];
 
 const PX=[
+  u=>`https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
   u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
@@ -583,6 +584,18 @@ const YF_HOSTS=['query2.finance.yahoo.com','query1.finance.yahoo.com'];
 
 let crumb=null, winPx=null, dbgLines=[];
 let fngHistory=[], fngRange=14;
+let fhKey=localStorage.getItem('fh_k')||'';
+
+async function fetchFH(fhSym){
+  if(!fhKey) return null;
+  try{
+    const res=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(fhSym)}&token=${fhKey}`,{signal:ctrl(6000).signal});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d=await res.json();
+    if(!d.c||d.c<=0) return null;
+    return d;
+  }catch(e){dlog(`FH ${fhSym} 실패: ${e.message.slice(0,40)}`);return null;}
+}
 
 function dlog(m){
   const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -793,17 +806,37 @@ if(market==='vix'||market==='wti') color=isUp?'var(--kr-down)':'var(--down)';
 }
 
 async function updateCard(inst){
-  const data=await fetchYF(inst.sym);
   const pEl=document.getElementById(`p-${inst.id}`);
   const cEl=document.getElementById(`c-${inst.id}`);
   const sEl=document.getElementById(`s-${inst.id}`);
   const card=document.getElementById(`card-${inst.id}`);
-  if(!data){pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;}
-  const r=data.chart.result[0],m=r.meta;
-  const px=m.regularMarketPrice;
-  const prv=m.chartPreviousClose??m.previousClose;
-  const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
-  const cls=r.indicators?.quote?.[0]?.close??[];
+
+  let px,chg,pct,up,cls=[];
+
+  if(inst.fhSym&&fhKey){
+    const [fh,yfData]=await Promise.all([fetchFH(inst.fhSym),fetchYF(inst.sym)]);
+    if(fh){
+      px=fh.c; chg=fh.d??0; pct=fh.dp??0; up=chg>=0;
+      dlog(`✅ FH ${inst.id}: ${px}`);
+    }else if(yfData){
+      const m=yfData.chart.result[0].meta;
+      px=m.regularMarketPrice;
+      const prv=m.chartPreviousClose??m.previousClose;
+      chg=px-prv; pct=prv?(chg/prv)*100:0; up=chg>=0;
+    }else{
+      pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;
+    }
+    if(yfData) cls=yfData.chart.result[0].indicators?.quote?.[0]?.close??[];
+  }else{
+    const data=await fetchYF(inst.sym);
+    if(!data){pEl.textContent='ERR';pEl.className='cp nt';cEl.textContent='fetch failed';cEl.className='cc nt';return;}
+    const m=data.chart.result[0].meta;
+    px=m.regularMarketPrice;
+    const prv=m.chartPreviousClose??m.previousClose;
+    chg=px-prv; pct=prv?(chg/prv)*100:0; up=chg>=0;
+    cls=data.chart.result[0].indicators?.quote?.[0]?.close??[];
+  }
+
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
   const colorClass=(inst.market==='vix'||inst.id==='wti')?(up?'kr-down':'down'):(up?'kr-up':'kr-down');
   pEl.className=`cp ${colorClass}`;
@@ -816,12 +849,8 @@ async function updateCard(inst){
   else if(inst.market==='vix')card.classList.add(up?'fld':'flu');
   else card.classList.add(up?'flu':'fld');
 
-  // 알림 대상 종목 현재가 캐시
-  const alertKeys = ['nasdaq','sp500','kospi','kosdaq','gold','usdkrw'];
-  if(alertKeys.includes(inst.id)){
-    latestPrices[inst.id] = px;
-    renderAlertTable();
-  }
+  const alertKeys=['nasdaq','sp500','kospi','kosdaq','gold','usdkrw'];
+  if(alertKeys.includes(inst.id)){latestPrices[inst.id]=px;renderAlertTable();}
 }
 
 function setStat(txt,state){
