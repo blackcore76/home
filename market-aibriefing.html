@@ -1109,7 +1109,7 @@ document.addEventListener('click', e => { if(!e.target.closest('#symIn')&&!e.tar
 function pickKrSym(code, name) { $symIn.value=code.trim(); $symIn.dataset.krName=name; closeDrop(); }
 function pickSym(sym) { $symIn.value=sym; $symIn.dataset.krName=''; closeDrop(); }
 
-document.getElementById('runBtn').addEventListener('click', run);
+document.getElementById('runBtn').addEventListener('click', () => run());
 $symIn.addEventListener('keypress', e => { if(e.key==='Enter') { closeDrop(); run(); } });
 
 /* ══ 히스토리 ══ */
