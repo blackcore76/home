@@ -458,7 +458,17 @@ function showToast(msg, isErr=false) {
     el.textContent = msg;
     el.className = 'toast'+(isErr?' err':'');
     el.classList.add('on');
-    setTimeout(()=>el.classList.remove('on'), 3000);
+    setTimeout(()=>el.classList.remove('on'), isErr ? 6000 : 3000);
+}
+function sanitizeNum(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    if (typeof v === 'object' && !(v instanceof firebase.firestore.Timestamp)) {
+        const r = {};
+        for (const [k, val] of Object.entries(v)) r[k] = sanitizeNum(val);
+        return r;
+    }
+    return v;
 }
 function ldStep(n) {
     for (let i=1;i<=5;i++) {
@@ -1008,15 +1018,16 @@ async function saveRpt(sym, stockName, content, quote, indicators, isKr, yfSym, 
     try {
         const n=new Date(), p=v=>String(v).padStart(2,'0');
         const ds = `${n.getFullYear()}.${p(n.getMonth()+1)}.${p(n.getDate())} ${p(n.getHours())}:${p(n.getMinutes())}`;
-        await db.collection(COL).add({
+        await db.collection(COL).add(sanitizeNum({
+            uid: currentUser.uid,
             symbol:sym, stockName:stockName||'', content, dateStr:ds,
             price:quote.c, change:quote.d, chgPct:quote.dp, high:quote.h, low:quote.l,
             market:isKr?'KR':'US', yfSymbol:yfSym, dataTs:dataTs||null,
             indicators:indicators||{}, techScore:techScore??null, techVerdict:techVerdict??null,
             createdAt:firebase.firestore.Timestamp.now()
-        });
+        }));
         st.style.color='var(--green)'; st.textContent='✓ 저장 완료'; showToast('✅ Firestore에 저장되었습니다.');
-    } catch(e) { st.style.color='var(--red)'; st.textContent='⚠️ 저장 실패'; showToast('⚠️ 저장 실패: '+e.message,true); }
+    } catch(e) { st.style.color='var(--red)'; st.textContent='⚠️ 저장 실패'; console.error('Firestore 저장 오류:', e); showToast('⚠️ 저장 실패: '+e.message,true); }
 }
 
 let dropTimer = null;
