@@ -454,12 +454,12 @@ function go(t) {
     });
     if (t==='h') loadHist();
 }
-function showToast(msg, isErr=false) {
+function showToast(msg, isErr=false, dur=isErr?6000:3000) {
     const el = document.getElementById('toast');
     el.textContent = msg;
     el.className = 'toast'+(isErr?' err':'');
     el.classList.add('on');
-    setTimeout(()=>el.classList.remove('on'), isErr ? 6000 : 3000);
+    setTimeout(()=>el.classList.remove('on'), dur);
 }
 function sanitizeNum(v) {
     if (v === null || v === undefined) return null;
@@ -985,10 +985,17 @@ async function run(krNameHint = '') {
         const now = new Date(), dS = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
         const promptSym = isKr ? (stockName ? `${stockName} (${sym})` : `${sym} (${yfSym})`) : sym;
         const prompt = buildPrompt(promptSym, quote, indicators, dS, isKr);
-        const gmRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
-            {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.4,maxOutputTokens:8192}})}
-        );
+        let gmRes;
+        try {
+            gmRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gmKey}`,
+                {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.4,maxOutputTokens:8192}})}
+            );
+        } catch {
+            $ld.classList.add('gone');
+            showToast('AI 모델 연결이 불안정합니다. 잠시 후 다시 시도해주세요.', true, 5000);
+            return;
+        }
         const gm = await gmRes.json();
         let aiText = '';
         if (gm.candidates?.length>0) aiText = gm.candidates[0].content.parts[0].text;
