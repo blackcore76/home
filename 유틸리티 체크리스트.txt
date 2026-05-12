@@ -1,0 +1,36 @@
+유틸리티 산업 (전력 / 가스 / 에너지 공기업)
+
+cat: 수익성
+C01                                  criteria: 최근 흑자/적자 여부 및 연료비 연동제 작동 확인
+C02     label: EBITDA 마진율          criteria: 15% 이상, 대규모 감가상각비 고려
+C03     label: 매출 추이              criteria: 요금 인상 및 판매량에 따른 완만한 증가
+C04     label: 연료비 비중            criteria: 국제 유가/LNG 가격 변동에 따른 비용 통제력
+C05                                  criteria: 최근 2년 % 이상 유지 시 양호
+C06     label: ROIC (투하자본수익률)  criteria: 자본 비용 대비 효율적인 설비 운영 여부
+C07     label: 정책 리스크            criteria: 요금 기정사실화 여부 및 정부 압박 확인
+
+cat: 벨류에이션
+C08     label: PBR (주가순자산비율)  criteria: 0.5배 이하
+C09     label: EV/EBITDA            criteria: 업종 평균 이하 여부
+C10     label: BPS 증가율            criteria: 적자로 인한 자본 잠식 여부
+C11     label: 배당 수익률           criteria: 3~5% 가능 여부
+
+cat: 재무건전성
+C12                                  criteria: 200% 이하
+C13     label: 이자보상배율           criteria: 1.0 이상
+C14     label: 사채 발행 한도         criteria: 법적 발행 한도 여유분
+C15     label: 자본 유지              criteria: 대규모 적자로 인한 자본 확충 필요성 여부
+C16                                  criteria: 영업CF 플러스 유지 여부
+C17     label: 설비투자(CAPEX)        criteria: 노후 설비 및 신재생 투자 비중
+C18     label: 정부 지원 가능성       criteria: 유상증자나 정부 출자 가능성
+
+cat: 경쟁력
+C19     label: 독점적 지위            criteria: 시장 독점 여부 - 강,중,약
+C20     label: 에너지 믹스            criteria: 원전, 신재생, 화력 비중의 효율성
+C21     label: 요금 결정권            criteria: 정부와의 협상력 및 독립성
+C22     label: 탄소 중립 대응         criteria: ESG 평가 및 탄소배출권 비용 부담 정도
+C23     label: 배당 정책              criteria: 정부 배당 가이드라인 준수 여부
+
+cat: 신뢰도
+C24     label: 공공기관 경영평가       criteria: 등급 확인
+C25     label: 정치적 외풍            criteria: 정권 교체 등에 따른 에너지 정책 변화 리스크

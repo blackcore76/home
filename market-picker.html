@@ -94,6 +94,7 @@ select.filter-input option{background:var(--sf2);}
 .ind-mfg{background:rgba(255,202,40,.1);color:var(--yellow);border:1px solid rgba(255,202,40,.2);}
 .ind-retail{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
 .ind-fin{background:rgba(180,120,255,.1);color:#b478ff;border:1px solid rgba(180,120,255,.2);}
+.ind-util{background:rgba(255,145,0,.1);color:#ff9100;border:1px solid rgba(255,145,0,.2);}
 .score-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:700;}
 .score-hi{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
 .score-md{background:rgba(255,202,40,.12);color:var(--yellow);border:1px solid rgba(255,202,40,.3);}
@@ -153,6 +154,22 @@ select option{background:var(--sf2);}
 .ind-tab.active-mfg{background:rgba(255,202,40,.12);border-color:var(--yellow);color:var(--yellow);font-weight:700;}
 .ind-tab.active-retail{background:rgba(0,230,118,.12);border-color:var(--green);color:var(--green);font-weight:700;}
 .ind-tab.active-fin{background:rgba(180,120,255,.12);border-color:#b478ff;color:#b478ff;font-weight:700;}
+.ind-tab.active-util{background:rgba(255,145,0,.12);border-color:#ff9100;color:#ff9100;font-weight:700;}
+.btn-guide{background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:5px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-guide:hover{border-color:var(--accent);color:var(--accent);}
+/* GICS 안내 모달 */
+.gics-section-title{font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:1px;color:var(--accent);padding:10px 0 8px;margin-top:6px;}
+.gics-table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+.gics-table th{text-align:left;padding:7px 10px;font-size:10px;letter-spacing:.8px;color:var(--text3);border-bottom:1px solid var(--bd2);font-family:var(--mono);background:var(--sf2);}
+.gics-table td{padding:8px 10px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--bd);vertical-align:top;}
+.gics-table td:first-child{color:var(--text);white-space:nowrap;font-weight:600;width:30px;}
+.gics-table td:nth-child(2){color:var(--text);font-weight:600;}
+.gics-sector-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--mono);}
+.gics-sector-tag.tech{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.gics-sector-tag.mfg{background:rgba(255,202,40,.1);color:var(--yellow);border:1px solid rgba(255,202,40,.2);}
+.gics-sector-tag.retail{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.gics-sector-tag.fin{background:rgba(180,120,255,.1);color:#b478ff;border:1px solid rgba(180,120,255,.2);}
+.gics-sector-tag.util{background:rgba(255,145,0,.1);color:#ff9100;border:1px solid rgba(255,145,0,.2);}
 /* 라이브 점수판 */
 .live-score-strip{background:var(--sf3);border:1px solid var(--bd2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .live-score-num{font-family:var(--mono);font-size:36px;font-weight:700;line-height:1;}
@@ -238,6 +255,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
     <option value="제조산업">제조산업</option>
     <option value="유통산업">유통산업</option>
     <option value="금융산업">금융산업</option>
+    <option value="유틸리티">유틸리티</option>
   </select>
   <select class="filter-input" id="filterJudge" onchange="resetPage()" style="width:90px;">
     <option value="">판정 전체</option>
@@ -245,6 +263,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
     <option value="관망">관망</option>
     <option value="매수불가">매수불가</option>
   </select>
+  <button class="btn-guide" onclick="openGics()">📊 산업군 안내</button>
   <div class="count-chip" id="countChip">총 <span>0</span>건</div>
 </div>
 
@@ -277,6 +296,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
         <button class="ind-tab" data-ind="제조산업" onclick="selectIndustry('제조산업',this)">🏭 제조산업</button>
         <button class="ind-tab" data-ind="유통산업" onclick="selectIndustry('유통산업',this)">🛒 유통산업</button>
         <button class="ind-tab" data-ind="금융산업" onclick="selectIndustry('금융산업',this)">🏦 금융산업</button>
+        <button class="ind-tab" data-ind="유틸리티" onclick="selectIndustry('유틸리티',this)">⚡ 유틸리티</button>
       </div>
 
       <!-- 라이브 점수판 -->
@@ -312,6 +332,65 @@ textarea.actual-input::placeholder{color:var(--text3);}
     </div>
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeDetail()">닫기</button></div>
+  </div>
+</div>
+
+<!-- ══ GICS 산업군 안내 모달 ══ -->
+<div class="overlay" id="gicsOverlay" onclick="closeGics()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title"><div class="dot"></div>산업군 분류 안내 (GICS 기준)</div>
+      <button class="btn-close" onclick="closeGics()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="gics-section-title">🟢 GICS 11대 섹터 분류 (표준)</div>
+      <p style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px;">기업의 주요 수익원을 기준으로 11개 섹터로 구분</p>
+      <table class="gics-table">
+        <thead><tr><th>#</th><th>분류 (Sector)</th><th>포함 산업 및 특징</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>정보기술 (IT)</td><td>소프트웨어, 반도체, 하드웨어</td></tr>
+          <tr><td>2</td><td>산업재 (Industrials)</td><td>항공, 국방, 건설, 기계, 철도, 물류</td></tr>
+          <tr><td>3</td><td>경기민감 (Consumer Discretionary)</td><td>자동차, 의류, 호텔, 레저, 일반 유통(백화점, 이커머스)</td></tr>
+          <tr><td>4</td><td>경기방어 (Consumer Staples)</td><td>음식료, 가계용품, 개인용품, 마트(식료품 유통)</td></tr>
+          <tr><td>5</td><td>금융 (Financials)</td><td>은행, 보험, 증권, 자산운용</td></tr>
+          <tr><td>6</td><td>유틸리티 (Utilities)</td><td>전기, 가스, 수도, 신재생 에너지</td></tr>
+          <tr><td>7</td><td>헬스케어 (Health Care)</td><td>제약, 바이오, 의료기기, 병원 서비스</td></tr>
+          <tr><td>8</td><td>커뮤니케이션 서비스</td><td>통신사(SKT 등), 미디어, 엔터, SNS 플랫폼(메타, 구글)</td></tr>
+          <tr><td>9</td><td>에너지 (Energy)</td><td>석유, 가스 시추 및 정제 (정유주)</td></tr>
+          <tr><td>10</td><td>소재 (Materials)</td><td>화학, 철강, 금속 및 광업, 건축자재 (원자재 제조)</td></tr>
+          <tr><td>11</td><td>부동산 (Real Estate)</td><td>리츠(REITs), 부동산 개발 및 운영</td></tr>
+        </tbody>
+      </table>
+
+      <div class="gics-section-title">🔵 5대 섹터 재분류 (본 앱 적용 기준)</div>
+      <p style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px;">GICS 섹터를 5개 산업군으로 묶어 체크리스트 기준치를 차별 적용</p>
+      <table class="gics-table">
+        <thead><tr><th>본 앱 산업군</th><th>포함 GICS 섹터</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="gics-sector-tag tech">💻 기술산업</span></td>
+            <td>IT + 커뮤니케이션 서비스(플랫폼)</td>
+          </tr>
+          <tr>
+            <td><span class="gics-sector-tag mfg">🏭 제조산업</span></td>
+            <td>산업재 + 소재 + 자동차(경기민감 내 제조)</td>
+          </tr>
+          <tr>
+            <td><span class="gics-sector-tag retail">🛒 유통산업</span></td>
+            <td>경기민감(유통) + 경기방어 + 헬스케어(제약)</td>
+          </tr>
+          <tr>
+            <td><span class="gics-sector-tag fin">🏦 금융산업</span></td>
+            <td>금융 + 부동산(리츠)</td>
+          </tr>
+          <tr>
+            <td><span class="gics-sector-tag util">⚡ 유틸리티</span></td>
+            <td>에너지 + 유틸리티</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeGics()">닫기</button></div>
   </div>
 </div>
 
@@ -419,10 +498,37 @@ const OVERRIDES = {
     c23:{criteria:'20~60%'},
     c25:{label:'규제 리스크',         criteria:'없음'},
   },
+  유틸리티: {
+    c01:{criteria:'최근 흑자/적자 여부 및 연료비 연동제 작동 확인'},
+    c02:{label:'EBITDA 마진율',        criteria:'15% 이상, 대규모 감가상각비 고려'},
+    c03:{label:'매출 추이',            criteria:'요금 인상 및 판매량에 따른 완만한 증가'},
+    c04:{label:'연료비 비중',          criteria:'국제 유가/LNG 가격 변동에 따른 비용 통제력'},
+    c05:{criteria:'최근 2년 % 이상 유지 시 양호'},
+    c06:{label:'ROIC (투하자본수익률)',criteria:'자본 비용 대비 효율적인 설비 운영 여부'},
+    c07:{label:'정책 리스크',          criteria:'요금 기정사실화 여부 및 정부 압박 확인'},
+    c08:{label:'PBR (주가순자산비율)', criteria:'0.5배 이하'},
+    c09:{label:'EV/EBITDA',            criteria:'업종 평균 이하 여부'},
+    c10:{label:'BPS 증가율',           criteria:'적자로 인한 자본 잠식 여부'},
+    c11:{label:'배당 수익률',          criteria:'3~5% 가능 여부'},
+    c12:{criteria:'200% 이하'},
+    c13:{label:'이자보상배율',         criteria:'1.0 이상'},
+    c14:{label:'사채 발행 한도',       criteria:'법적 발행 한도 여유분'},
+    c15:{label:'자본 유지',            criteria:'대규모 적자로 인한 자본 확충 필요성 여부'},
+    c16:{criteria:'영업CF 플러스 유지 여부'},
+    c17:{label:'설비투자(CAPEX)',       criteria:'노후 설비 및 신재생 투자 비중'},
+    c18:{label:'정부 지원 가능성',     criteria:'유상증자나 정부 출자 가능성'},
+    c19:{label:'독점적 지위',          criteria:'시장 독점 여부 - 강,중,약'},
+    c20:{label:'에너지 믹스',          criteria:'원전, 신재생, 화력 비중의 효율성'},
+    c21:{label:'요금 결정권',          criteria:'정부와의 협상력 및 독립성'},
+    c22:{label:'탄소 중립 대응',       criteria:'ESG 평가 및 탄소배출권 비용 부담 정도'},
+    c23:{label:'배당 정책',            criteria:'정부 배당 가이드라인 준수 여부'},
+    c24:{label:'공공기관 경영평가',    criteria:'등급 확인'},
+    c25:{label:'정치적 외풍',          criteria:'정권 교체 등에 따른 에너지 정책 변화 리스크'},
+  },
 };
 
-const IND_CLS = {기술산업:'ind-tech', 제조산업:'ind-mfg', 유통산업:'ind-retail', 금융산업:'ind-fin'};
-const IND_ACTIVE = {기술산업:'active-tech', 제조산업:'active-mfg', 유통산업:'active-retail', 금융산업:'active-fin'};
+const IND_CLS = {기술산업:'ind-tech', 제조산업:'ind-mfg', 유통산업:'ind-retail', 금융산업:'ind-fin', 유틸리티:'ind-util'};
+const IND_ACTIVE = {기술산업:'active-tech', 제조산업:'active-mfg', 유통산업:'active-retail', 금융산업:'active-fin', 유틸리티:'active-util'};
 
 // 산업군 적용된 항목 배열 반환
 function getItems(industry) {
@@ -509,7 +615,7 @@ function selectIndustry(ind, btn) {
   currentIndustry = ind;
   // 탭 active 클래스 교체
   document.querySelectorAll('.ind-tab').forEach(t => {
-    t.classList.remove('active-tech','active-mfg','active-retail','active-fin');
+    t.classList.remove('active-tech','active-mfg','active-retail','active-fin','active-util');
   });
   btn.classList.add(IND_ACTIVE[ind]);
   // 체크리스트 기준치만 업데이트 (입력값 유지)
@@ -594,7 +700,7 @@ function openModal(id) {
 
   // 탭 active 초기화
   document.querySelectorAll('.ind-tab').forEach(t => {
-    t.classList.remove('active-tech','active-mfg','active-retail','active-fin');
+    t.classList.remove('active-tech','active-mfg','active-retail','active-fin','active-util');
     if (t.dataset.ind === ind) t.classList.add(IND_ACTIVE[ind]);
   });
 
@@ -737,6 +843,9 @@ function openDetail(id) {
   document.getElementById('detailOverlay').classList.add('open');
 }
 function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+function openGics() { document.getElementById('gicsOverlay').classList.add('open'); }
+function closeGics() { document.getElementById('gicsOverlay').classList.remove('open'); }
 
 // ════════════════════════════════════════════════
 //  목록 렌더
