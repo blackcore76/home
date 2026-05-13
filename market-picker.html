@@ -218,7 +218,8 @@ textarea.actual-input::placeholder{color:var(--text3);}
 .detail-table tr.cat-tr td{background:var(--sf2);color:var(--accent);font-size:9px;letter-spacing:1.5px;font-family:var(--mono);text-transform:uppercase;padding:5px 10px;}
 .detail-table .td-label{font-weight:600;color:var(--text);width:110px;}
 .detail-table .td-criteria{color:var(--text3);font-family:var(--mono);font-size:10px;width:150px;}
-.detail-table .td-actual{word-break:break-all;max-width:240px;}
+.detail-table .td-actual{word-break:break-word;max-width:160px;}
+@media(max-width:599px){.detail-table .td-criteria,.detail-table th.th-criteria{display:none;}.detail-table .td-actual{max-width:none;}}
 .vtag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;font-family:var(--mono);}
 .vtag.ok{background:rgba(0,230,118,.1);color:var(--green);}
 .vtag.warn{background:rgba(255,202,40,.1);color:var(--yellow);}
@@ -839,7 +840,7 @@ function openDetail(id) {
     <div style="font-size:11px;color:var(--text3);margin-bottom:12px;font-family:var(--mono);">${r.date} · ${r.stype||''} · ${fmtEmail(r.userEmail)}</div>
     ${r.memo?`<div class="note-area" style="margin-bottom:14px;">📌 ${esc(r.memo)}</div>`:''}
     <table class="detail-table">
-      <thead><tr><th>항목</th><th>기준치</th><th>실제값</th><th>판정</th></tr></thead>
+      <thead><tr><th>항목</th><th class="th-criteria">기준치</th><th>실제값</th><th>판정</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="display:flex;gap:8px;margin-top:14px;">
