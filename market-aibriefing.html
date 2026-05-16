@@ -1134,6 +1134,12 @@ function pickSym(sym) { $symIn.value=sym; $symIn.dataset.krName=''; closeDrop();
 document.getElementById('runBtn').addEventListener('click', () => run());
 $symIn.addEventListener('keypress', e => { if(e.key==='Enter') { closeDrop(); run(); } });
 
+// AI 스캐너에서 넘어온 심볼 자동 입력
+(function() {
+    const sym = sessionStorage.getItem('sc_sym');
+    if (sym) { sessionStorage.removeItem('sc_sym'); $symIn.value = sym; run(); }
+})();
+
 /* ══ 히스토리 ══ */
 async function loadHist() {
     // ✅ 비로그인도 공개 리포트 열람 가능 (Firestore 규칙: allow read: if true)
