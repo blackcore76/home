@@ -16,7 +16,6 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="home-bar.js" onerror="console.log('home-bar skip')"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <style>
         :root {
@@ -313,8 +312,68 @@ const FB_CFG = {
 };
 const COL = 'market_scanner_reports';
 firebase.initializeApp(FB_CFG);
-const db = firebase.firestore(), auth = firebase.auth();
+const auth = firebase.auth();
 let currentUser = null;
+
+// ── Firestore REST API (WebChannel 없는 단순 HTTP) ──────────
+const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FB_CFG.projectId}/databases/(default)/documents`;
+
+function _parseField(v) {
+    if (!v) return null;
+    if ('stringValue'    in v) return v.stringValue;
+    if ('integerValue'   in v) return Number(v.integerValue);
+    if ('doubleValue'    in v) return v.doubleValue;
+    if ('booleanValue'   in v) return v.booleanValue;
+    if ('nullValue'      in v) return null;
+    if ('timestampValue' in v) return new Date(v.timestampValue);
+    if ('mapValue'       in v) return _parseFields(v.mapValue.fields || {});
+    if ('arrayValue'     in v) return (v.arrayValue.values || []).map(_parseField);
+    return null;
+}
+function _parseFields(fields) {
+    const o = {};
+    for (const [k, v] of Object.entries(fields || {})) o[k] = _parseField(v);
+    return o;
+}
+function _toField(val) {
+    if (val === null || val === undefined) return { nullValue: null };
+    if (typeof val === 'boolean')  return { booleanValue: val };
+    if (typeof val === 'number')   return Number.isInteger(val) ? { integerValue: String(val) } : { doubleValue: val };
+    if (typeof val === 'string')   return { stringValue: val };
+    if (val instanceof Date)       return { timestampValue: val.toISOString() };
+    if (Array.isArray(val))        return { arrayValue: { values: val.map(_toField) } };
+    if (typeof val === 'object')   return { mapValue: { fields: _toFields(val) } };
+    return { stringValue: String(val) };
+}
+function _toFields(obj) {
+    const f = {};
+    for (const [k, v] of Object.entries(obj || {})) f[k] = _toField(v);
+    return f;
+}
+async function fsAdd(col, data) {
+    const res = await fetch(`${FS_BASE}/${col}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: _toFields(data) }),
+    });
+    if (!res.ok) throw new Error('Firestore write ' + res.status);
+}
+async function fsQuery(col, orderField, limitN = 30) {
+    const res = await fetch(`${FS_BASE}:runQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredQuery: {
+            from: [{ collectionId: col }],
+            orderBy: [{ field: { fieldPath: orderField }, direction: 'DESCENDING' }],
+            limit: limitN,
+        }}),
+    });
+    if (!res.ok) throw new Error('Firestore query ' + res.status);
+    const rows = await res.json();
+    return rows
+        .filter(r => r.document)
+        .map(r => ({ id: r.document.name.split('/').pop(), data: _parseFields(r.document.fields) }));
+}
 
 auth.onAuthStateChanged(user => {
     currentUser = user;
@@ -588,7 +647,7 @@ async function saveScan(picks, summary, market, totalScanned, filtered) {
     saveSt.className='save-st saving';saveSt.textContent='💾 저장 중...';
     try {
         const doc = {
-            ts: firebase.firestore.FieldValue.serverTimestamp(),
+            ts: new Date(),
             uid: currentUser?.uid || null,
             market,
             totalScanned,
@@ -602,7 +661,7 @@ async function saveScan(picks, summary, market, totalScanned, filtered) {
                 price:p.ind?.cur||null,chg5d:p.ind?.chg5d||null,
             })),
         };
-        await db.collection(COL).add(doc);
+        await fsAdd(COL, doc);
         saveSt.className='save-st saved';saveSt.textContent='✓ 저장됨';
         showToast('Firestore에 자동 저장됐습니다.');
     } catch(e) {
@@ -769,13 +828,11 @@ async function loadHistory() {
     document.getElementById('hList').classList.add('gone');
     document.getElementById('hEmpty').classList.add('gone');
     try {
-        let q=db.collection(COL).orderBy('ts','desc').limit(30);
-        const snap=await q.get();
-        histDocs=snap.docs;
-        document.getElementById('hTotCnt').textContent=histDocs.length;
+        histDocs = await fsQuery(COL, 'ts', 30);
+        document.getElementById('hTotCnt').textContent = histDocs.length;
         renderHistory(histDocs);
     } catch(e) {
-        showToast('히스토리 로딩 실패: '+e.message,true);
+        showToast('히스토리 로딩 실패: '+e.message, true);
     } finally {
         document.getElementById('hLoading').style.display='none';
     }
@@ -788,8 +845,8 @@ function renderHistory(docs) {
     document.getElementById('hEmpty').classList.add('gone');
 
     docs.forEach((doc,i)=>{
-        const d=doc.data();
-        const ts=d.ts?.toDate?.()??new Date();
+        const d=doc.data;
+        const ts=d.ts instanceof Date ? d.ts : new Date(d.ts||0);
         const dateStr=ts.toLocaleDateString('ko-KR',{month:'short',day:'numeric'})
             +' '+ts.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
         const mktLabel={'all':'🌏 전체','kr':'🇰🇷 한국','us':'🇺🇸 미국'}[d.market]||d.market;
