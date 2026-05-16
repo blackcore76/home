@@ -651,11 +651,16 @@ ${JSON.stringify(payload,null,2)}
 // ── Firestore 저장 ─────────────────────────────────────────
 async function saveScan(picks, summary, market, totalScanned, filtered) {
     const saveSt = document.getElementById('saveSt');
+    if (!currentUser) {
+        saveSt.className='save-st';saveSt.style.color='var(--text3)';
+        saveSt.textContent='🔒 로그인 후 저장됩니다';
+        return;
+    }
     saveSt.className='save-st saving';saveSt.textContent='💾 저장 중...';
     try {
         const doc = {
             ts: new Date(),
-            uid: currentUser?.uid || null,
+            uid: currentUser.uid,
             market,
             totalScanned,
             filtered,
