@@ -144,6 +144,7 @@
   `;
 
   var FILE_LABELS = {
+    'market-scanner.html':    '🔍 AI 마켓 스캐너',
     'market-aibriefing.html': '🤖 AI 차트 분석',
     'market-dashboard.html':  '📊 마켓 대시보드',
     'market-picker.html':     '📈 관심 주식 픽',
