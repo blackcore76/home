@@ -688,7 +688,7 @@ async function startScan() {
         document.getElementById('ticker').textContent='Firestore에 저장 중...';
         const enriched=(aiResult.picks||[]).map(pick=>{
             const orig=scored.find(s=>s.symbol===pick.symbol);
-            return{...pick,ind:orig?.ind,filterScore:orig?.filterScore};
+            return{...pick, name: orig?.name||pick.name, ind:orig?.ind, filterScore:orig?.filterScore};
         });
 
         await saveScan(enriched, aiResult.summary, selectedMkt, universe.length, filteredLen);
