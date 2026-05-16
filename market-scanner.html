@@ -350,18 +350,25 @@ function _toFields(obj) {
     for (const [k, v] of Object.entries(obj || {})) f[k] = _toField(v);
     return f;
 }
+async function _fsHeaders() {
+    const h = { 'Content-Type': 'application/json' };
+    if (currentUser) {
+        try { h['Authorization'] = 'Bearer ' + await currentUser.getIdToken(); } catch {}
+    }
+    return h;
+}
 async function fsAdd(col, data) {
-    const res = await fetch(`${FS_BASE}/${col}`, {
+    const res = await fetch(`${FS_BASE}/${col}?key=${FB_CFG.apiKey}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await _fsHeaders(),
         body: JSON.stringify({ fields: _toFields(data) }),
     });
     if (!res.ok) throw new Error('Firestore write ' + res.status);
 }
 async function fsQuery(col, orderField, limitN = 30) {
-    const res = await fetch(`${FS_BASE}:runQuery`, {
+    const res = await fetch(`${FS_BASE}:runQuery?key=${FB_CFG.apiKey}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await _fsHeaders(),
         body: JSON.stringify({ structuredQuery: {
             from: [{ collectionId: col }],
             orderBy: [{ field: { fieldPath: orderField }, direction: 'DESCENDING' }],
