@@ -41,16 +41,19 @@ body{
 }
 
 /* ══════════════════════════════════
-   GRAIN OVERLAY
+   GRAIN OVERLAY — feTurbulence 제거 (CPU 과부하·탭 스피너 원인)
+   대신 repeating-linear-gradient 로 경량 노이즈 대체
 ══════════════════════════════════ */
 body::before{
   content:'';
   position:fixed;
   inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity:.45;
+  background-image:
+    repeating-linear-gradient(0deg,   transparent, transparent 2px, rgba(255,255,255,.012) 2px, rgba(255,255,255,.012) 4px),
+    repeating-linear-gradient(90deg,  transparent, transparent 3px, rgba(255,255,255,.008) 3px, rgba(255,255,255,.008) 6px);
   pointer-events:none;
   z-index:1000;
+  will-change:transform;
 }
 
 /* ══════════════════════════════════
@@ -650,6 +653,7 @@ document.getElementById('yr').textContent = new Date().getFullYear();
   const img = document.querySelector('.footer-stamp');
   if (!img) return;
   function removeWhite() {
+    img.onload = null; // src 변경 후 재발동 방지 (무한루프 차단)
     const canvas = document.createElement('canvas');
     canvas.width  = img.naturalWidth;
     canvas.height = img.naturalHeight;
