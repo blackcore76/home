@@ -1268,7 +1268,7 @@ function doSave() {
     H[idx] = { id: editId, market, exchange, broker, brokers: prev.brokers || [prev.broker || broker], ticker, name, date, lastBuyDate: date, qty, buyPrice: price, buyFX: market==='US' ? buyfx : null, memo, curPrice: prev.curPrice, lastUpd: prev.lastUpd, userId: currentUser.uid, userEmail: currentUser.email };
     toast('✅ 수정되었습니다');
   } else {
-    const ex = H.find(x => x.ticker === ticker && x.market === market);
+    const ex = H.find(x => x.ticker === ticker && x.market === market && x.broker === broker);
     if(ex) {
       const total = ex.qty + qty;
       if(market==='US') {
