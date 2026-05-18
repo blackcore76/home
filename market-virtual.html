@@ -260,8 +260,12 @@ select option{background:var(--sf2);}
         </div>
         <div class="form-group">
           <label>티커 (Yahoo Finance 형식) *</label>
-          <input type="text" id="fTicker" placeholder="NVDA / 005930.KS" oninput="this.value=this.value.toUpperCase()">
+          <input type="text" id="fTicker" placeholder="NVDA / 005930.KS" oninput="this.value=this.value.toUpperCase();checkMerge()">
           <div class="helper">미국: AAPL, NVDA · 코스피: 005930.KS · 코스닥: 035720.KQ</div>
+        </div>
+        <div class="form-group full" id="mergeNoticeWrap" style="display:none;">
+          <div id="mergeNotice" style="background:rgba(255,202,40,.08);border:1px solid rgba(255,202,40,.25);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--yellow);">
+          </div>
         </div>
         <div class="form-group"><label>매입일 *</label><input type="date" id="fBuyDate"></div>
         <div class="form-group">
@@ -567,28 +571,54 @@ function render() {
 function openModal(id) {
   editId = id || null;
   document.getElementById('modalTitle').textContent = editId ? '포지션 수정' : '새 모의 포지션';
+  document.getElementById('mergeNoticeWrap').style.display = 'none';
 
   if (!editId) {
-    document.getElementById('fName').value      = '';
-    document.getElementById('fTicker').value    = '';
-    document.getElementById('fMarket').value    = 'US';
-    document.getElementById('fBuyDate').value   = new Date().toISOString().slice(0,10);
-    document.getElementById('fBuyPrice').value  = '';
-    document.getElementById('fShares').value    = '';
-    document.getElementById('fMemo').value      = '';
+    document.getElementById('fName').value     = '';
+    document.getElementById('fTicker').value   = '';
+    document.getElementById('fMarket').value   = 'US';
+    document.getElementById('fBuyDate').value  = new Date().toISOString().slice(0,10);
+    document.getElementById('fBuyPrice').value = '';
+    document.getElementById('fShares').value   = '';
+    document.getElementById('fMemo').value     = '';
   } else {
     const r = records.find(x => x.id === editId);
     if (!r) return;
-    document.getElementById('fName').value     = r.name    || '';
-    document.getElementById('fTicker').value   = r.ticker  || '';
-    document.getElementById('fMarket').value   = r.market  || 'US';
-    document.getElementById('fBuyDate').value  = r.buyDate || '';
+    document.getElementById('fName').value     = r.name     || '';
+    document.getElementById('fTicker').value   = r.ticker   || '';
+    document.getElementById('fMarket').value   = r.market   || 'US';
+    document.getElementById('fBuyDate').value  = r.buyDate  || '';
     document.getElementById('fBuyPrice').value = r.buyPrice || '';
-    document.getElementById('fShares').value   = r.shares  || '';
-    document.getElementById('fMemo').value     = r.memo    || '';
+    document.getElementById('fShares').value   = r.shares   || '';
+    document.getElementById('fMemo').value     = r.memo     || '';
   }
   updatePriceUnit();
   document.getElementById('overlay').classList.add('open');
+}
+
+function checkMerge() {
+  if (editId) return;
+  const ticker   = document.getElementById('fTicker').value.trim().toUpperCase();
+  const existing = records.find(r => r.ticker === ticker && r.uid === currentUser?.uid);
+  const wrap     = document.getElementById('mergeNoticeWrap');
+  const box      = document.getElementById('mergeNotice');
+
+  if (!existing || !ticker) { wrap.style.display = 'none'; return; }
+
+  const priceStr = existing.market === 'US' ? usdFmt(existing.buyPrice) : krwFmt(existing.buyPrice);
+  const newShares  = parseFloat(document.getElementById('fShares').value) || 0;
+  const newPrice   = parseFloat(document.getElementById('fBuyPrice').value) || 0;
+
+  let previewLine = '';
+  if (newShares > 0 && newPrice > 0) {
+    const totalShares = existing.shares + newShares;
+    const avgPrice    = (existing.buyPrice * existing.shares + newPrice * newShares) / totalShares;
+    const avgStr      = existing.market === 'US' ? usdFmt(avgPrice) : krwFmt(avgPrice);
+    previewLine = `<br>→ 병합 후: <b style="color:var(--text)">${numFmt(totalShares)}주 @ ${avgStr}</b> (가중평균)`;
+  }
+
+  box.innerHTML = `🔀 동일 종목 발견 — 저장 시 자동 병합됩니다<br>기존: ${numFmt(existing.shares)}주 @ ${priceStr}${previewLine}`;
+  wrap.style.display = 'block';
 }
 
 function updatePriceUnit() {
@@ -621,10 +651,36 @@ async function saveRecord() {
     toast('⚠️ 가격과 수량은 0보다 커야 합니다.'); return;
   }
 
+  const memo = document.getElementById('fMemo').value.trim();
+
+  // 동일 티커 병합 (신규 추가 시에만)
+  const existing = !editId && records.find(r => r.ticker === ticker && r.uid === currentUser.uid);
+  if (existing) {
+    const totalShares = existing.shares + shares;
+    const avgPrice    = (existing.buyPrice * existing.shares + buyPrice * shares) / totalShares;
+    const earliestDate = existing.buyDate < buyDate ? existing.buyDate : buyDate;
+    const mergedMemo  = [existing.memo, memo].filter(Boolean).join(' / ');
+
+    const mergeData = {
+      shares:    totalShares,
+      buyPrice:  Math.round(avgPrice * 10000) / 10000,
+      buyDate:   earliestDate,
+      memo:      mergedMemo,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    setSyncStatus('saving');
+    try {
+      await db.collection(COL).doc(existing.id).update(mergeData);
+      closeModal();
+      toast(`🔀 병합 완료! ${numFmt(totalShares)}주 @ ${existing.market === 'US' ? usdFmt(mergeData.buyPrice) : krwFmt(mergeData.buyPrice)}`);
+    } catch(e) { toast('❌ 병합 실패: ' + e.message); setSyncStatus('offline'); }
+    finally    { setSyncStatus('live'); }
+    return;
+  }
+
   const data = {
     uid: currentUser.uid, userEmail: currentUser.email,
-    name, ticker, market, buyDate, buyPrice, shares,
-    memo: document.getElementById('fMemo').value.trim(),
+    name, ticker, market, buyDate, buyPrice, shares, memo,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
