@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="모의투자">
+<title>모의투자 포트폴리오</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+  });
+</script>
+<script src="home-bar.js"></script>
+<style>
+:root {
+  --bg:     #080c14;
+  --sf:     #0e1422;
+  --sf2:    #131b2d;
+  --sf3:    #181f30;
+  --bd:     #1e2d45;
+  --bd2:    #263548;
+  --text:   #c8d6e8;
+  --text2:  #7a91a8;
+  --text3:  #4a5f74;
+  --accent: #00d4ff;
+  --green:  #00e676;
+  --red:    #ff5252;
+  --yellow: #ffca28;
+  --mono:   'JetBrains Mono', monospace;
+  --sans:   'Noto Sans KR', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:80px;}
+
+header{
+  position:sticky;top:36px;z-index:50;
+  background:rgba(8,12,20,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bd);padding:0 16px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
+.sync-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
+.sync-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.sync-dot.live{background:var(--green);box-shadow:0 0 5px var(--green);animation:bl 3s infinite;}
+.sync-dot.loading{background:var(--yellow);box-shadow:0 0 5px var(--yellow);animation:bl .6s infinite;}
+.sync-dot.offline{background:var(--red);}
+.sync-dot.saving{background:var(--accent);box-shadow:0 0 5px var(--accent);animation:bl .4s infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.sync-txt.live{color:var(--green);}.sync-txt.loading{color:var(--yellow);}.sync-txt.offline{color:var(--red);}.sync-txt.saving{color:var(--accent);}
+.user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;cursor:pointer;}
+.user-badge:hover{border-color:var(--accent);color:var(--accent);}
+.btn-add{background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 14px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
+.btn-add:hover{background:#33ddff;}
+
+/* ── 요약 스트립 ── */
+.summary-strip{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--bd);margin:12px 16px 0;border-radius:12px;overflow:hidden;border:1px solid var(--bd);
+}
+.sum-cell{background:var(--sf);padding:14px 16px;}
+.sum-label{font-family:var(--mono);font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.sum-val{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1.1;}
+.sum-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:3px;}
+.sum-val.green{color:var(--green);}.sum-val.red{color:var(--red);}.sum-val.yellow{color:var(--yellow);}.sum-val.accent{color:var(--accent);}
+
+/* ── 필터바 ── */
+.filter-bar{padding:8px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bd);margin-top:12px;}
+.filter-input{background:var(--sf2);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--sans);outline:none;color-scheme:dark;}
+.filter-input:focus{border-color:var(--accent);}
+select.filter-input option{background:var(--sf2);}
+.count-chip{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
+.count-chip span{color:var(--accent);font-weight:600;}
+.btn-refresh{margin-left:auto;background:var(--sf2);border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:6px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;}
+.btn-refresh:hover{border-color:var(--accent);color:var(--accent);}
+.btn-refresh.spinning svg{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── 피드 ── */
+.feed{padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+.feed-item{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s;animation:fadeIn .3s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.feed-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+.feed-item.us::before{background:linear-gradient(to bottom,#00d4ff,transparent);}
+.feed-item.kr::before{background:linear-gradient(to bottom,#ff5252,transparent);}
+.feed-item:hover{border-color:var(--bd2);}
+
+.item-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.item-name{font-size:16px;font-weight:700;color:var(--text);}
+.item-ticker{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:2px 7px;}
+.mkt-tag{font-family:var(--mono);font-size:9px;border-radius:4px;padding:2px 7px;font-weight:700;}
+.mkt-us{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.mkt-kr{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2);}
+.item-author{font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:2px 6px;}
+.item-actions{margin-left:auto;display:flex;gap:6px;}
+.btn-icon{background:transparent;border:1px solid var(--bd);color:var(--text3);border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.btn-icon.edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.btn-icon.del:hover{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.08);}
+
+/* ── 가격 그리드 ── */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px 12px;margin-bottom:10px;background:var(--sf3);border-radius:10px;padding:10px 12px;border:1px solid var(--bd2);}
+.pc{display:flex;flex-direction:column;gap:2px;}
+.pc-label{font-size:9px;font-family:var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--text3);}
+.pc-val{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);}
+.pc-val.green{color:var(--green);}.pc-val.red{color:var(--red);}.pc-val.yellow{color:var(--yellow);}.pc-val.accent{color:var(--accent);}
+
+/* ── 손익 바 ── */
+.pnl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.pnl-pill{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:6px;font-weight:700;}
+.pnl-pill.green{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25);}
+.pnl-pill.red{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2);}
+.pnl-pill.flat{background:rgba(255,202,40,.08);color:var(--yellow);border:1px solid rgba(255,202,40,.15);font-weight:400;font-size:10px;}
+
+/* ── 로딩 점 ── */
+.price-loading{font-family:var(--mono);font-size:11px;color:var(--text3);padding:6px 0;display:flex;align-items:center;gap:6px;}
+.dot-anim{display:inline-flex;gap:3px;}
+.dot-anim span{width:4px;height:4px;background:var(--text3);border-radius:50%;animation:dp 1.2s ease-in-out infinite;}
+.dot-anim span:nth-child(2){animation-delay:.2s;}
+.dot-anim span:nth-child(3){animation-delay:.4s;}
+@keyframes dp{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+.note-area{margin-top:8px;padding:8px 10px;background:var(--sf3);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text2);border-left:2px solid var(--accent);}
+.empty-state{text-align:center;padding:80px 20px;color:var(--text3);}
+.empty-icon{font-size:48px;opacity:.4;margin-bottom:12px;}
+
+/* ── 모달 ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--sf);border:1px solid var(--bd2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6);transform:translateY(20px);transition:transform .2s;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--sf);z-index:10;}
+.modal-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--accent);}
+.modal-title .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;}
+.btn-close{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:24px;padding:0 6px;}
+.btn-close:hover{color:var(--red);}
+.modal-body{padding:16px 20px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);}
+input,textarea,select{background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;font-family:var(--sans);outline:none;width:100%;color-scheme:dark;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+select option{background:var(--sf2);}
+.helper{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px;line-height:1.6;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;}
+.btn-cancel{background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--sans);}
+.btn-cancel:hover{border-color:var(--text2);color:var(--text);}
+.btn-save{background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:700;cursor:pointer;font-family:var(--sans);}
+.btn-save:hover{background:#33ddff;}
+
+/* ── 로그인 모달 ── */
+.login-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.login-overlay.open{opacity:1;pointer-events:all;}
+.login-modal{background:var(--sf);border:1px solid var(--bd2);border-radius:20px;padding:32px 24px;text-align:center;max-width:320px;width:90%;}
+.login-modal .btn-login{background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+.login-modal .btn-cancel-sm{margin-top:12px;background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:10px;padding:10px 20px;width:100%;cursor:pointer;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--sf2);border:1px solid var(--bd2);border-radius:40px;padding:8px 20px;font-size:12px;opacity:0;transition:all .2s;z-index:9999;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(max-width:600px){
+  .summary-strip{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>모의투자 / VIRTUAL PORTFOLIO</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="sync-badge">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span class="sync-txt loading" id="syncTxt">연결 중...</span>
+    </div>
+    <div class="user-badge" id="userBadge" onclick="showLoginModal()">
+      <span>👤</span><span id="userEmail">로그인</span>
+    </div>
+    <button class="btn-add" onclick="checkLoginAndOpen()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      새 포지션
+    </button>
+  </div>
+</header>
+
+<!-- 요약 스트립 -->
+<div class="summary-strip">
+  <div class="sum-cell">
+    <div class="sum-label">총 평가금액</div>
+    <div class="sum-val accent" id="sumTotal">—</div>
+    <div class="sum-sub" id="sumTotalSub">—</div>
+  </div>
+  <div class="sum-cell">
+    <div class="sum-label">총 투자원금</div>
+    <div class="sum-val" id="sumCost">—</div>
+    <div class="sum-sub" id="sumCostSub">—</div>
+  </div>
+  <div class="sum-cell">
+    <div class="sum-label">가상 총손익</div>
+    <div class="sum-val" id="sumPnl">—</div>
+    <div class="sum-sub" id="sumPnlPct">—</div>
+  </div>
+  <div class="sum-cell">
+    <div class="sum-label">USD / KRW</div>
+    <div class="sum-val accent" id="sumRate">—</div>
+    <div class="sum-sub" id="sumRateTime">시세 갱신 전</div>
+  </div>
+</div>
+
+<!-- 필터바 -->
+<div class="filter-bar">
+  <select class="filter-input" id="filterMarket" onchange="render()" style="width:100px;">
+    <option value="">전체 시장</option>
+    <option value="US">미국 🇺🇸</option>
+    <option value="KR">한국 🇰🇷</option>
+  </select>
+  <div class="count-chip" id="countChip">총 <span>0</span>건</div>
+  <button class="btn-refresh" id="btnRefresh" onclick="refreshPrices()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    시세 갱신
+  </button>
+</div>
+
+<div class="feed" id="feedList"></div>
+
+<!-- 추가/수정 모달 -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title"><div class="dot"></div><span id="modalTitle">새 모의 포지션</span></div>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>종목명 *</label><input type="text" id="fName" placeholder="예: NVIDIA Corp"></div>
+        <div class="form-group">
+          <label>시장 *</label>
+          <select id="fMarket" onchange="updatePriceUnit()">
+            <option value="US">미국 🇺🇸</option>
+            <option value="KR">한국 🇰🇷</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>티커 (Yahoo Finance 형식) *</label>
+          <input type="text" id="fTicker" placeholder="NVDA / 005930.KS" oninput="this.value=this.value.toUpperCase()">
+          <div class="helper">미국: AAPL, NVDA · 코스피: 005930.KS · 코스닥: 035720.KQ</div>
+        </div>
+        <div class="form-group"><label>매입일 *</label><input type="date" id="fBuyDate"></div>
+        <div class="form-group">
+          <label>매입가 * <span id="fPriceUnit" style="color:var(--accent);font-size:10px;">(USD)</span></label>
+          <input type="number" id="fBuyPrice" placeholder="178.50" step="0.01" min="0">
+        </div>
+        <div class="form-group"><label>수량(주) *</label><input type="number" id="fShares" placeholder="10" step="1" min="1"></div>
+        <div class="form-group full"><label>메모</label><textarea id="fMemo" rows="2" placeholder="매수 이유, 목표가, 참고사항..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveRecord()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 로그인 모달 -->
+<div class="login-overlay" id="loginModal" onclick="if(event.target===this)closeLoginModal()">
+  <div class="login-modal">
+    <div style="font-size:48px;margin-bottom:16px;">🔐</div>
+    <h3 style="margin-bottom:8px;">로그인이 필요합니다</h3>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:24px;">포지션을 추가·수정·삭제하려면<br>Google 계정으로 로그인해주세요</p>
+    <button class="btn-login" onclick="triggerLogin()">Google 계정으로 로그인</button>
+    <button class="btn-cancel-sm" onclick="closeLoginModal()">취소</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════
+const PROXY   = 'https://lotto-proxy.blackcore-ff6.workers.dev/?url=';
+const YF_QUOTE = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=';
+
+const db = firebase.firestore();
+const COL = 'virtualPortfolio';
+let records = [], currentUser = null, editId = null;
+let prices = {}, exchangeRate = 1350, lastUpdated = null;
+let isFetching = false;
+
+// ════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════
+const esc = s => String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const fmtEmail = e => e ? e.split('@')[0] : '익명';
+const numFmt = (n,d=0) => n != null ? n.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+const usdFmt = n => '$' + numFmt(n, 2);
+const krwFmt = n => '₩' + numFmt(Math.round(n));
+const pctFmt = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+const pnlCls = n => n > 0 ? 'green' : n < 0 ? 'red' : 'yellow';
+const holdDays = d => Math.floor((Date.now() - new Date(d)) / 86400000);
+
+// ════════════════════════════════════════════════
+//  SYNC STATUS
+// ════════════════════════════════════════════════
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  dot.className = `sync-dot ${s}`;
+  txt.className = `sync-txt ${s}`;
+  txt.textContent = {loading:'연결 중...',live:'● 실시간',saving:'저장 중...',offline:'오프라인'}[s] || '—';
+}
+
+// ════════════════════════════════════════════════
+//  FIREBASE AUTH
+// ════════════════════════════════════════════════
+function showLoginModal()  { document.getElementById('loginModal').classList.add('open'); }
+function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
+async function triggerLogin() {
+  try { await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); closeLoginModal(); }
+  catch(e) { toast('❌ 로그인 실패: ' + e.message); }
+}
+firebase.auth().onAuthStateChanged(user => {
+  currentUser = user;
+  document.getElementById('userEmail').textContent = user ? fmtEmail(user.email) : '로그인';
+  if (user) toast('✅ ' + user.email + ' 님 환영합니다!');
+});
+
+function checkLoginAndOpen(id) {
+  if (!currentUser) { showLoginModal(); return; }
+  openModal(id);
+}
+
+// ════════════════════════════════════════════════
+//  FIRESTORE SYNC
+// ════════════════════════════════════════════════
+function initSync() {
+  setSyncStatus('loading');
+  db.collection(COL).orderBy('buyDate','desc').onSnapshot(snap => {
+    records = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    setSyncStatus('live');
+    render();
+    if (records.length) refreshPrices();
+  }, err => { console.error(err); setSyncStatus('offline'); render(); });
+}
+initSync();
+
+// ════════════════════════════════════════════════
+//  PRICE FETCHING
+// ════════════════════════════════════════════════
+async function fetchQuotes(tickers) {
+  if (!tickers.length) return {};
+  try {
+    const url = YF_QUOTE + tickers.join(',');
+    const res  = await fetch(PROXY + encodeURIComponent(url));
+    const data = await res.json();
+    const out  = {};
+    (data.quoteResponse?.result || []).forEach(q => {
+      out[q.symbol] = { price: q.regularMarketPrice, chgPct: q.regularMarketChangePercent };
+    });
+    return out;
+  } catch(e) { console.error('Quote fetch error:', e); return {}; }
+}
+
+async function refreshPrices() {
+  if (isFetching) return;
+  isFetching = true;
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spinning');
+
+  const tickers = [...new Set(records.map(r => r.ticker)), 'USDKRW=X'];
+  const result  = await fetchQuotes(tickers);
+
+  if (result['USDKRW=X']?.price) exchangeRate = result['USDKRW=X'].price;
+  delete result['USDKRW=X'];
+  prices      = result;
+  lastUpdated = new Date();
+
+  isFetching = false;
+  btn.classList.remove('spinning');
+  render();
+  toast('✅ 시세 갱신 완료');
+}
+
+// ════════════════════════════════════════════════
+//  P&L CALC
+// ════════════════════════════════════════════════
+function calcPnL(r) {
+  const q = prices[r.ticker];
+  if (!q) return null;
+  const cur = q.price, chgPct = q.chgPct;
+  const cost = r.buyPrice * r.shares;
+
+  if (r.market === 'US') {
+    const val   = cur * r.shares;
+    const pnlU  = val - cost;
+    const pnlK  = pnlU * exchangeRate;
+    const valK  = val  * exchangeRate;
+    const costK = cost * exchangeRate;
+    const pct   = cost > 0 ? (pnlU / cost) * 100 : 0;
+    return { cur, chgPct, pnlUsd:pnlU, pnlKrw:pnlK, pct, valUsd:val, costUsd:cost, valKrw:valK, costKrw:costK };
+  } else {
+    const val  = cur * r.shares;
+    const pnlK = val - cost;
+    const pct  = cost > 0 ? (pnlK / cost) * 100 : 0;
+    return { cur, chgPct, pnlKrw:pnlK, pct, valKrw:val, costKrw:cost };
+  }
+}
+
+// ════════════════════════════════════════════════
+//  SUMMARY
+// ════════════════════════════════════════════════
+function updateSummary() {
+  let totalValK = 0, totalCostK = 0, totalValU = 0, totalCostU = 0, cnt = 0;
+  records.forEach(r => {
+    const p = calcPnL(r);
+    if (!p) return;
+    cnt++;
+    totalValK  += p.valKrw;
+    totalCostK += p.costKrw;
+    if (r.market === 'US') { totalValU += p.valUsd; totalCostU += p.costUsd; }
+  });
+  if (!cnt) return;
+
+  const pnlK = totalValK - totalCostK;
+  const pnlPct = totalCostK > 0 ? (pnlK / totalCostK) * 100 : 0;
+  const cls = pnlCls(pnlK);
+
+  document.getElementById('sumTotal').textContent    = krwFmt(totalValK);
+  document.getElementById('sumTotalSub').textContent = totalValU > 0 ? usdFmt(totalValU) : '';
+  document.getElementById('sumCost').textContent     = krwFmt(totalCostK);
+  document.getElementById('sumCostSub').textContent  = totalCostU > 0 ? usdFmt(totalCostU) : '';
+
+  const pnlEl = document.getElementById('sumPnl');
+  pnlEl.textContent = (pnlK >= 0 ? '+' : '') + krwFmt(pnlK);
+  pnlEl.className   = `sum-val ${cls}`;
+  document.getElementById('sumPnlPct').textContent = pctFmt(pnlPct);
+
+  document.getElementById('sumRate').textContent     = numFmt(Math.round(exchangeRate)) + '원';
+  document.getElementById('sumRateTime').textContent = lastUpdated
+    ? lastUpdated.toLocaleTimeString('ko-KR') + ' 갱신'
+    : '시세 갱신 전';
+}
+
+// ════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════
+function render() {
+  const mv = document.getElementById('filterMarket').value;
+  const filtered = records.filter(r => !mv || r.market === mv);
+
+  document.getElementById('countChip').innerHTML = `총 <span>${records.length}</span>건`;
+
+  const feed = document.getElementById('feedList');
+  if (!records.length) {
+    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div>
+      <p>등록된 모의 포지션이 없습니다</p>
+      <p style="font-size:12px;margin-top:8px;">+ 새 포지션 버튼으로 시작해보세요</p></div>`;
+    return;
+  }
+  if (!filtered.length) {
+    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과 없음</p></div>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(r => {
+    const p = calcPnL(r);
+    const mktCls = r.market === 'US' ? 'us' : 'kr';
+    const mktTag = r.market === 'US'
+      ? '<span class="mkt-tag mkt-us">🇺🇸 US</span>'
+      : '<span class="mkt-tag mkt-kr">🇰🇷 KR</span>';
+    const days = holdDays(r.buyDate);
+
+    let priceBlock = '';
+    let pnlBlock   = '';
+
+    if (isFetching) {
+      priceBlock = `<div class="price-loading">시세 조회 중
+        <div class="dot-anim"><span></span><span></span><span></span></div></div>`;
+    } else if (!p) {
+      priceBlock = `<div class="price-loading" style="color:var(--text3);">
+        ⚠ 시세 없음 — 상단 [시세 갱신] 버튼을 눌러주세요</div>`;
+    } else {
+      const cls = pnlCls(p.pnlKrw);
+      const chgStr = p.chgPct != null ? ` (${p.chgPct >= 0 ? '+' : ''}${p.chgPct.toFixed(2)}%)` : '';
+      const buyStr = r.market === 'US' ? usdFmt(r.buyPrice)  : krwFmt(r.buyPrice);
+      const curStr = r.market === 'US' ? usdFmt(p.cur)       : krwFmt(p.cur);
+      const valStr = r.market === 'US' ? usdFmt(p.valUsd)    : krwFmt(p.valKrw);
+      const cstStr = r.market === 'US' ? usdFmt(p.costUsd)   : krwFmt(p.costKrw);
+
+      priceBlock = `
+        <div class="price-grid">
+          <div class="pc"><span class="pc-label">매입가</span><span class="pc-val">${esc(buyStr)}</span></div>
+          <div class="pc"><span class="pc-label">현재가</span><span class="pc-val ${cls}">${esc(curStr)}${esc(chgStr)}</span></div>
+          <div class="pc"><span class="pc-label">수량</span><span class="pc-val">${numFmt(r.shares)}주</span></div>
+          <div class="pc"><span class="pc-label">투자원금</span><span class="pc-val">${esc(cstStr)}</span></div>
+          <div class="pc"><span class="pc-label">현재가치</span><span class="pc-val ${cls}">${esc(valStr)}</span></div>
+          <div class="pc"><span class="pc-label">보유기간</span><span class="pc-val">${days}일</span></div>
+        </div>`;
+
+      const usdPill = r.market === 'US'
+        ? `<span class="pnl-pill ${cls}">${p.pnlUsd >= 0 ? '+' : ''}${usdFmt(p.pnlUsd)}</span>` : '';
+      const ratePill = r.market === 'US'
+        ? `<span class="pnl-pill flat">환율 ${numFmt(Math.round(exchangeRate))}원</span>` : '';
+
+      pnlBlock = `
+        <div class="pnl-bar">
+          ${usdPill}
+          <span class="pnl-pill ${cls}">${p.pnlKrw >= 0 ? '+' : ''}${krwFmt(p.pnlKrw)}</span>
+          <span class="pnl-pill ${cls}">${pctFmt(p.pct)}</span>
+          ${ratePill}
+        </div>`;
+    }
+
+    html += `
+    <div class="feed-item ${mktCls}">
+      <div class="item-header">
+        <span class="item-name">${esc(r.name)}</span>
+        <span class="item-ticker">${esc(r.ticker)}</span>
+        ${mktTag}
+        <span class="item-author">👤 ${fmtEmail(r.userEmail)}</span>
+        <div class="item-actions">
+          <button class="btn-icon edit" onclick="checkLoginAndOpen('${r.id}')">✏️</button>
+          <button class="btn-icon del"  onclick="deleteRecord('${r.id}')">🗑️</button>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px;">
+        📅 매입일 ${r.buyDate}</div>
+      ${priceBlock}
+      ${pnlBlock}
+      ${r.memo ? `<div class="note-area">📌 ${esc(r.memo)}</div>` : ''}
+    </div>`;
+  });
+
+  feed.innerHTML = html;
+  updateSummary();
+}
+
+// ════════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════════
+function openModal(id) {
+  editId = id || null;
+  document.getElementById('modalTitle').textContent = editId ? '포지션 수정' : '새 모의 포지션';
+
+  if (!editId) {
+    document.getElementById('fName').value      = '';
+    document.getElementById('fTicker').value    = '';
+    document.getElementById('fMarket').value    = 'US';
+    document.getElementById('fBuyDate').value   = new Date().toISOString().slice(0,10);
+    document.getElementById('fBuyPrice').value  = '';
+    document.getElementById('fShares').value    = '';
+    document.getElementById('fMemo').value      = '';
+  } else {
+    const r = records.find(x => x.id === editId);
+    if (!r) return;
+    document.getElementById('fName').value     = r.name    || '';
+    document.getElementById('fTicker').value   = r.ticker  || '';
+    document.getElementById('fMarket').value   = r.market  || 'US';
+    document.getElementById('fBuyDate').value  = r.buyDate || '';
+    document.getElementById('fBuyPrice').value = r.buyPrice || '';
+    document.getElementById('fShares').value   = r.shares  || '';
+    document.getElementById('fMemo').value     = r.memo    || '';
+  }
+  updatePriceUnit();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function updatePriceUnit() {
+  document.getElementById('fPriceUnit').textContent =
+    document.getElementById('fMarket').value === 'US' ? '(USD)' : '(원)';
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+}
+
+// ════════════════════════════════════════════════
+//  SAVE / DELETE
+// ════════════════════════════════════════════════
+async function saveRecord() {
+  if (!currentUser) { showLoginModal(); return; }
+
+  const name     = document.getElementById('fName').value.trim();
+  const ticker   = document.getElementById('fTicker').value.trim().toUpperCase();
+  const market   = document.getElementById('fMarket').value;
+  const buyDate  = document.getElementById('fBuyDate').value;
+  const buyPrice = parseFloat(document.getElementById('fBuyPrice').value);
+  const shares   = parseFloat(document.getElementById('fShares').value);
+
+  if (!name || !ticker || !buyDate || isNaN(buyPrice) || isNaN(shares)) {
+    toast('⚠️ 종목명·티커·매입가·수량·날짜는 필수입니다.'); return;
+  }
+  if (buyPrice <= 0 || shares <= 0) {
+    toast('⚠️ 가격과 수량은 0보다 커야 합니다.'); return;
+  }
+
+  const data = {
+    uid: currentUser.uid, userEmail: currentUser.email,
+    name, ticker, market, buyDate, buyPrice, shares,
+    memo: document.getElementById('fMemo').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+
+  setSyncStatus('saving');
+  try {
+    if (editId) await db.collection(COL).doc(editId).update(data);
+    else        await db.collection(COL).add(data);
+    closeModal();
+    toast('✅ 저장 완료!');
+  } catch(e) { toast('❌ 저장 실패: ' + e.message); setSyncStatus('offline'); }
+  finally    { setSyncStatus('live'); }
+}
+
+async function deleteRecord(id) {
+  if (!currentUser) { showLoginModal(); return; }
+  const r = records.find(x => x.id === id);
+  if (!r || r.uid !== currentUser.uid) { toast('⚠️ 본인 포지션만 삭제 가능합니다.'); return; }
+  if (!confirm('이 포지션을 삭제하시겠습니까?')) return;
+  try   { await db.collection(COL).doc(id).delete(); toast('🗑️ 삭제 완료'); }
+  catch(e) { toast('❌ 삭제 실패: ' + e.message); }
+}
+
+// ════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════
+let _tt;
+function toast(msg, dur=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+document.getElementById('fBuyDate').value = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
