@@ -296,8 +296,8 @@ select option{background:var(--sf2);}
 // ════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════
-const PROXY   = 'https://lotto-proxy.blackcore-ff6.workers.dev/?url=';
-const YF_QUOTE = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=';
+const PROXY  = 'https://lotto-proxy.blackcore-ff6.workers.dev/?url=';
+const YF_V8  = 'https://query2.finance.yahoo.com/v8/finance/chart/';
 
 const db = firebase.firestore();
 const COL = 'virtualPortfolio';
@@ -363,20 +363,27 @@ function initSync() {
 initSync();
 
 // ════════════════════════════════════════════════
-//  PRICE FETCHING
+//  PRICE FETCHING  (v8/chart — 개별 조회, 병렬 처리)
 // ════════════════════════════════════════════════
-async function fetchQuotes(tickers) {
-  if (!tickers.length) return {};
+async function fetchSingle(ticker) {
   try {
-    const url = YF_QUOTE + tickers.join(',');
+    const url  = YF_V8 + encodeURIComponent(ticker) + '?interval=1d&range=1d';
     const res  = await fetch(PROXY + encodeURIComponent(url));
     const data = await res.json();
-    const out  = {};
-    (data.quoteResponse?.result || []).forEach(q => {
-      out[q.symbol] = { price: q.regularMarketPrice, chgPct: q.regularMarketChangePercent };
-    });
-    return out;
-  } catch(e) { console.error('Quote fetch error:', e); return {}; }
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta?.regularMarketPrice) return null;
+    const prev   = meta.previousClose || meta.chartPreviousClose || meta.regularMarketPrice;
+    const chgPct = prev ? ((meta.regularMarketPrice - prev) / prev) * 100 : 0;
+    return { price: meta.regularMarketPrice, chgPct };
+  } catch(e) { console.error(`Quote [${ticker}] error:`, e); return null; }
+}
+
+async function fetchQuotes(tickers) {
+  if (!tickers.length) return {};
+  const pairs = await Promise.all(tickers.map(async t => [t, await fetchSingle(t)]));
+  const out = {};
+  pairs.forEach(([t, d]) => { if (d) out[t] = d; });
+  return out;
 }
 
 async function refreshPrices() {
