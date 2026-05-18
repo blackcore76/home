@@ -1445,12 +1445,6 @@ async function naverPrice(code) {
 }
 
 async function yahooPrice(sym) {
-  const url7 = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols='+encodeURIComponent(sym)+'&fields=regularMarketPrice';
-  let p7 = await proxyFetch(url7, d => {
-    const r = d && d.quoteResponse && d.quoteResponse.result && d.quoteResponse.result[0];
-    return r ? r.regularMarketPrice : 0;
-  }, 8000);
-  if(p7) return p7;
   const url8 = 'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?interval=1d&range=1d';
   return await proxyFetch(url8, d => {
     const r = d && d.chart && d.chart.result && d.chart.result[0];
@@ -1505,18 +1499,15 @@ async function refreshAll() {
   icon.innerHTML = '<span class="spin">⟳</span>';
   btn.disabled = true;
   toast('⏳ '+H.length+'개 조회 중...', 10000);
+  const prices = await Promise.all(H.map(h => getPrice(h)));
   let ok = 0, fails = [];
-  for(let i=0; i<H.length; i++) {
-    const h = H[i];
-    const price = await getPrice(h);
-    const idx = H.findIndex(x => x.id === h.id);
+  prices.forEach((price, i) => {
     if(price) {
-      H[idx].curPrice = price;
-      H[idx].lastUpd = new Date().toISOString();
-      if(h.exchange) H[idx].exchange = h.exchange;
+      H[i].curPrice = price;
+      H[i].lastUpd = new Date().toISOString();
       ok++;
-    } else { fails.push(h.ticker); }
-  }
+    } else { fails.push(H[i].ticker); }
+  });
   persist();
   resetToFirstPageAndRender();
   icon.textContent = '↻';
