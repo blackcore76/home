@@ -270,9 +270,14 @@ select option{background:var(--sf2);}
         <div class="form-group"><label>매입일 *</label><input type="date" id="fBuyDate"></div>
         <div class="form-group">
           <label>매입가 * <span id="fPriceUnit" style="color:var(--accent);font-size:10px;">(USD)</span></label>
-          <input type="number" id="fBuyPrice" placeholder="178.50" step="0.01" min="0">
+          <input type="number" id="fBuyPrice" placeholder="178.50" step="0.01" min="0" oninput="checkMerge()">
         </div>
-        <div class="form-group"><label>수량(주) *</label><input type="number" id="fShares" placeholder="10" step="1" min="1"></div>
+        <div class="form-group"><label>수량(주) *</label><input type="number" id="fShares" placeholder="10" step="1" min="1" oninput="checkMerge()"></div>
+        <div class="form-group" id="buyRateWrap">
+          <label>매입 당시 환율 <span style="color:var(--accent);font-size:10px;">(원/USD)</span></label>
+          <input type="number" id="fBuyRate" placeholder="1350" step="1" min="1">
+          <div class="helper">시세 갱신 후 자동입력 · 직접 수정 가능</div>
+        </div>
         <div class="form-group full"><label>메모</label><textarea id="fMemo" rows="2" placeholder="매수 이유, 목표가, 참고사항..."></textarea></div>
       </div>
     </div>
@@ -417,21 +422,24 @@ function calcPnL(r) {
   const q = prices[r.ticker];
   if (!q) return null;
   const cur = q.price, chgPct = q.chgPct;
-  const cost = r.buyPrice * r.shares;
 
   if (r.market === 'US') {
-    const val   = cur * r.shares;
-    const pnlU  = val - cost;
-    const pnlK  = pnlU * exchangeRate;
-    const valK  = val  * exchangeRate;
-    const costK = cost * exchangeRate;
-    const pct   = cost > 0 ? (pnlU / cost) * 100 : 0;
-    return { cur, chgPct, pnlUsd:pnlU, pnlKrw:pnlK, pct, valUsd:val, costUsd:cost, valKrw:valK, costKrw:costK };
+    const buyRate = r.buyRate || exchangeRate;   // 매입 당시 환율 (없으면 현재 환율 fallback)
+    const costUsd = r.buyPrice * r.shares;
+    const valUsd  = cur * r.shares;
+    const pnlUsd  = valUsd - costUsd;
+    const costKrw = costUsd * buyRate;           // 실제 원화 투자원금
+    const valKrw  = valUsd  * exchangeRate;      // 현재 원화 평가금액
+    const pnlKrw  = valKrw  - costKrw;
+    const pct     = costUsd > 0 ? (pnlUsd / costUsd) * 100 : 0;
+    const pctKrw  = costKrw > 0 ? (pnlKrw / costKrw) * 100 : 0;
+    return { cur, chgPct, buyRate, pnlUsd, pnlKrw, pct, pctKrw, valUsd, costUsd, valKrw, costKrw };
   } else {
+    const cost = r.buyPrice * r.shares;
     const val  = cur * r.shares;
     const pnlK = val - cost;
     const pct  = cost > 0 ? (pnlK / cost) * 100 : 0;
-    return { cur, chgPct, pnlKrw:pnlK, pct, valKrw:val, costKrw:cost };
+    return { cur, chgPct, pnlKrw:pnlK, pct, pctKrw:pct, valKrw:val, costKrw:cost };
   }
 }
 
@@ -517,27 +525,30 @@ function render() {
       const valStr = r.market === 'US' ? usdFmt(p.valUsd)    : krwFmt(p.valKrw);
       const cstStr = r.market === 'US' ? usdFmt(p.costUsd)   : krwFmt(p.costKrw);
 
+      const buyRateCell = r.market === 'US'
+        ? `<div class="pc"><span class="pc-label">매입환율</span><span class="pc-val">${numFmt(Math.round(p.buyRate))}원</span></div>` : '';
+
       priceBlock = `
         <div class="price-grid">
           <div class="pc"><span class="pc-label">매입가</span><span class="pc-val">${esc(buyStr)}</span></div>
           <div class="pc"><span class="pc-label">현재가</span><span class="pc-val ${cls}">${esc(curStr)}${esc(chgStr)}</span></div>
           <div class="pc"><span class="pc-label">수량</span><span class="pc-val">${numFmt(r.shares)}주</span></div>
-          <div class="pc"><span class="pc-label">투자원금</span><span class="pc-val">${esc(cstStr)}</span></div>
-          <div class="pc"><span class="pc-label">현재가치</span><span class="pc-val ${cls}">${esc(valStr)}</span></div>
+          <div class="pc"><span class="pc-label">투자원금(원)</span><span class="pc-val">${krwFmt(p.costKrw)}</span></div>
+          <div class="pc"><span class="pc-label">현재가치(원)</span><span class="pc-val ${cls}">${krwFmt(p.valKrw)}</span></div>
+          ${buyRateCell}
           <div class="pc"><span class="pc-label">보유기간</span><span class="pc-val">${days}일</span></div>
         </div>`;
 
       const usdPill = r.market === 'US'
-        ? `<span class="pnl-pill ${cls}">${p.pnlUsd >= 0 ? '+' : ''}${usdFmt(p.pnlUsd)}</span>` : '';
-      const ratePill = r.market === 'US'
-        ? `<span class="pnl-pill flat">환율 ${numFmt(Math.round(exchangeRate))}원</span>` : '';
+        ? `<span class="pnl-pill ${cls}">${p.pnlUsd >= 0 ? '+' : ''}${usdFmt(p.pnlUsd)} (${pctFmt(p.pct)})</span>` : '';
+      const krwRatePill = r.market === 'US'
+        ? `<span class="pnl-pill flat">현재환율 ${numFmt(Math.round(exchangeRate))}원</span>` : '';
 
       pnlBlock = `
         <div class="pnl-bar">
           ${usdPill}
-          <span class="pnl-pill ${cls}">${p.pnlKrw >= 0 ? '+' : ''}${krwFmt(p.pnlKrw)}</span>
-          <span class="pnl-pill ${cls}">${pctFmt(p.pct)}</span>
-          ${ratePill}
+          <span class="pnl-pill ${cls}">${p.pnlKrw >= 0 ? '+' : ''}${krwFmt(p.pnlKrw)} (${pctFmt(p.pctKrw)})</span>
+          ${krwRatePill}
         </div>`;
     }
 
@@ -580,6 +591,7 @@ function openModal(id) {
     document.getElementById('fBuyDate').value  = new Date().toISOString().slice(0,10);
     document.getElementById('fBuyPrice').value = '';
     document.getElementById('fShares').value   = '';
+    document.getElementById('fBuyRate').value  = exchangeRate > 1 ? Math.round(exchangeRate) : '';
     document.getElementById('fMemo').value     = '';
   } else {
     const r = records.find(x => x.id === editId);
@@ -590,6 +602,7 @@ function openModal(id) {
     document.getElementById('fBuyDate').value  = r.buyDate  || '';
     document.getElementById('fBuyPrice').value = r.buyPrice || '';
     document.getElementById('fShares').value   = r.shares   || '';
+    document.getElementById('fBuyRate').value  = r.buyRate  || Math.round(exchangeRate) || '';
     document.getElementById('fMemo').value     = r.memo     || '';
   }
   updatePriceUnit();
@@ -614,7 +627,18 @@ function checkMerge() {
     const totalShares = existing.shares + newShares;
     const avgPrice    = (existing.buyPrice * existing.shares + newPrice * newShares) / totalShares;
     const avgStr      = existing.market === 'US' ? usdFmt(avgPrice) : krwFmt(avgPrice);
-    previewLine = `<br>→ 병합 후: <b style="color:var(--text)">${numFmt(totalShares)}주 @ ${avgStr}</b> (가중평균)`;
+
+    let rateStr = '';
+    if (existing.market === 'US') {
+      const newRate      = parseFloat(document.getElementById('fBuyRate').value) || exchangeRate;
+      const existRate    = existing.buyRate || exchangeRate;
+      const existKrw     = existing.buyPrice * existing.shares * existRate;
+      const newKrw       = newPrice * newShares * newRate;
+      const totalUsdCost = existing.buyPrice * existing.shares + newPrice * newShares;
+      const mergedRate   = Math.round((existKrw + newKrw) / totalUsdCost);
+      rateStr = ` / 환율 ${numFmt(mergedRate)}원`;
+    }
+    previewLine = `<br>→ 병합 후: <b style="color:var(--text)">${numFmt(totalShares)}주 @ ${avgStr}${rateStr}</b>`;
   }
 
   box.innerHTML = `🔀 동일 종목 발견 — 저장 시 자동 병합됩니다<br>기존: ${numFmt(existing.shares)}주 @ ${priceStr}${previewLine}`;
@@ -622,8 +646,9 @@ function checkMerge() {
 }
 
 function updatePriceUnit() {
-  document.getElementById('fPriceUnit').textContent =
-    document.getElementById('fMarket').value === 'US' ? '(USD)' : '(원)';
+  const isUS = document.getElementById('fMarket').value === 'US';
+  document.getElementById('fPriceUnit').textContent = isUS ? '(USD)' : '(원)';
+  document.getElementById('buyRateWrap').style.display = isUS ? '' : 'none';
 }
 
 function closeModal() {
@@ -643,6 +668,7 @@ async function saveRecord() {
   const buyDate  = document.getElementById('fBuyDate').value;
   const buyPrice = parseFloat(document.getElementById('fBuyPrice').value);
   const shares   = parseFloat(document.getElementById('fShares').value);
+  const buyRate  = market === 'US' ? (parseFloat(document.getElementById('fBuyRate').value) || Math.round(exchangeRate)) : undefined;
 
   if (!name || !ticker || !buyDate || isNaN(buyPrice) || isNaN(shares)) {
     toast('⚠️ 종목명·티커·매입가·수량·날짜는 필수입니다.'); return;
@@ -656,23 +682,40 @@ async function saveRecord() {
   // 동일 티커 병합 (신규 추가 시에만)
   const existing = !editId && records.find(r => r.ticker === ticker && r.uid === currentUser.uid);
   if (existing) {
-    const totalShares = existing.shares + shares;
-    const avgPrice    = (existing.buyPrice * existing.shares + buyPrice * shares) / totalShares;
+    const totalShares  = existing.shares + shares;
+    const avgPrice     = (existing.buyPrice * existing.shares + buyPrice * shares) / totalShares;
+
+    // 원화 기준 가중평균 환율 계산 (미국 주식)
+    let mergedBuyRate = undefined;
+    if (existing.market === 'US') {
+      const existRate    = existing.buyRate || exchangeRate;
+      const existKrwCost = existing.buyPrice * existing.shares * existRate;
+      const newKrwCost   = buyPrice * shares * buyRate;
+      const totalUsdCost = existing.buyPrice * existing.shares + buyPrice * shares;
+      mergedBuyRate      = Math.round((existKrwCost + newKrwCost) / totalUsdCost);
+    }
+
     const earliestDate = existing.buyDate < buyDate ? existing.buyDate : buyDate;
-    const mergedMemo  = [existing.memo, memo].filter(Boolean).join(' / ');
+    const mergedMemo   = [existing.memo, memo].filter(Boolean).join(' / ');
+    const mergedPrice  = Math.round(avgPrice * 10000) / 10000;
 
     const mergeData = {
       shares:    totalShares,
-      buyPrice:  Math.round(avgPrice * 10000) / 10000,
+      buyPrice:  mergedPrice,
       buyDate:   earliestDate,
       memo:      mergedMemo,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
+    if (mergedBuyRate) mergeData.buyRate = mergedBuyRate;
+
     setSyncStatus('saving');
     try {
       await db.collection(COL).doc(existing.id).update(mergeData);
       closeModal();
-      toast(`🔀 병합 완료! ${numFmt(totalShares)}주 @ ${existing.market === 'US' ? usdFmt(mergeData.buyPrice) : krwFmt(mergeData.buyPrice)}`);
+      const priceStr = existing.market === 'US'
+        ? `${usdFmt(mergedPrice)} / 환율 ${numFmt(mergedBuyRate)}원`
+        : krwFmt(mergedPrice);
+      toast(`🔀 병합 완료! ${numFmt(totalShares)}주 @ ${priceStr}`);
     } catch(e) { toast('❌ 병합 실패: ' + e.message); setSyncStatus('offline'); }
     finally    { setSyncStatus('live'); }
     return;
@@ -683,6 +726,7 @@ async function saveRecord() {
     name, ticker, market, buyDate, buyPrice, shares, memo,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
+  if (buyRate) data.buyRate = buyRate;
   if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
 
   setSyncStatus('saving');
