@@ -1271,8 +1271,14 @@ function doSave() {
     const ex = H.find(x => x.ticker === ticker && x.market === market);
     if(ex) {
       const total = ex.qty + qty;
+      if(market==='US') {
+        const existUsd = ex.buyPrice * ex.qty;
+        const newUsd   = price * qty;
+        const existKrw = existUsd * (ex.buyFX || buyfx);
+        const newKrw   = newUsd * buyfx;
+        ex.buyFX = parseFloat(((existKrw + newKrw) / (existUsd + newUsd)).toFixed(2));
+      }
       ex.buyPrice = parseFloat(market==='US' ? ((ex.buyPrice*ex.qty+price*qty)/total).toFixed(4) : Math.round((ex.buyPrice*ex.qty+price*qty)/total));
-      if(market==='US') ex.buyFX = parseFloat(((ex.buyFX||buyfx)*ex.qty+buyfx*qty)/total).toFixed(2);
       ex.qty = total;
       ex.lastBuyDate = date;
       const bl = ex.brokers || [ex.broker];
