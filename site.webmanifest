@@ -1,7 +1,8 @@
 {
   "name": "BlackCore",
   "short_name": "BlackCore",
-  "start_url": "/",
+  "start_url": ".",
+  "scope": "/home/",
   "display": "standalone",
   "background_color": "#080c14",
   "theme_color": "#080c14",
