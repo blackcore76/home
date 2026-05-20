@@ -699,5 +699,12 @@ const observer = new IntersectionObserver(entries => {
 },{threshold:.12});
 document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
 </script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/home/sw.js').catch(()=>{});
+  });
+}
+</script>
 </body>
 </html>
