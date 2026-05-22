@@ -167,6 +167,10 @@
         .h-pick-sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);}
         .h-pick-name{font-size:11px;color:var(--text2);}
         .h-pick-score{font-family:var(--mono);font-size:10px;color:var(--ac);margin-left:auto;}
+        .r-price{font-family:var(--mono);font-size:10px;color:var(--text2);}
+        .r-chg{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:4px;}
+        .r-chg.up{background:rgba(255,82,82,.15);color:var(--red);}
+        .r-chg.dn{background:rgba(77,166,255,.15);color:var(--blue);}
         .h-sigs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
         .h-sig{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:20px;background:rgba(0,212,255,.06);color:var(--ac);border:1px solid rgba(0,212,255,.15);}
         .h-reason{font-size:12px;color:var(--text2);line-height:1.7;}
@@ -870,13 +874,14 @@ function renderHistory(docs) {
             const isKR=p.market==='KR';
             const sigHtml=(p.signals||[]).map(s=>`<span class="h-sig">${s}</span>`).join('');
             const priceStr=p.price?fmtPrice(p.price,isKR):'';
-            const chgStr=p.chg5d!=null?` ${fmtChg(p.chg5d)}`:'';
+            const chgCls=(p.chg5d??0)>=0?'up':'dn';
             return`<div class="h-pick">
 <div class="h-pick-hd">
     <span class="mkt-badge ${isKR?'mkt-kr':'mkt-us'}" style="font-size:8px;padding:1px 5px;">${isKR?'🇰🇷':'🇺🇸'}</span>
     <span class="h-pick-sym">${p.symbol.replace(/\.(KS|KQ)$/,'')}</span>
     <span class="h-pick-name">${p.name}</span>
-    ${priceStr?`<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${priceStr}${chgStr}</span>`:''}
+    ${priceStr?`<span class="r-price">${priceStr}</span>`:''}
+    ${p.chg5d!=null?`<span class="r-chg ${chgCls}">${fmtChg(p.chg5d)}</span>`:''}
     <span class="h-pick-score">${p.score??'-'}/100</span>
 </div>
 <div class="h-sigs">${sigHtml}</div>
