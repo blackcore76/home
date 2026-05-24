@@ -304,6 +304,14 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
 .install-step p{font-size:13px;opacity:.9;line-height:1.5}
 .install-step strong{color:#64B5F6}
 
+/* ── PULL TO REFRESH ── */
+#ptr{position:fixed;left:0;right:0;height:52px;display:flex;align-items:center;
+  justify-content:center;z-index:150;pointer-events:none;
+  top:92px;transform:translateY(-100%)}
+#ptr-icon{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);transition:background .2s}
+
 /* ── RESPONSIVE ── */
 @media(min-width:800px){
   .stats-kpi{grid-template-columns:repeat(6,1fr)}
@@ -568,6 +576,9 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
 
 <!-- TOOLTIP -->
 <div id="tooltip"></div>
+
+<!-- PULL TO REFRESH -->
+<div id="ptr" aria-hidden="true"><div id="ptr-icon">↓</div></div>
 
 <!-- TOAST -->
 <div id="toast"></div>
@@ -1313,6 +1324,76 @@ function showToast(msg){
 
 // resize chart
 window.addEventListener("resize",()=>{if(curTab===3)renderChart()});
+
+// ── PULL TO REFRESH ──
+(function(){
+  const el=document.getElementById("ptr");
+  const icon=document.getElementById("ptr-icon");
+  const THRESHOLD=70;
+  let startY=0,curY=0,active=false,refreshing=false;
+
+  function positionPtr(){
+    const hdr=document.querySelector(".hdr");
+    if(hdr) el.style.top=hdr.getBoundingClientRect().bottom+"px";
+  }
+  document.addEventListener("DOMContentLoaded",positionPtr);
+  window.addEventListener("resize",positionPtr);
+  setTimeout(positionPtr,400);
+
+  document.addEventListener("touchstart",e=>{
+    if(refreshing||window.scrollY>5)return;
+    startY=curY=e.touches[0].clientY;
+    active=true;
+  },{passive:true});
+
+  document.addEventListener("touchmove",e=>{
+    if(!active||refreshing)return;
+    curY=e.touches[0].clientY;
+    const dy=curY-startY;
+    if(dy<=0){active=false;return;}
+    const travel=Math.min(dy*0.45,52);
+    el.style.transition="none";
+    el.style.transform=`translateY(${travel-52}px)`;
+    icon.style.transform=`rotate(${Math.min(dy/THRESHOLD,1)*180}deg)`;
+    icon.style.background=dy>=THRESHOLD?"#1B5E20":"var(--navy)";
+  },{passive:true});
+
+  document.addEventListener("touchend",()=>{
+    if(!active||refreshing)return;
+    active=false;
+    if(curY-startY>=THRESHOLD){
+      refreshing=true;
+      el.style.transition="transform .2s";
+      el.style.transform="translateY(0)";
+      icon.textContent="↺";
+      icon.style.transform="";
+      icon.style.animation="spin .8s linear infinite";
+      icon.style.background="var(--navy)";
+      // Re-attach Firebase listener
+      if(dbListener&&dbRef){dbRef.off("value",dbListener);dbListener=null;}
+      if(dbRef) initDB(); else showToast("❗ 로그인이 필요합니다");
+      setTimeout(()=>{
+        refreshing=false;
+        showToast("✅ 새로고침 완료");
+        dismiss();
+      },1500);
+    } else {
+      dismiss();
+    }
+  });
+
+  function dismiss(){
+    el.style.transition="transform .3s";
+    el.style.transform="translateY(-100%)";
+    setTimeout(()=>{
+      el.style.transition="none";
+      icon.textContent="↓";
+      icon.style.transform="";
+      icon.style.animation="";
+      icon.style.background="var(--navy)";
+    },300);
+  }
+})();
 </script>
 </body>
 </html>
