@@ -259,9 +259,15 @@ select option{background:var(--sf2);}
           </select>
         </div>
         <div class="form-group">
-          <label>티커 (Yahoo Finance 형식) *</label>
-          <input type="text" id="fTicker" placeholder="NVDA / 005930.KS" oninput="this.value=this.value.toUpperCase();checkMerge()">
-          <div class="helper">미국: AAPL, NVDA · 코스피: 005930.KS · 코스닥: 035720.KQ</div>
+          <label>티커 *</label>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="fTicker" placeholder="AAPL, NVDA" oninput="this.value=this.value.toUpperCase();checkMerge()" style="flex:1;">
+            <select id="fExchange" style="width:96px;display:none;" onchange="checkMerge()">
+              <option value="KS">KOSPI</option>
+              <option value="KQ">KOSDAQ</option>
+            </select>
+          </div>
+          <div class="helper" id="fTickerHelper">미국: AAPL, NVDA · 코스피: NVDA</div>
         </div>
         <div class="form-group full" id="mergeNoticeWrap" style="display:none;">
           <div id="mergeNotice" style="background:rgba(255,202,40,.08);border:1px solid rgba(255,202,40,.25);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--yellow);">
@@ -596,25 +602,32 @@ function openModal(id) {
   document.getElementById('mergeNoticeWrap').style.display = 'none';
 
   if (!editId) {
-    document.getElementById('fName').value     = '';
-    document.getElementById('fTicker').value   = '';
-    document.getElementById('fMarket').value   = 'US';
-    document.getElementById('fBuyDate').value  = new Date().toISOString().slice(0,10);
-    document.getElementById('fBuyPrice').value = '';
-    document.getElementById('fShares').value   = '';
-    document.getElementById('fBuyRate').value  = exchangeRate > 1 ? Math.round(exchangeRate) : '';
-    document.getElementById('fMemo').value     = '';
+    document.getElementById('fName').value       = '';
+    document.getElementById('fTicker').value     = '';
+    document.getElementById('fExchange').value   = 'KS';
+    document.getElementById('fMarket').value     = 'US';
+    document.getElementById('fBuyDate').value    = new Date().toISOString().slice(0,10);
+    document.getElementById('fBuyPrice').value   = '';
+    document.getElementById('fShares').value     = '';
+    document.getElementById('fBuyRate').value    = exchangeRate > 1 ? Math.round(exchangeRate) : '';
+    document.getElementById('fMemo').value       = '';
   } else {
     const r = records.find(x => x.id === editId);
     if (!r) return;
     document.getElementById('fName').value     = r.name     || '';
-    document.getElementById('fTicker').value   = r.ticker   || '';
     document.getElementById('fMarket').value   = r.market   || 'US';
     document.getElementById('fBuyDate').value  = r.buyDate  || '';
     document.getElementById('fBuyPrice').value = r.buyPrice || '';
     document.getElementById('fShares').value   = r.shares   || '';
     document.getElementById('fBuyRate').value  = r.buyRate  || Math.round(exchangeRate) || '';
     document.getElementById('fMemo').value     = r.memo     || '';
+    if (r.market === 'KR') {
+      const parts = (r.ticker || '').split('.');
+      document.getElementById('fTicker').value   = parts[0] || '';
+      document.getElementById('fExchange').value = parts[1] || 'KS';
+    } else {
+      document.getElementById('fTicker').value = r.ticker || '';
+    }
   }
   updatePriceUnit();
   document.getElementById('overlay').classList.add('open');
@@ -622,7 +635,9 @@ function openModal(id) {
 
 function checkMerge() {
   if (editId) return;
-  const ticker   = document.getElementById('fTicker').value.trim().toUpperCase();
+  const mkt = document.getElementById('fMarket').value;
+  const raw = document.getElementById('fTicker').value.trim().toUpperCase();
+  const ticker = mkt === 'KR' ? raw + '.' + document.getElementById('fExchange').value : raw;
   const existing = records.find(r => r.ticker === ticker && r.uid === currentUser?.uid);
   const wrap     = document.getElementById('mergeNoticeWrap');
   const box      = document.getElementById('mergeNotice');
@@ -660,6 +675,17 @@ function updatePriceUnit() {
   const isUS = document.getElementById('fMarket').value === 'US';
   document.getElementById('fPriceUnit').textContent = isUS ? '(USD)' : '(원)';
   document.getElementById('buyRateWrap').style.display = isUS ? '' : 'none';
+  const exchEl = document.getElementById('fExchange');
+  const helperEl = document.getElementById('fTickerHelper');
+  if (isUS) {
+    exchEl.style.display = 'none';
+    document.getElementById('fTicker').placeholder = 'AAPL, NVDA';
+    helperEl.textContent = '미국: AAPL, NVDA';
+  } else {
+    exchEl.style.display = '';
+    document.getElementById('fTicker').placeholder = '005930';
+    helperEl.textContent = '종목코드 6자리만 입력 후 거래소 선택';
+  }
 }
 
 function closeModal() {
@@ -674,8 +700,11 @@ async function saveRecord() {
   if (!currentUser) { showLoginModal(); return; }
 
   const name     = document.getElementById('fName').value.trim();
-  const ticker   = document.getElementById('fTicker').value.trim().toUpperCase();
   const market   = document.getElementById('fMarket').value;
+  const tickerRaw = document.getElementById('fTicker').value.trim().toUpperCase();
+  const ticker   = market === 'KR'
+    ? tickerRaw + '.' + document.getElementById('fExchange').value
+    : tickerRaw;
   const buyDate  = document.getElementById('fBuyDate').value;
   const buyPrice = parseFloat(document.getElementById('fBuyPrice').value);
   const shares   = parseFloat(document.getElementById('fShares').value);
