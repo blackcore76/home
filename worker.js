@@ -111,7 +111,7 @@ async function naverCandles(code, days) {
           .slice(-days);
       }
     }
-  } catch (e) {}
+  } catch (e1) {}
 
   const endD = new Date();
   const startD = new Date();
@@ -122,7 +122,10 @@ async function naverCandles(code, days) {
     '&requestType=1&startTime=' + fmtD(startD) + '&endTime=' + fmtD(endD) + '&timeframe=day',
     { headers: NV_HDR }
   );
-  if (!res.ok) throw new Error('siseJson ' + res.status);
+  if (!res.ok) {
+    const body = await res.text().catch(function() { return ''; });
+    throw new Error('siseJson ' + res.status + ' | ' + body.slice(0, 200));
+  }
 
   const text = await res.text();
   const clean = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
