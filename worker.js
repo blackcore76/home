@@ -220,17 +220,30 @@ async function naverNews(tab, count) {
   const res = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
   if (!res.ok) throw new Error('news ' + res.status);
 
-  // news_list.naver pages are EUC-KR; mainnews.naver is UTF-8
-  var html;
-  if (tab === 'main') {
-    html = await res.text();
-  } else {
-    const buf = await res.arrayBuffer();
-    html = new TextDecoder('euc-kr').decode(buf);
-  }
+  // All Naver Finance news pages are EUC-KR
+  const buf = await res.arrayBuffer();
+  var html = new TextDecoder('euc-kr').decode(buf);
 
   var items = tab === 'main' ? parseNaverMainNews(html, count) : parseNaverNewsList(html, count);
   return { tab: tab, items: items };
+}
+
+var HTML_ENTITIES = {
+  amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", nbsp:' ',
+  middot:'·', bull:'•', hellip:'…', ndash:'–', mdash:'—',
+  lsquo:'‘', rsquo:'’', ldquo:'“', rdquo:'”',
+  uarr:'↑', darr:'↓', rarr:'→', larr:'←',
+  utrif:'▴', dtrif:'▾', utri:'△', dtri:'▽',
+  times:'×', divide:'÷', plusmn:'±', deg:'°',
+  copy:'©', reg:'®', trade:'™',
+};
+
+function decodeEntities(s) {
+  return s
+    .replace(/&([a-zA-Z]+);/g, function(m, name) { return HTML_ENTITIES[name] || m; })
+    .replace(/&#(\d+);/g, function(_, n) { return String.fromCharCode(Number(n)); })
+    .replace(/&#x([0-9a-fA-F]+);/g, function(_, h) { return String.fromCharCode(parseInt(h, 16)); })
+    .replace(/ /g, ' ');
 }
 
 function parseNaverMainNews(html, max) {
@@ -243,9 +256,7 @@ function parseNaverMainNews(html, max) {
   var i = 0;
   while ((m = linkRe.exec(html)) !== null && items.length < max) {
     var href = m[1].trim();
-    var title = m[2].replace(/<[^>]+>/g, '').trim()
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&#039;/g, "'").replace(/&quot;/g, '"');
+    var title = decodeEntities(m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
     if (!title || href.indexOf('javascript') === 0 || href === '#') continue;
     items.push({
       url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href,
@@ -257,27 +268,40 @@ function parseNaverMainNews(html, max) {
 }
 
 function parseNaverNewsList(html, max) {
-  var items = [];
-  var seen = {};
-  var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
-  var linkRe = /<a[^>]+href="([^"]*(?:news_read\.naver|\/news\/article)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
   var dates = [];
   var m;
+  var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
   while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
-  var i = 0;
-  while ((m = linkRe.exec(html)) !== null && items.length < max) {
-    var href = m[1].trim();
-    var title = m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&#039;/g, "'").replace(/&quot;/g, '"');
-    if (!title || title.length < 6 || seen[href]) continue;
+
+  var items = [];
+  var seen = {};
+  var di = 0;
+
+  // 1차: <dt> 안의 <a> (news_list 표준 구조)
+  var dtRe = /<dt[^>]*>([\s\S]*?)<\/dt>/gi;
+  while ((m = dtRe.exec(html)) !== null && items.length < max) {
+    var inner = m[1];
+    var aM = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i.exec(inner);
+    if (!aM) continue;
+    var href = aM[1].trim();
+    var title = decodeEntities(aM[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+    if (!title || title.length < 6 || href.indexOf('javascript') === 0 || seen[href]) continue;
     seen[href] = true;
-    items.push({
-      url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href,
-      title: title,
-      time: dates[i++] || '',
-    });
+    items.push({ url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href, title: title, time: dates[di++] || '' });
   }
+
+  // 2차 폴백: href에 article_id 포함된 모든 <a>
+  if (items.length === 0) {
+    var linkRe = /<a[^>]+href="([^"]*article_id=[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    while ((m = linkRe.exec(html)) !== null && items.length < max) {
+      var href = m[1].trim();
+      var title = decodeEntities(m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+      if (!title || title.length < 6 || seen[href]) continue;
+      seen[href] = true;
+      items.push({ url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href, title: title, time: dates[di++] || '' });
+    }
+  }
+
   return items;
 }
 
