@@ -13,7 +13,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:apiportal.koreainvestment.com)",
       "WebFetch(domain:www.bizhankook.com)",
-      "WebFetch(domain:corp.tossinvest.com)"
+      "WebFetch(domain:corp.tossinvest.com)",
+      "Bash(dir *)",
+      "PowerShell(Start-Process notepad \"C:\\\\Users\\\\BlackCore\\\\dropbox\\\\github.pages\\\\home\\\\worker.js\")"
     ]
   }
 }
