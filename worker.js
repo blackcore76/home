@@ -128,13 +128,33 @@ async function naverCandles(code, days) {
   }
 
   const text = await res.text();
-  const clean = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
-  const json = JSON.parse(clean);
-  const list = Array.isArray(json) ? json : (json.result && json.result.itemList ? json.result.itemList : []);
-  if (list.length < 20) throw new Error('insufficient data');
+  const clean = (text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text).trim();
 
-  return list
-    .map(function(r) {
+  // siseJson returns single-quoted array-of-arrays: [['날짜','시가',...],[date,o,h,l,c,v],...]
+  // JSON.parse doesn't accept single quotes — replace them
+  var json;
+  try {
+    json = JSON.parse(clean);
+  } catch (e) {
+    json = JSON.parse(clean.replace(/'/g, '"'));
+  }
+
+  var list;
+  if (Array.isArray(json) && Array.isArray(json[0])) {
+    // array-of-arrays format: first row = headers, rest = data
+    list = json.slice(1)
+      .filter(function(r) { return r[0]; })
+      .map(function(r) {
+        var ds = String(r[0]).replace(/\./g, '-');
+        return {
+          t: Math.floor(new Date(ds + 'T00:00:00+09:00').getTime() / 1000),
+          o: nv(r[1]), h: nv(r[2]), l: nv(r[3]), c: nv(r[4]), v: nv(r[5]),
+        };
+      });
+  } else {
+    // array-of-objects format (Korean keys)
+    var raw = Array.isArray(json) ? json : (json.result && json.result.itemList ? json.result.itemList : []);
+    list = raw.map(function(r) {
       var ds = (r['날짜'] || r.date || '').replace(/\./g, '-');
       return {
         t: Math.floor(new Date(ds + 'T00:00:00+09:00').getTime() / 1000),
@@ -144,7 +164,12 @@ async function naverCandles(code, days) {
         c: nv(r['종가'] || r.closePrice),
         v: nv(r['거래량'] || r.volume || 0),
       };
-    })
+    });
+  }
+
+  if (list.length < 20) throw new Error('insufficient data');
+
+  return list
     .filter(function(c) { return c.c > 0; })
     .sort(function(a, b) { return a.t - b.t; })
     .slice(-days);
