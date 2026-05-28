@@ -306,6 +306,7 @@ select option{background:var(--sf2);}
 //  CONFIG
 // ════════════════════════════════════════════════
 const PROXY  = 'https://lotto-proxy.blackcore-ff6.workers.dev/?url=';
+const WORKER = 'https://lotto-proxy.blackcore-ff6.workers.dev';
 const YF_V8  = 'https://query2.finance.yahoo.com/v8/finance/chart/';
 
 const db = firebase.firestore();
@@ -376,6 +377,16 @@ initSync();
 // ════════════════════════════════════════════════
 async function fetchSingle(ticker) {
   try {
+    // 한국 종목(.KS / .KQ) → Naver Worker
+    const krMatch = ticker.match(/^(\d{6,7})\.(KS|KQ)$/);
+    if (krMatch) {
+      const res = await fetch(WORKER + '/naver/quote?code=' + krMatch[1], { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return null;
+      const d = await res.json();
+      if (!d.price) return null;
+      return { price: d.price, chgPct: d.changePct || 0 };
+    }
+    // 미국 종목 → Yahoo Finance
     const url  = YF_V8 + encodeURIComponent(ticker) + '?interval=1d&range=1d';
     const res  = await fetch(PROXY + encodeURIComponent(url));
     const data = await res.json();
