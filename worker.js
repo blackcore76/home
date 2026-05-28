@@ -54,6 +54,13 @@ async function handleRequest(req, event) {
     } else if (path === '/naver/news') {
       data = await naverNews(qs.get('tab') || 'main', parseInt(qs.get('count') || '25'));
       ttl = TTL.news;
+    } else if (path === '/naver/debug') {
+      const tab = qs.get('tab') || 'main';
+      const url = NEWS_URLS[tab] || NEWS_URLS.main;
+      const r = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
+      const buf = await r.arrayBuffer();
+      const html = new TextDecoder('euc-kr').decode(buf);
+      return new Response(JSON.stringify({ status: r.status, url: url, html: html.slice(0, 5000) }), { headers: CORS });
     } else {
       return errRes('unknown route', 404);
     }
