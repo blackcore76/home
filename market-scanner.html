@@ -415,8 +415,8 @@ function toggleAuth() {
 const PROXIES = [
     u => `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    u => u.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com'),
 ];
 
 // ── 종목 유니버스 ───────────────────────────────────────────
@@ -641,10 +641,15 @@ ${JSON.stringify(payload,null,2)}
 아래 JSON만 출력하세요 (코드블록 없이 순수 JSON):
 {"picks":[{"symbol":"코드","name":"이름","market":"KR또는US","reason":"선정이유2-3문장(구체적기술근거)","signals":["신호1","신호2"],"risk":"주의사항1문장","score":85}],"summary":"시장전반기술적상황한줄"}`;
 
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const doFetch=()=>fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
         headers:{'x-api-key':claudeKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
         body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4096,messages:[{role:'user',content:prompt}]}),
+        signal:AbortSignal.timeout(60000),
+    });
+    let res=await doFetch().catch(async e=>{
+        await new Promise(r=>setTimeout(r,2000));
+        return doFetch();
     });
     if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(`Claude 오류: ${err.error?.message||res.status}`);}
     const data=await res.json();
