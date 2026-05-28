@@ -183,9 +183,10 @@ function renderNews(tab, items) {
             prefix = `<span class="rank-badge ${cls}">${i + 1}</span>`;
         }
         const time = item.time ? `<span>${esc(item.time)}</span>` : '';
+        const src  = item.source ? `<span style="margin-left:auto;">${esc(item.source)}</span>` : '';
         return `<a class="news-item" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">
             <div class="news-title">${prefix}${esc(item.title)}</div>
-            <div class="news-meta">${time}</div>
+            <div class="news-meta">${time}${src}</div>
         </a>`;
     }).join('');
 

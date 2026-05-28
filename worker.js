@@ -265,6 +265,11 @@ function parseNaverNewsAny(html, max) {
   var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
   var m;
   while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
+
+  var sources = [];
+  var srcRe = /<(?:span|em)[^>]*class="[^"]*(?:source|press_name|press)[^"]*"[^>]*>([^<]+)<\/(?:span|em)>/gi;
+  while ((m = srcRe.exec(html)) !== null) sources.push(m[1].trim());
+
   var di = 0;
 
   // Match opening <a> tag whose href contains news_read.naver or article_id=
@@ -282,8 +287,10 @@ function parseNaverNewsAny(html, max) {
     items.push({
       url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href,
       title: title,
-      time: dates[di++] || '',
+      time: dates[di] || '',
+      source: sources[di] || '',
     });
+    di++;
   }
   return items;
 }
