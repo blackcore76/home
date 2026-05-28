@@ -93,6 +93,9 @@
         /* 결과 */
         .result-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
         .result-hd h2{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--ac);}
+        .cache-badge{font-size:11px;color:var(--text3);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:2px 8px;}
+        .btn-rescan{font-size:12px;padding:4px 12px;background:transparent;border:1px solid var(--ac);color:var(--ac);border-radius:6px;cursor:pointer;font-family:var(--sans);}
+        .btn-rescan:hover{background:rgba(0,212,255,.1);}
         .result-meta{font-family:var(--mono);font-size:10px;color:var(--text3);}
         .save-st{font-family:var(--mono);font-size:10px;}
         .save-st.saving{color:var(--yel);}
@@ -258,9 +261,10 @@
     </div>
 
     <div class="gone" id="resultArea">
-        <div class="result-hd">
+        <div class="result-hd" id="resultHd">
             <h2>🎯 AI 추천 픽</h2>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span id="cacheBadge"></span>
                 <span class="result-meta" id="resultMeta"></span>
                 <span class="save-st" id="saveSt"></span>
             </div>
@@ -712,6 +716,70 @@ async function saveScan(picks, summary, market, totalScanned, filtered) {
     }
 }
 
+// ── 스캔 캐시 ──────────────────────────────────────────────
+function _scanSlotKey(market) {
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 3600 * 1000);
+    const kstH = kst.getUTCHours();
+    const kstMin = kstH * 60 + kst.getUTCMinutes();
+    const kstDate = kst.toISOString().slice(0, 10);
+
+    if (market === 'kr') {
+        // KR 장중 09:00~15:30 KST
+        const slot = (kstMin >= 540 && kstMin < 930) ? 'open' : 'close';
+        return 'sc_kr_' + kstDate + '_' + slot;
+    }
+    if (market === 'us') {
+        // 미장+애프터 21:00 KST ~ 익일 10:00 KST
+        const inSession = (kstH >= 21 || kstH < 10);
+        const slot = inSession ? 'open' : 'close';
+        // 자정 이전(21~24)이면 오늘, 자정 이후(0~10)면 어제가 거래일
+        let sessionDate = kstDate;
+        if (kstH < 10) {
+            const yesterday = new Date(kst.getTime() - 86400000);
+            sessionDate = yesterday.toISOString().slice(0, 10);
+        }
+        return 'sc_us_' + sessionDate + '_' + slot;
+    }
+    // all: KST 날짜 기준 하루 1회
+    return 'sc_all_' + kstDate;
+}
+
+function getCachedScan(market) {
+    try {
+        const raw = localStorage.getItem(_scanSlotKey(market));
+        return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+}
+
+function setCachedScan(market, data) {
+    try {
+        localStorage.setItem(_scanSlotKey(market), JSON.stringify(Object.assign({}, data, { ts: Date.now() })));
+    } catch (e) { console.warn('scan cache write failed', e); }
+}
+
+function showCachedResult(cached) {
+    document.getElementById('introArea').classList.add('gone');
+    document.getElementById('progArea').classList.add('gone');
+    renderResults(cached.picks, cached.summary, cached.filtered, cached.scoredLen);
+    document.getElementById('resultArea').classList.remove('gone');
+
+    const ts = new Date(cached.ts);
+    const timeStr = ts.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('lastScan').textContent = '캐시됨 ' + timeStr;
+
+    const badge = document.getElementById('cacheBadge');
+    badge.innerHTML = '<span class="cache-badge">📦 캐시 ' + timeStr + '</span>'
+        + ' <button class="btn-rescan" onclick="forceRescan()">🔄 새로 스캔</button>';
+    document.getElementById('saveSt').textContent = '';
+}
+
+function forceRescan() {
+    localStorage.removeItem(_scanSlotKey(selectedMkt));
+    document.getElementById('cacheBadge').innerHTML = '';
+    startScan();
+}
+
 // ── 스캔 메인 ──────────────────────────────────────────────
 function setStep(n) {
     for(let i=1;i<=5;i++){
@@ -731,6 +799,10 @@ async function startScan() {
         return;
     }
     if(scanning)return;
+
+    // 캐시 확인: 같은 세션에 이미 스캔했으면 캐시 결과 표시
+    const cached = getCachedScan(selectedMkt);
+    if (cached) { showCachedResult(cached); return; }
     scanning=true;
 
     const universe=(selectedMkt==='all'
@@ -795,6 +867,8 @@ async function startScan() {
         await saveScan(enriched, aiResult.summary, selectedMkt, universe.length, filteredLen);
         document.getElementById('progFill').style.width='100%';
 
+        setCachedScan(selectedMkt, { picks: enriched, summary: aiResult.summary, market: selectedMkt, totalScanned: universe.length, filtered: filteredLen, scoredLen });
+        document.getElementById('cacheBadge').innerHTML = '';
         renderResults(enriched, aiResult.summary, filteredLen, scoredLen);
         document.getElementById('lastScan').textContent='마지막 스캔 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
 
