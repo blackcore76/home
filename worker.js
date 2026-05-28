@@ -225,15 +225,38 @@ var NEWS_URLS = {
 };
 
 async function naverNews(tab, count) {
-  var url = NEWS_URLS[tab] || NEWS_URLS.main;
-  const res = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
-  if (!res.ok) throw new Error('news ' + res.status);
-  // Pages declare UTF-8 but actually serve EUC-KR
-  var html = new TextDecoder('euc-kr').decode(await res.arrayBuffer());
-  // Skip the shared ticker section at the top
-  var tickerEnd = html.indexOf('</dl>', html.indexOf('sub_tit_ticker'));
-  if (tickerEnd > 0) html = html.slice(tickerEnd + 5);
-  var items = parseNaverNewsAny(html, count);
+  var baseUrl = NEWS_URLS[tab] || NEWS_URLS.main;
+  var items = [];
+
+  if (baseUrl.indexOf('news_list.naver') >= 0) {
+    // 페이지네이션 지원 탭: 3페이지 병렬 요청
+    var buffers = await Promise.all([1, 2, 3].map(function(p) {
+      return fetch(baseUrl + '&page=' + p, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) })
+        .then(function(r) { return r.ok ? r.arrayBuffer() : null; })
+        .catch(function() { return null; });
+    }));
+    var seen = {};
+    for (var i = 0; i < buffers.length; i++) {
+      if (!buffers[i]) continue;
+      var html = new TextDecoder('euc-kr').decode(buffers[i]);
+      var tickerEnd = html.indexOf('</dl>', html.indexOf('sub_tit_ticker'));
+      if (tickerEnd > 0) html = html.slice(tickerEnd + 5);
+      var pageItems = parseNaverNewsAny(html, count);
+      pageItems.forEach(function(item) {
+        if (!seen[item.url]) { seen[item.url] = true; items.push(item); }
+      });
+    }
+    items = items.slice(0, count);
+  } else {
+    // 단일 페이지 탭 (주요뉴스 등 편집 큐레이션)
+    var res = await fetch(baseUrl, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
+    if (!res.ok) throw new Error('news ' + res.status);
+    var html = new TextDecoder('euc-kr').decode(await res.arrayBuffer());
+    var tickerEnd = html.indexOf('</dl>', html.indexOf('sub_tit_ticker'));
+    if (tickerEnd > 0) html = html.slice(tickerEnd + 5);
+    items = parseNaverNewsAny(html, count);
+  }
+
   return { tab: tab, items: items };
 }
 
