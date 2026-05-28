@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>금융뉴스 — BlackCore</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:    #0d0f12;
+  --bg2:   #13171e;
+  --bg3:   #1a2030;
+  --line:  rgba(255,255,255,.08);
+  --text:  #e8e2d8;
+  --text2: #a09488;
+  --text3: #6b5f54;
+  --ac:    #c9a84c;
+  --ac2:   #a8883a;
+  --red:   #e05555;
+  --blue:  #5599dd;
+  --sans:  'Noto Sans KR', sans-serif;
+  --mono:  'JetBrains Mono', monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overscroll-behavior:none;}
+
+/* ── 헤더 ── */
+.hd{background:var(--bg2);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10;}
+.hd-left{display:flex;align-items:center;gap:12px;}
+.back{font-size:18px;color:var(--text2);text-decoration:none;line-height:1;}
+.hd-title{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ac);}
+.index-bar{display:flex;gap:12px;font-family:var(--mono);font-size:11px;}
+.idx-item{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.idx-name{color:var(--text3);font-size:10px;}
+.idx-val{color:var(--text);font-weight:500;}
+.idx-chg{font-size:10px;}
+.up{color:#4caf8a;}.dn{color:var(--red);}
+
+/* ── 탭 ── */
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--bg2);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{flex-shrink:0;padding:11px 18px;font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;}
+.tab-btn.active{color:var(--ac);border-bottom-color:var(--ac);}
+.tab-btn:hover:not(.active){color:var(--text);}
+.realtime-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;animation:blink 1.4s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── 상태 ── */
+.state{padding:48px 16px;text-align:center;color:var(--text3);font-size:14px;}
+.spin{display:inline-block;width:20px;height:20px;border:2px solid var(--bg3);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── 뉴스 리스트 ── */
+.news-list{padding:0 0 80px;}
+.news-item{display:block;padding:14px 16px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit;transition:background .12s;}
+.news-item:hover{background:var(--bg2);}
+.news-title{font-size:14px;line-height:1.55;color:var(--text);margin-bottom:6px;word-break:keep-all;}
+.news-meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.news-rank{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:var(--bg3);font-family:var(--mono);font-size:11px;font-weight:500;color:var(--ac);flex-shrink:0;margin-right:4px;}
+.news-rank.top3{background:rgba(201,168,76,.15);color:var(--ac);}
+
+/* ── 갱신 바 ── */
+.refresh-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--line);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.refresh-btn{padding:4px 12px;background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--mono);}
+.refresh-btn:hover{border-color:var(--ac);color:var(--ac);}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-left">
+    <a class="back" href="index.html">←</a>
+    <span class="hd-title">📰 금융뉴스</span>
+  </div>
+  <div class="index-bar" id="indexBar">
+    <div class="idx-item"><span class="idx-name">KOSPI</span><span class="idx-val" id="kospiVal">—</span><span class="idx-chg" id="kospiChg"></span></div>
+    <div class="idx-item"><span class="idx-name">KOSDAQ</span><span class="idx-val" id="kosdaqVal">—</span><span class="idx-chg" id="kosdaqChg"></span></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabBar">
+  <button class="tab-btn active" data-tab="realtime" onclick="switchTab('realtime')"><span class="realtime-dot"></span>실시간속보</button>
+  <button class="tab-btn" data-tab="main"     onclick="switchTab('main')">주요뉴스</button>
+  <button class="tab-btn" data-tab="popular"  onclick="switchTab('popular')">많이본뉴스</button>
+  <button class="tab-btn" data-tab="focus"    onclick="switchTab('focus')">뉴스포커스</button>
+</div>
+
+<div id="newsArea"></div>
+
+<div class="refresh-bar">
+  <span id="refreshLbl">—</span>
+  <button class="refresh-btn" onclick="forceLoad()">↻ 새로고침</button>
+</div>
+
+<script>
+const WORKER = 'https://lotto-proxy.blackcore-ff6.workers.dev';
+const TTL = { realtime: 120, main: 300, popular: 300, focus: 600 };
+
+let currentTab = 'realtime';
+let autoTimer = null;
+
+// ── 지수 ──
+async function loadIndex() {
+  try {
+    const r = await fetch(WORKER + '/naver/index', { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    const fmt = (v) => v == null ? '—' : Number(v).toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const chgHtml = (chg, pct) => {
+      const cls = chg >= 0 ? 'up' : 'dn';
+      const sign = chg >= 0 ? '+' : '';
+      return `<span class="${cls}">${sign}${fmt(chg)} (${sign}${Number(pct).toFixed(2)}%)</span>`;
+    };
+    document.getElementById('kospiVal').textContent = fmt(d.kospi.value);
+    document.getElementById('kospiChg').innerHTML = chgHtml(d.kospi.change, d.kospi.changePct);
+    document.getElementById('kosdaqVal').textContent = fmt(d.kosdaq.value);
+    document.getElementById('kosdaqChg').innerHTML = chgHtml(d.kosdaq.change, d.kosdaq.changePct);
+  } catch {}
+}
+
+// ── 탭 전환 ──
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  loadNews(tab);
+}
+
+// ── 캐시 ──
+function cacheKey(tab) { return 'news_' + tab; }
+function getCache(tab) {
+  try {
+    const d = JSON.parse(localStorage.getItem(cacheKey(tab)) || 'null');
+    if (!d) return null;
+    if (Date.now() - d.ts > TTL[tab] * 1000) return null;
+    return d.items;
+  } catch { return null; }
+}
+function setCache(tab, items) {
+  try { localStorage.setItem(cacheKey(tab), JSON.stringify({ ts: Date.now(), items })); } catch {}
+}
+
+// ── 뉴스 로드 ──
+async function loadNews(tab, force) {
+  if (!force) {
+    const cached = getCache(tab);
+    if (cached) { renderNews(tab, cached); return; }
+  }
+  renderLoading();
+  try {
+    const r = await fetch(WORKER + '/naver/news?tab=' + tab + '&count=30', {
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const items = d.items || [];
+    if (items.length === 0) throw new Error('뉴스 없음');
+    setCache(tab, items);
+    renderNews(tab, items);
+  } catch (e) {
+    renderError(e.message);
+  }
+}
+
+function forceLoad() { loadNews(currentTab, true); }
+
+// ── 렌더 ──
+function renderLoading() {
+  document.getElementById('newsArea').innerHTML =
+    '<div class="state"><div class="spin"></div><br>뉴스 불러오는 중...</div>';
+  document.getElementById('refreshLbl').textContent = '불러오는 중...';
+}
+
+function renderError(msg) {
+  document.getElementById('newsArea').innerHTML =
+    '<div class="state">⚠️ ' + msg + '<br><br><button class="refresh-btn" onclick="forceLoad()" style="margin:auto">다시 시도</button></div>';
+  document.getElementById('refreshLbl').textContent = '오류';
+}
+
+function renderNews(tab, items) {
+  const isPopular = tab === 'popular';
+  const html = items.map((item, i) => {
+    const rankHtml = isPopular
+      ? `<span class="news-rank ${i < 3 ? 'top3' : ''}">${i + 1}</span>`
+      : '';
+    const time = item.time ? `<span>${item.time}</span>` : '';
+    return `<a class="news-item" href="${item.url}" target="_blank" rel="noopener">
+      <div class="news-title">${rankHtml}${esc(item.title)}</div>
+      <div class="news-meta">${time}</div>
+    </a>`;
+  }).join('');
+
+  document.getElementById('newsArea').innerHTML = '<div class="news-list">' + html + '</div>';
+
+  const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('refreshLbl').textContent = '업데이트 ' + now + ' · ' + items.length + '건';
+
+  // 실시간속보: TTL 후 자동 갱신
+  if (autoTimer) clearTimeout(autoTimer);
+  if (tab === 'realtime') {
+    autoTimer = setTimeout(() => { if (currentTab === 'realtime') loadNews('realtime', true); }, TTL.realtime * 1000);
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 초기화 ──
+loadIndex();
+loadNews('realtime');
+// 지수 1분마다 갱신
+setInterval(loadIndex, 60000);
+</script>
+</body>
+</html>

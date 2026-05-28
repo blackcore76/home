@@ -52,7 +52,7 @@ async function handleRequest(req, event) {
       data = await naverIndex();
       ttl = TTL.index;
     } else if (path === '/naver/news') {
-      data = await naverNews(parseInt(qs.get('count') || '20'));
+      data = await naverNews(qs.get('tab') || 'main', parseInt(qs.get('count') || '25'));
       ttl = TTL.news;
     } else {
       return errRes('unknown route', 404);
@@ -208,25 +208,29 @@ async function naverIndex() {
   };
 }
 
-async function naverNews(count) {
-  const res = await fetch(
-    'https://finance.naver.com/news/mainnews.naver',
-    { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html' }) }
-  );
+var NEWS_URLS = {
+  main:     'https://finance.naver.com/news/mainnews.naver',
+  realtime: 'https://finance.naver.com/news/news_list.naver?mode=LSS3D&section=101&category=3',
+  popular:  'https://finance.naver.com/news/news_list.naver?mode=RANK',
+  focus:    'https://finance.naver.com/news/news_list.naver?mode=LSS2D&section=101&category=311',
+};
+
+async function naverNews(tab, count) {
+  var url = NEWS_URLS[tab] || NEWS_URLS.main;
+  const res = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
   if (!res.ok) throw new Error('news ' + res.status);
   const html = await res.text();
-  return { count: 0, items: parseNaverNews(html, count) };
+  var items = tab === 'main' ? parseNaverMainNews(html, count) : parseNaverNewsList(html, count);
+  return { tab: tab, items: items };
 }
 
-function parseNaverNews(html, max) {
+function parseNaverMainNews(html, max) {
   var items = [];
   var linkRe = /<dt[^>]*>[\s\S]*?<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
   var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
   var dates = [];
   var m;
-  while ((m = dateRe.exec(html)) !== null) {
-    dates.push(m[1].trim());
-  }
+  while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
   var i = 0;
   while ((m = linkRe.exec(html)) !== null && items.length < max) {
     var href = m[1].trim();
@@ -234,6 +238,31 @@ function parseNaverNews(html, max) {
       .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
       .replace(/&#039;/g, "'").replace(/&quot;/g, '"');
     if (!title || href.indexOf('javascript') === 0 || href === '#') continue;
+    items.push({
+      url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href,
+      title: title,
+      time: dates[i++] || '',
+    });
+  }
+  return items;
+}
+
+function parseNaverNewsList(html, max) {
+  var items = [];
+  var seen = {};
+  var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
+  var linkRe = /<a[^>]+href="([^"]*(?:news_read\.naver|\/news\/article)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  var dates = [];
+  var m;
+  while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
+  var i = 0;
+  while ((m = linkRe.exec(html)) !== null && items.length < max) {
+    var href = m[1].trim();
+    var title = m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&#039;/g, "'").replace(/&quot;/g, '"');
+    if (!title || title.length < 6 || seen[href]) continue;
+    seen[href] = true;
     items.push({
       url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href,
       title: title,
