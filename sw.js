@@ -11,5 +11,7 @@ self.addEventListener('activate',e=>{
 });
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
+  // 외부 API 요청은 SW가 가로채지 않음 (Yahoo Finance, Anthropic 등)
+  if(!e.request.url.startsWith(self.location.origin))return;
   e.respondWith(caches.match(e.request).then(cached=>cached||fetch(e.request)));
 });
