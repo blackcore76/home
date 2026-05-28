@@ -219,7 +219,16 @@ async function naverNews(tab, count) {
   var url = NEWS_URLS[tab] || NEWS_URLS.main;
   const res = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
   if (!res.ok) throw new Error('news ' + res.status);
-  const html = await res.text();
+
+  // news_list.naver pages are EUC-KR; mainnews.naver is UTF-8
+  var html;
+  if (tab === 'main') {
+    html = await res.text();
+  } else {
+    const buf = await res.arrayBuffer();
+    html = new TextDecoder('euc-kr').decode(buf);
+  }
+
   var items = tab === 'main' ? parseNaverMainNews(html, count) : parseNaverNewsList(html, count);
   return { tab: tab, items: items };
 }
