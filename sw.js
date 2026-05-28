@@ -1,4 +1,4 @@
-const CACHE='home-v1';
+const CACHE='home-v2';
 const SHELL=['/home/','/home/index.html','/home/icon-192.png','/home/icon-512.png','/home/favicon.png'];
 
 self.addEventListener('install',e=>{
