@@ -221,14 +221,18 @@ var NEWS_URLS = {
   main:     'https://finance.naver.com/news/mainnews.naver',
   realtime: 'https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258&type=0',
   popular:  'https://finance.naver.com/news/news_list.naver?mode=RANK',
-  focus:    'https://finance.naver.com/news/news_list.naver?mode=MAINNEWS',
+  focus:    'https://finance.naver.com/news/news_list.naver?mode=LSS3D&section_id=101&section_id2=258&section_id3=401',
 };
 
 async function naverNews(tab, count) {
   var url = NEWS_URLS[tab] || NEWS_URLS.main;
   const res = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
   if (!res.ok) throw new Error('news ' + res.status);
-  var html = await res.text();
+  // Pages declare UTF-8 but actually serve EUC-KR
+  var html = new TextDecoder('euc-kr').decode(await res.arrayBuffer());
+  // Skip the shared ticker section at the top
+  var tickerEnd = html.indexOf('</dl>', html.indexOf('sub_tit_ticker'));
+  if (tickerEnd > 0) html = html.slice(tickerEnd + 5);
   var items = parseNaverNewsAny(html, count);
   return { tab: tab, items: items };
 }
@@ -252,22 +256,26 @@ function decodeEntities(s) {
 }
 
 // Universal parser: works for all Naver Finance news pages
+// Extracts full title from title= attribute (link text is always truncated on Naver)
 function parseNaverNewsAny(html, max) {
   var items = [];
   var seen = {};
 
-  // dates
   var dates = [];
   var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
   var m;
   while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
   var di = 0;
 
-  // Match any <a> whose href contains news_read or article_id or /news/ article paths
-  var linkRe = /<a[^>]+href="([^"]*(?:news_read\.naver|article_id=)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-  while ((m = linkRe.exec(html)) !== null && items.length < max) {
-    var href = m[1].trim();
-    var title = decodeEntities(m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  // Match opening <a> tag whose href contains news_read.naver or article_id=
+  var tagRe = /<a\b([^>]*(?:news_read\.naver|article_id=)[^>]*)>/gi;
+  while ((m = tagRe.exec(html)) !== null && items.length < max) {
+    var attrs = m[1];
+    var hrefM = /href="([^"]+)"/.exec(attrs);
+    var titleM = /title="([^"]+)"/.exec(attrs);
+    if (!hrefM || !titleM) continue;
+    var href = hrefM[1].trim();
+    var title = decodeEntities(titleM[1]);
     if (!title || title.length < 8 || seen[href] || seen[title]) continue;
     seen[href] = true;
     seen[title] = true;
