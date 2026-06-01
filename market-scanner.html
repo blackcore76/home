@@ -229,7 +229,7 @@
             <p class="hint">
                 🔒 API 키는 브라우저 로컬 저장소에만 보관됩니다.<br>
                 📊 Yahoo Finance 데이터 수집 + Claude Haiku 분석으로 구동<br>
-                💾 스캔 결과는 Firestore에 자동 저장됩니다 (로그인 시 본인 전용)<br>
+                💾 스캔 결과는 Firestore에 자동 저장됩니다 (로그인 시 본인 전용 / 비로그인 시 익명 저장)<br>
                 💰 스캔 1회 비용: 약 $0.05~0.15 (Haiku 기준)
             </p>
         </div>
@@ -685,16 +685,11 @@ ${JSON.stringify(payload,null,2)}
 // ── Firestore 저장 ─────────────────────────────────────────
 async function saveScan(picks, summary, market, totalScanned, filtered) {
     const saveSt = document.getElementById('saveSt');
-    if (!currentUser) {
-        saveSt.className='save-st';saveSt.style.color='var(--text3)';
-        saveSt.textContent='🔒 로그인 후 저장됩니다';
-        return;
-    }
     saveSt.className='save-st saving';saveSt.textContent='💾 저장 중...';
     try {
         const doc = {
             ts: new Date(),
-            uid: currentUser.uid,
+            uid: currentUser?.uid || 'anonymous',
             market,
             totalScanned,
             filtered,
@@ -1027,3 +1022,4 @@ function goAnalysisFromHistory(symbol) {
 </script>
 </body>
 </html>
+                                                                                                                                    
