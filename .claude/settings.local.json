@@ -16,7 +16,9 @@
       "WebFetch(domain:corp.tossinvest.com)",
       "Bash(dir *)",
       "PowerShell(Start-Process notepad \"C:\\\\Users\\\\BlackCore\\\\dropbox\\\\github.pages\\\\home\\\\worker.js\")",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(grep -n \"\\\\\\\\-\\\\\\\\-hdr\\\\\\\\|\\\\\\\\-\\\\\\\\-gold\\\\\\\\|\\\\\\\\-\\\\\\\\-sub\\\\\\\\|\\\\\\\\-\\\\\\\\-card\\\\\\\\|\\\\\\\\-\\\\\\\\-shadow\" C:/Users/BlackCore/dropbox/github.pages/rent/common.css)",
+      "Bash(node *)"
     ]
   }
 }
