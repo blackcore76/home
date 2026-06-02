@@ -128,7 +128,7 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
 /* SYS + DIA 나란히 위 / PULSE 전체 너비 아래 */
 .vital-row-top{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .vital-row-bottom{margin-bottom:16px}
-.vital-box{display:flex;flex-direction:column;align-items:center;gap:4px}
+.vital-box{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;width:100%}
 .vital-box label{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .vital-box.sys label{color:var(--red)}
 .vital-box.dia label{color:var(--blue)}
@@ -310,6 +310,17 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
   .stages-grid{grid-template-columns:repeat(6,1fr)}
   .stats-row{grid-template-columns:repeat(6,1fr)}
 }
+/* 기록 테이블 모바일: 비필수 컬럼 숨김 */
+.date-short{display:none}
+@media(max-width:600px){
+  .hide-m{display:none}
+  .date-full{display:none}
+  .date-short{display:inline}
+  .badge-name{display:none}
+  .rec-tbl td,.rec-tbl th{padding:8px 5px}
+  .r-sys,.r-dia,.r-pulse{font-size:13px}
+  .action-btns .del-btn,.action-btns .edit-btn{width:28px;height:28px;font-size:13px}
+}
 @media(max-width:500px){
   .vital-row-top{gap:8px}
   .stepper-wide .step-btn{width:56px;min-width:56px}
@@ -460,9 +471,9 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
       <table class="rec-tbl">
         <thead>
           <tr>
-            <th>날짜</th><th>요일</th><th>시간</th>
+            <th>날짜</th><th class="hide-m">요일</th><th class="hide-m">시간</th>
             <th>SYS</th><th>DIA</th><th>PULSE</th>
-            <th>판정</th><th>메모</th><th></th>
+            <th>판정</th><th class="hide-m">메모</th><th></th>
           </tr>
         </thead>
         <tbody id="rec-body"></tbody>
@@ -957,14 +968,14 @@ function renderRecords(){
   body.innerHTML=list.map(r=>{
     const jj=j(r);
     return `<tr>
-      <td class="r-date">${r.date}</td>
-      <td class="r-day">${fmtDay(r.date)}</td>
-      <td class="r-time">${r.time||"—"}</td>
+      <td class="r-date"><span class="date-full">${r.date}</span><span class="date-short">${fmtDate(r.date)}</span></td>
+      <td class="r-day hide-m">${fmtDay(r.date)}</td>
+      <td class="r-time hide-m">${r.time||"—"}</td>
       <td class="r-sys">${r.sys}</td>
       <td class="r-dia">${r.dia}</td>
       <td class="r-pulse">${r.pulse}</td>
-      <td><span class="r-badge" style="background:${jj.bg};color:${jj.tc}">${jj.emoji} ${jj.name}</span></td>
-      <td class="r-memo">${r.memo||""}</td>
+      <td><span class="r-badge" style="background:${jj.bg};color:${jj.tc}">${jj.emoji}<span class="badge-name"> ${jj.name}</span></span></td>
+      <td class="r-memo hide-m">${r.memo||""}</td>
       <td><div class="action-btns">
         <button class="edit-btn" onclick="editRecord(${r.id})" title="수정">✏️</button>
         <button class="del-btn" onclick="deleteRecord(${r.id})" title="삭제">✕</button>
