@@ -85,9 +85,9 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
 .hdr{position:fixed;top:36px;left:0;right:0;z-index:200;background:var(--navy);
   box-shadow:0 3px 16px rgba(0,0,0,.3);padding:0 20px}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;height:56px}
-.hdr-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
-.hdr-title span{font-size:12px;font-weight:400;color:rgba(255,255,255,.5);margin-left:4px}
-.hdr-actions{display:flex;gap:8px}
+.hdr-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden}
+.hdr-title span{font-size:12px;font-weight:400;color:rgba(255,255,255,.5);margin-left:4px;white-space:nowrap}
+.hdr-actions{display:flex;gap:8px;flex-shrink:0}
 .hdr-btn{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.85);
   padding:7px 14px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;
   transition:background .15s}
@@ -314,6 +314,18 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
   .vital-row-top{gap:8px}
   .stepper-wide .step-btn{width:56px;min-width:56px}
   .stepper-wide .step-input{font-size:30px}
+  .tab{font-size:12px;padding:10px 3px 12px}
+  .hdr-btn{padding:7px 10px;font-size:12px}
+  .kpi-val{font-size:22px}
+}
+@media(max-width:380px){
+  .hdr-title{font-size:16px;gap:4px}
+  #hdr-date{display:none}
+  .tab{font-size:11px;padding:10px 1px 12px}
+  .kpi-val{font-size:18px}
+  .stats-kpi{grid-template-columns:repeat(2,1fr)}
+  .stages-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 <script src="home-bar.js"></script>
@@ -530,7 +542,8 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
 
   <div class="card">
     <div class="card-hd">🩺 혈압 단계 기준 (AHA 기준)</div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:320px">
       <thead>
         <tr style="background:#EEF3F8">
           <th style="padding:10px;text-align:left;font-size:11px;color:var(--sub)">분류</th>
@@ -541,6 +554,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
       </thead>
       <tbody id="guide-tbl"></tbody>
     </table>
+    </div>
   </div>
 
   <div class="card">
