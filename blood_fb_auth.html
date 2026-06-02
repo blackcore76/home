@@ -310,16 +310,43 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
   .stages-grid{grid-template-columns:repeat(6,1fr)}
   .stats-row{grid-template-columns:repeat(6,1fr)}
 }
-/* 기록 테이블 모바일: 비필수 컬럼 숨김 */
+/* 기록 테이블 모바일 */
 .date-short{display:none}
 @media(max-width:600px){
-  .hide-m{display:none}
+  /* ── 입력 탭: SYS·DIA·PULSE 각각 1열로 세로 배열 ── */
+  .vital-row-top{grid-template-columns:1fr}
+  /* ── 기록 탭: 2줄 카드형 (날짜·수치 1줄 / 판정배지 2줄) ── */
   .date-full{display:none}
   .date-short{display:inline}
-  .badge-name{display:none}
-  .rec-tbl td,.rec-tbl th{padding:8px 5px}
-  .r-sys,.r-dia,.r-pulse{font-size:13px}
-  .action-btns .del-btn,.action-btns .edit-btn{width:28px;height:28px;font-size:13px}
+  .rec-tbl thead{display:none}
+  .rec-tbl,.rec-tbl tbody{display:block}
+  .rec-tbl tr{
+    display:grid;
+    grid-template-columns:auto 1fr 1fr 1fr auto;
+    grid-template-rows:auto auto;
+    align-items:center;
+    gap:2px 8px;
+    padding:8px 6px;
+    border-bottom:1px solid var(--border)
+  }
+  .rec-tbl tr:last-child{border-bottom:none}
+  .rec-tbl tr:hover td{background:transparent}
+  .rec-tbl td{display:block;border:none !important;padding:2px 0}
+  /* 1줄: 날짜(col1) · SYS(col2) · DIA(col3) · PULSE(col4) */
+  .rec-tbl td:nth-child(1){grid-column:1;grid-row:1}
+  .rec-tbl td:nth-child(2){display:none}
+  .rec-tbl td:nth-child(3){display:none}
+  .rec-tbl td:nth-child(4){grid-column:2;grid-row:1;text-align:center}
+  .rec-tbl td:nth-child(5){grid-column:3;grid-row:1;text-align:center}
+  .rec-tbl td:nth-child(6){grid-column:4;grid-row:1;text-align:center}
+  /* 2줄: 판정 배지 전체 너비 */
+  .rec-tbl td:nth-child(7){grid-column:1/5;grid-row:2}
+  .rec-tbl td:nth-child(8){display:none}
+  /* 액션 버튼: 오른쪽 1~2줄 span */
+  .rec-tbl td:nth-child(9){grid-column:5;grid-row:1/3;align-self:center}
+  .rec-tbl td:nth-child(9) .action-btns{flex-direction:column;gap:4px}
+  .r-sys,.r-dia,.r-pulse{font-size:14px}
+  .r-date{font-size:12px}
 }
 @media(max-width:500px){
   .vital-row-top{gap:8px}
@@ -974,7 +1001,7 @@ function renderRecords(){
       <td class="r-sys">${r.sys}</td>
       <td class="r-dia">${r.dia}</td>
       <td class="r-pulse">${r.pulse}</td>
-      <td><span class="r-badge" style="background:${jj.bg};color:${jj.tc}">${jj.emoji}<span class="badge-name"> ${jj.name}</span></span></td>
+      <td><span class="r-badge" style="background:${jj.bg};color:${jj.tc}">${jj.emoji} ${jj.name}</span></td>
       <td class="r-memo hide-m">${r.memo||""}</td>
       <td><div class="action-btns">
         <button class="edit-btn" onclick="editRecord(${r.id})" title="수정">✏️</button>
