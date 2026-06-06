@@ -90,10 +90,54 @@
             padding: 3px 10px;
         }
 
+        /* ── 티커 테이프 ── */
+        .ticker-wrap {
+            position: fixed;
+            top: 84px;
+            left: 0; right: 0;
+            height: 30px;
+            z-index: 40;
+            background: rgba(6,9,15,.97);
+            border-bottom: 1px solid var(--bd);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        .ticker-track {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            animation: ticker-scroll 55s linear infinite;
+            will-change: transform;
+        }
+        .ticker-track:hover { animation-play-state: paused; }
+        @keyframes ticker-scroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 20px;
+            font-family: var(--mono);
+            font-size: 13px;
+            border-right: 1px solid rgba(30,45,69,.6);
+        }
+        .tk-name  { color: #7a91a8; font-weight: 500; letter-spacing: .04em; }
+        .tk-price { color: #c8d6e8; font-weight: 600; }
+        .tk-chg   { font-size: 11px; font-weight: 500; }
+        .tk-chg.c-up   { color: #ff3b5c; }   /* 상승: 빨강 (한국식) */
+        .tk-chg.c-dn   { color: #448aff; }   /* 하락: 파랑 (한국식) */
+        .tk-chg.c-vup  { color: #448aff; }   /* VIX/WTI 상승: 파랑 */
+        .tk-chg.c-vdn  { color: #ff3b5c; }   /* VIX/WTI 하락: 빨강 */
+        .tk-chg.c-nt   { color: #4a607a; }
+        .ticker-sep { color: rgba(30,45,69,.8); padding: 0 4px; font-size: 10px; }
+
         /* ── PC: fixed 2×2 그리드 ── */
         .grid-container {
             position: fixed;
-            top: 84px;
+            top: 114px;
             left: 0;
             right: 0;
             bottom: 0;
@@ -118,9 +162,10 @@
         /* ── 모바일/태블릿 (≤1024px) ── */
         @media (max-width: 1024px) {
             header { top: 36px; }
+            .ticker-wrap { top: 84px; }
             .grid-container {
                 position: fixed;
-                top: 84px;
+                top: 114px;
                 left: 0;
                 right: 0;
                 bottom: 52px;
@@ -207,7 +252,8 @@
         /* ── 작은 화면에서 헤더 여백 조정 ── */
         @media (max-width: 600px) {
             header { height: 44px; top: 36px; }
-            .grid-container { top: 80px; }
+            .ticker-wrap { top: 80px; }
+            .grid-container { top: 110px; }
         }
     </style>
     <script src="home-bar.js"></script>
@@ -221,6 +267,12 @@
     </div>
     <div class="header-badge"> D 딜레이데이터 / ≈ 5초마다 업뎃 </div>
 </header>
+
+<div class="ticker-wrap" id="tickerWrap">
+    <div class="ticker-track" id="tickerTrack">
+        <span class="tk-name" style="padding:0 16px;opacity:.4">로딩 중…</span>
+    </div>
+</div>
 
 <div class="grid-container" id="scrollWrap">
     <!-- chart-box는 JS가 CHARTS 배열 기준으로 동적 생성 -->
@@ -341,6 +393,105 @@ window.addEventListener('resize', () => {
         try { w.resize(); } catch(e) {}
     });
 });
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   티커 테이프 — Yahoo Finance 데이터
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const TICKER_INSTR = [
+    { id:'nasdaq', name:'NASDAQ',   sym:'^IXIC', isVix:false, fmt:'int', pre:'' },
+    { id:'sp500',  name:'S&P500',   sym:'^GSPC', isVix:false, fmt:'int', pre:'' },
+    { id:'dow',    name:'DOW',      sym:'^DJI',  isVix:false, fmt:'int', pre:'' },
+    { id:'vix',    name:'VIX',      sym:'^VIX',  isVix:true,  fmt:'d2',  pre:'' },
+    { id:'kospi',  name:'KOSPI',    sym:'^KS11', isVix:false, fmt:'d2',  pre:'' },
+    { id:'kosdaq', name:'KOSDAQ',   sym:'^KQ11', isVix:false, fmt:'d2',  pre:'' },
+    { id:'gold',   name:'금 현물',  sym:'GC=F',  isVix:false, fmt:'d2',  pre:'$' },
+    { id:'usdkrw', name:'환율',     sym:'KRW=X', isVix:false, fmt:'d2',  pre:'₩' },
+    { id:'wti',    name:'WTI원유',  sym:'CL=F',  isVix:true,  fmt:'d2',  pre:'$' },
+];
+
+const TICKER_PX = [
+    u => `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
+    u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
+
+let tkWinPx = null;
+
+function tkFmt(val, fmt, pre) {
+    if (val == null) return '—';
+    let s;
+    if (fmt === 'int') s = Math.round(val).toLocaleString('en-US');
+    else s = val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return pre + s;
+}
+
+async function tkFetchOne(pfn, sym) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`;
+    const res = await fetch(pfn(url), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const m = data?.chart?.result?.[0]?.meta;
+    if (!m) throw new Error('no meta');
+    return m;
+}
+
+async function tkFetch(sym) {
+    const order = tkWinPx !== null
+        ? [TICKER_PX[tkWinPx], ...TICKER_PX.filter((_, i) => i !== tkWinPx)]
+        : TICKER_PX;
+    for (let i = 0; i < order.length; i++) {
+        try {
+            const m = await tkFetchOne(order[i], sym);
+            if (tkWinPx === null) tkWinPx = TICKER_PX.indexOf(order[i]);
+            return m;
+        } catch(e) {}
+    }
+    return null;
+}
+
+function buildTickerHTML(items) {
+    const parts = items.map(it => {
+        const { name, pre, fmt, isVix, px, prv } = it;
+        if (px == null) return `<span class="ticker-item"><span class="tk-name">${name}</span><span class="tk-price tk-chg c-nt">—</span></span>`;
+        const chg = px - prv;
+        const pct = prv ? (chg / prv) * 100 : 0;
+        const up  = chg >= 0;
+        const sg  = up ? '+' : '';
+        const cls = isVix ? (up ? 'c-vup' : 'c-vdn') : (up ? 'c-up' : 'c-dn');
+        const arr = isVix ? (up ? '▲' : '▼') : (up ? '▲' : '▼');
+        return `<span class="ticker-item">` +
+            `<span class="tk-name">${name}</span>` +
+            `<span class="tk-price">${tkFmt(px, fmt, pre)}</span>` +
+            `<span class="tk-chg ${cls}">${arr} ${sg}${pct.toFixed(2)}%</span>` +
+            `</span>`;
+    });
+    // 무한 스크롤을 위해 2배 복제
+    const html = parts.join('') + parts.join('');
+    return html;
+}
+
+async function loadTicker() {
+    const results = await Promise.allSettled(
+        TICKER_INSTR.map(inst => tkFetch(inst.sym))
+    );
+    const items = TICKER_INSTR.map((inst, i) => {
+        const m = results[i].status === 'fulfilled' ? results[i].value : null;
+        return {
+            ...inst,
+            px:  m?.regularMarketPrice ?? null,
+            prv: m?.chartPreviousClose ?? m?.previousClose ?? null,
+        };
+    });
+
+    const track = document.getElementById('tickerTrack');
+    if (!track) return;
+    track.innerHTML = buildTickerHTML(items);
+}
+
+// 초기 로드 + 60초마다 갱신
+loadTicker();
+setInterval(loadTicker, 60000);
 
 </script>
 </body>
