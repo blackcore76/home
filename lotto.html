@@ -1012,6 +1012,8 @@ function getLatestLottoDrwNo() {
     return Math.floor((now - firstDraw) / (7 * 24 * 60 * 60 * 1000)) + 1;
 }
 
+const PROXY = 'https://api.allorigins.win/raw?url=';
+
 async function loadLottoWinHistory() {
     const list = document.getElementById('lotto-win-history-list');
     list.innerHTML = '<div class="empty-state">📡<br>불러오는 중…</div>';
@@ -1020,8 +1022,9 @@ async function loadLottoWinHistory() {
     for (let i = 0; i < 10; i++) {
         const drwNo = latest - i;
         if (drwNo < 1) break;
+        const url = encodeURIComponent(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drwNo}`);
         promises.push(
-            fetch(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drwNo}`)
+            fetch(PROXY + url)
                 .then(r => r.json())
                 .then(d => d.returnValue === 'success' ? d : null)
                 .catch(() => null)
@@ -1097,8 +1100,9 @@ async function loadPensionWinHistory() {
     for (let i = 0; i < 10; i++) {
         const round = latest - i;
         if (round < 1) break;
+        const url = encodeURIComponent(`https://www.dhlottery.co.kr/gameResult.do?method=win720sNumShow&Round=${round}`);
         promises.push(
-            fetch(`https://www.dhlottery.co.kr/gameResult.do?method=win720sNumShow&Round=${round}`)
+            fetch(PROXY + url)
                 .then(r => r.text())
                 .then(html => parsePensionHtml(html, round))
                 .catch(() => null)
