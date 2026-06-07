@@ -232,6 +232,35 @@ textarea.actual-input::placeholder{color:var(--text3);}
   .industry-tabs{gap:4px;}
   .ind-tab{padding:4px 10px;font-size:10px;}
 }
+/* ══ 서브탭 ══ */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--bd);background:rgba(8,12,20,.95);backdrop-filter:blur(12px);padding:0 16px;position:sticky;top:88px;z-index:40;}
+.tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text2);font-family:var(--mono);font-size:12px;font-weight:600;padding:10px 16px;cursor:pointer;transition:all .15s;letter-spacing:.3px;white-space:nowrap;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+/* ══ 뉴스 피드 ══ */
+.news-feed{padding:12px 16px;display:flex;flex-direction:column;gap:12px;}
+.news-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;position:relative;overflow:hidden;animation:fadeIn .3s ease both;}
+.news-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,#ff9100,transparent);border-radius:3px 0 0 3px;}
+.news-date-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.news-date-badge{font-family:var(--mono);font-size:12px;font-weight:700;color:#ff9100;background:rgba(255,145,0,.1);border:1px solid rgba(255,145,0,.2);border-radius:6px;padding:4px 12px;}
+.news-meta-badge{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.news-stock-list{display:flex;flex-direction:column;gap:8px;}
+.news-stock-item{padding:10px 12px;background:var(--sf3);border-radius:10px;border:1px solid var(--bd2);}
+.news-stock-header{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.news-stock-num{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.news-stock-name{font-size:13px;font-weight:700;color:var(--text);}
+.news-stock-ticker{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:1px 6px;}
+.news-stock-adate{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;}
+.news-item-list{display:flex;flex-direction:column;gap:3px;}
+.news-item-link{font-size:11px;color:var(--text2);text-decoration:none;display:block;line-height:1.6;padding:1px 0;}
+.news-item-link::before{content:'• ';color:#ff9100;}
+.news-item-link:hover{color:var(--accent);}
+.news-item-none{font-size:11px;color:var(--text3);font-family:var(--mono);padding:2px 0;}
+.news-item-none::before{content:'• ';}
+.news-empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.news-empty-icon{font-size:48px;opacity:.4;margin-bottom:12px;}
 </style>
 </head>
 <body>
@@ -253,6 +282,14 @@ textarea.actual-input::placeholder{color:var(--text3);}
   </div>
 </header>
 
+<!-- ══ 서브탭 바 ══ -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabBtnAnalysis" onclick="switchTab('analysis')">📊 분석 목록</button>
+  <button class="tab-btn" id="tabBtnNews" onclick="switchTab('news')">📰 뉴스 브리핑</button>
+</div>
+
+<!-- ══ 분석 탭 패널 ══ -->
+<div class="tab-panel active" id="tabPanelAnalysis">
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="resetPage()" style="width:140px;">
   <input class="filter-input" type="text" id="filterText" oninput="resetPage()" placeholder="종목명·티커·메모..." style="width:160px;">
@@ -276,6 +313,15 @@ textarea.actual-input::placeholder{color:var(--text3);}
 
 <div class="feed" id="feedList"></div>
 <div class="pagination" id="paginationEl"></div>
+</div><!-- /tabPanelAnalysis -->
+
+<!-- ══ 뉴스 브리핑 탭 패널 ══ -->
+<div class="tab-panel" id="tabPanelNews">
+  <div class="news-feed" id="newsFeed">
+    <div class="news-empty"><div class="news-empty-icon">📰</div><p>탭을 클릭하면 불러옵니다</p></div>
+  </div>
+  <div class="pagination" id="newsPaginationEl"></div>
+</div><!-- /tabPanelNews -->
 
 <!-- ══ 입력/수정 모달 ══ -->
 <div class="overlay" id="overlay">
@@ -992,6 +1038,116 @@ function toast(msg,dur=3000){
 }
 
 document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+
+// ════════════════════════════════════════════════
+//  서브탭 전환
+// ════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const capTab = tab.charAt(0).toUpperCase() + tab.slice(1);
+  document.getElementById('tabPanel' + capTab).classList.add('active');
+  document.getElementById('tabBtn'   + capTab).classList.add('active');
+  if (tab === 'news' && !newsLoaded) loadNews();
+}
+
+// ════════════════════════════════════════════════
+//  뉴스 브리핑 (Firestore marketNews 컬렉션)
+// ════════════════════════════════════════════════
+const NEWS_COL = 'marketNews';
+const NEWS_PER = 5;
+let newsRecords = [], newsPage = 1, newsLoaded = false;
+
+function loadNews() {
+  document.getElementById('newsFeed').innerHTML =
+    `<div class="news-empty"><div class="news-empty-icon">⏳</div><p>뉴스를 불러오는 중...</p></div>`;
+  db.collection(NEWS_COL).orderBy('date','desc').limit(50).get()
+    .then(snap => {
+      newsRecords = snap.docs.map(d => ({id:d.id,...d.data()}));
+      newsLoaded = true;
+      renderNews();
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('newsFeed').innerHTML =
+        `<div class="news-empty"><div class="news-empty-icon">⚠️</div><p>불러오기 실패: ${esc(err.message)}</p></div>`;
+    });
+}
+
+function renderNews() {
+  const total = Math.ceil(newsRecords.length / NEWS_PER) || 1;
+  if (newsPage > total) newsPage = total;
+  const slice = newsRecords.slice((newsPage-1)*NEWS_PER, newsPage*NEWS_PER);
+  const feed  = document.getElementById('newsFeed');
+
+  if (!newsRecords.length) {
+    feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">📰</div><p>저장된 뉴스 브리핑이 없습니다</p></div>`;
+    document.getElementById('newsPaginationEl').innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  slice.forEach(entry => {
+    const stocks   = entry.stocks || [];
+    const savedAt  = entry.createdAt?.toDate
+      ? entry.createdAt.toDate().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '';
+    html += `<div class="news-card">
+      <div class="news-date-header">
+        <span class="news-date-badge">📅 ${esc(entry.date)}</span>
+        ${savedAt ? `<span class="news-meta-badge">저장 ${savedAt} KST</span>` : ''}
+        <span class="news-meta-badge" style="margin-left:auto;">${stocks.length}종목</span>
+      </div>
+      <div class="news-stock-list">`;
+    stocks.forEach(s => {
+      const jlabel = s.judge || '';
+      const jcls   = jlabel==='매수검토'?'judge-buy':jlabel==='관망'?'judge-watch':'judge-no';
+      html += `<div class="news-stock-item">
+        <div class="news-stock-header">
+          <span class="news-stock-num">${s.num}.</span>
+          <span class="news-stock-name">${esc(s.name)}</span>
+          <span class="news-stock-ticker">${esc(s.ticker)}</span>
+          <span class="judge-badge ${jcls}" style="font-size:9px;padding:1px 8px;">${esc(jlabel)}</span>
+          <span class="news-stock-adate">분석 ${esc(s.analysisDate||s.date||'')}</span>
+        </div>
+        <div class="news-item-list">`;
+      const items = s.news || [];
+      if (!items.length) {
+        html += `<span class="news-item-none">최신 뉴스 없음</span>`;
+      } else {
+        items.forEach(n => {
+          if (n.url && n.url.startsWith('http')) {
+            html += `<a class="news-item-link" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>`;
+          } else {
+            html += `<span class="news-item-none">${esc(n.title)}</span>`;
+          }
+        });
+      }
+      html += `</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  feed.innerHTML = html;
+  renderNewsPagination(total);
+}
+
+function renderNewsPagination(total) {
+  const el = document.getElementById('newsPaginationEl');
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let h = `<button class="page-btn" onclick="goNewsPage(${newsPage-1})" ${newsPage===1?'disabled':''}>‹</button>`;
+  for (let i = 1; i <= total; i++) {
+    h += `<button class="page-btn ${i===newsPage?'active':''}" onclick="goNewsPage(${i})">${i}</button>`;
+  }
+  h += `<button class="page-btn" onclick="goNewsPage(${newsPage+1})" ${newsPage===total?'disabled':''}>›</button>`;
+  el.innerHTML = h;
+}
+
+function goNewsPage(p) {
+  const tp = Math.ceil(newsRecords.length/NEWS_PER)||1;
+  if (p<1||p>tp) return;
+  newsPage = p; renderNews();
+}
 </script>
 </body>
 </html>
