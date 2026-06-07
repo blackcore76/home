@@ -316,12 +316,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
 <!-- ══ 뉴스 브리핑 탭 패널 ══ -->
 <div class="tab-panel" id="tabPanelNews">
   <div class="news-ctrl-bar">
-    <span class="news-ctrl-label">최근</span>
-    <select id="newsStockCount" class="filter-input" style="width:70px;">
-      <option value="5">5개</option>
-      <option value="10">10개</option>
-    </select>
-    <span class="news-ctrl-label">종목 뉴스 조회</span>
+    <select id="newsStockPicker" class="filter-input" style="width:200px;"></select>
     <button class="btn-news-fetch" id="btnNewsFetch" onclick="fetchLiveNews()">📰 뉴스 찾아보기</button>
   </div>
   <div id="newsFetchStatus" style="display:none;" class="news-fetch-status"></div>
@@ -1056,7 +1051,7 @@ function switchTab(tab) {
   const capTab = tab.charAt(0).toUpperCase() + tab.slice(1);
   document.getElementById('tabPanel' + capTab).classList.add('active');
   document.getElementById('tabBtn'   + capTab).classList.add('active');
-  // 뉴스 탭은 버튼으로 수동 조회
+  if (tab === 'news') buildNewsStockPicker();
 }
 
 // ════════════════════════════════════════════════
@@ -1064,12 +1059,32 @@ function switchTab(tab) {
 // ════════════════════════════════════════════════
 const NEWS_PER = 10;
 const RSS_PROXY = 'https://api.allorigins.win/raw?url=';
+const NEWS_MONTHS = 6; // 6개월 이내 뉴스만
 let liveFeed = [], liveNewsPage = 1;
+
+function buildNewsStockPicker() {
+  const sel = document.getElementById('newsStockPicker');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = '__all__';
+  allOpt.textContent = `── 최근 분석 목록 (5개) ──`;
+  sel.appendChild(allOpt);
+  records.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = `${r.name}  (${r.ticker})`;
+    sel.appendChild(opt);
+  });
+}
 
 async function fetchLiveNews() {
   if (!currentUser) { toast('로그인 후 이용 가능합니다.'); return; }
-  const count = parseInt(document.getElementById('newsStockCount').value);
-  const targets = records.slice(0, count);
+  const sel = document.getElementById('newsStockPicker');
+  const val = sel?.value;
+  const targets = val === '__all__'
+    ? records.slice(0, 5)
+    : records.filter(r => r.id === val);
   if (!targets.length) { toast('분석 목록이 없습니다.'); return; }
 
   const btn = document.getElementById('btnNewsFetch');
@@ -1089,6 +1104,9 @@ async function fetchLiveNews() {
     items.forEach(item => liveFeed.push({...item, stockName: r.name, stockTicker: r.ticker}));
   }
 
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - NEWS_MONTHS);
+  liveFeed = liveFeed.filter(item => !item.pubDate || new Date(item.pubDate) >= cutoff);
   liveFeed.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
   status.style.display = 'none';
   btn.disabled = false;
