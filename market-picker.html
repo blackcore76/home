@@ -271,6 +271,17 @@ textarea.actual-input::placeholder{color:var(--text3);}
 .live-news-title{font-size:13px;color:var(--text);text-decoration:none;line-height:1.55;display:block;word-break:keep-all;}
 .live-news-title:hover{color:var(--accent);}
 .live-news-source{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:5px;display:block;}
+.news-save-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--bd);background:rgba(0,212,255,.04);}
+.btn-news-save{background:transparent;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-news-save:hover:not(:disabled){background:rgba(0,212,255,.1);}
+.btn-news-save:disabled{opacity:.4;cursor:not-allowed;}
+.saved-news-section{border-top:2px solid var(--bd);margin-top:8px;padding-top:4px;}
+.saved-news-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;}
+.saved-news-title{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.05em;}
+.saved-search-bar{padding:0 16px 12px;}
+.saved-search-input{width:100%;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:10px;color:var(--text);font-size:13px;padding:9px 14px;outline:none;transition:border-color .2s;}
+.saved-search-input:focus{border-color:var(--accent);}
+.saved-search-input::placeholder{color:var(--text3);}
 .news-empty{text-align:center;padding:60px 20px;color:var(--text3);}
 .news-empty-icon{font-size:48px;opacity:.4;margin-bottom:12px;}
 </style>
@@ -340,7 +351,26 @@ textarea.actual-input::placeholder{color:var(--text3);}
   <div id="newsFeed">
     <div class="news-empty"><div class="news-empty-icon">📰</div><p>버튼을 눌러 뉴스를 검색하세요</p></div>
   </div>
+  <div id="newsSaveBar" style="display:none;" class="news-save-bar">
+    <span id="newsSaveInfo" class="news-sel-count"></span>
+    <button class="btn-news-save" id="btnNewsSave" onclick="saveBriefing()">💾 저장하기</button>
+  </div>
   <div class="pagination" id="newsPaginationEl"></div>
+
+  <!-- 저장된 뉴스 섹션 -->
+  <div class="saved-news-section">
+    <div class="saved-news-header">
+      <span class="saved-news-title">📂 저장된 브리핑</span>
+      <span class="hist-count" id="savedNewsCount">0건</span>
+    </div>
+    <div class="saved-search-bar">
+      <input class="saved-search-input" id="savedSearchInput" type="text" placeholder="종목명·티커·뉴스 제목 검색…" oninput="renderSavedNews()">
+    </div>
+    <div id="savedNewsFeed">
+      <div class="news-empty"><div class="news-empty-icon">📂</div><p>저장된 브리핑이 없습니다</p></div>
+    </div>
+    <div class="pagination" id="savedNewsPaginationEl"></div>
+  </div>
 </div><!-- /tabPanelNews -->
 
 <!-- ══ 입력/수정 모달 ══ -->
@@ -1068,7 +1098,7 @@ function switchTab(tab) {
   const capTab = tab.charAt(0).toUpperCase() + tab.slice(1);
   document.getElementById('tabPanel' + capTab).classList.add('active');
   document.getElementById('tabBtn'   + capTab).classList.add('active');
-  if (tab === 'news') buildNewsStockPicker();
+  if (tab === 'news') { buildNewsStockPicker(); loadSavedNews(); }
 }
 
 // ════════════════════════════════════════════════
@@ -1138,6 +1168,12 @@ async function fetchLiveNews() {
   btn.disabled = false;
   btn.textContent = '📰 뉴스 찾아보기';
   renderLiveNews();
+
+  const saveBar = document.getElementById('newsSaveBar');
+  document.getElementById('newsSaveInfo').textContent = `${liveFeed.length}건 조회됨`;
+  saveBar.style.display = liveFeed.length ? 'flex' : 'none';
+  document.getElementById('btnNewsSave').disabled = false;
+  document.getElementById('btnNewsSave').textContent = '💾 저장하기';
 }
 
 async function fetchRssItems(name, ticker) {
@@ -1205,6 +1241,114 @@ function goLiveNewsPage(p) {
   liveNewsPage = p;
   renderLiveNews();
   document.getElementById('tabPanelNews').scrollIntoView({behavior:'smooth'});
+}
+
+// ── 저장 ──────────────────────────────────────────
+const NEWS_BRIEFING_COL = 'marketNewsBriefing';
+let savedItems = [], savedNewsPage = 1;
+
+async function saveBriefing() {
+  if (!liveFeed.length) return;
+  const btn = document.getElementById('btnNewsSave');
+  btn.disabled = true;
+  btn.textContent = '저장 중…';
+  try {
+    await db.collection(NEWS_BRIEFING_COL).add({
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      items: liveFeed.map(i => ({
+        stockName: i.stockName, stockTicker: i.stockTicker,
+        title: i.title, url: i.url,
+        pubDate: i.pubDate, source: i.source || ''
+      }))
+    });
+    btn.textContent = '✅ 저장됨';
+    toast('📂 브리핑이 저장됐습니다!');
+    loadSavedNews();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '💾 저장하기';
+    toast('⚠️ 저장 실패: ' + e.message);
+  }
+}
+
+function loadSavedNews() {
+  db.collection(NEWS_BRIEFING_COL).orderBy('savedAt','desc').limit(30).get()
+    .then(snap => {
+      savedItems = [];
+      snap.docs.forEach(doc => {
+        const d = doc.data();
+        const savedAt = d.savedAt?.toDate
+          ? d.savedAt.toDate().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+          : '';
+        (d.items || []).forEach(item => savedItems.push({...item, savedAt}));
+      });
+      document.getElementById('savedNewsCount').textContent = `${savedItems.length}건`;
+      savedNewsPage = 1;
+      renderSavedNews();
+    })
+    .catch(() => {});
+}
+
+function renderSavedNews() {
+  const q = document.getElementById('savedSearchInput')?.value.toLowerCase() || '';
+  const filtered = savedItems.filter(i =>
+    !q || i.stockName?.toLowerCase().includes(q)
+       || i.stockTicker?.toLowerCase().includes(q)
+       || i.title?.toLowerCase().includes(q)
+  );
+  const total = Math.ceil(filtered.length / NEWS_PER) || 1;
+  if (savedNewsPage > total) savedNewsPage = 1;
+  const slice = filtered.slice((savedNewsPage-1)*NEWS_PER, savedNewsPage*NEWS_PER);
+  const feed = document.getElementById('savedNewsFeed');
+
+  if (!filtered.length) {
+    feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">📂</div><p>${q ? '검색 결과가 없습니다' : '저장된 브리핑이 없습니다'}</p></div>`;
+    document.getElementById('savedNewsPaginationEl').innerHTML = '';
+    return;
+  }
+
+  let html = '<div class="live-news-feed">';
+  slice.forEach(item => {
+    const dt = item.pubDate
+      ? new Date(item.pubDate).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '';
+    html += `<div class="live-news-item">
+      <div class="live-news-meta">
+        <span class="news-stock-ticker">${esc(item.stockTicker)}</span>
+        <span class="news-stock-name">${esc(item.stockName)}</span>
+        <span class="live-news-date">${dt}</span>
+      </div>
+      <a class="live-news-title" href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title)}</a>
+      <span class="live-news-source">${item.source ? '📌 '+esc(item.source)+'  ' : ''}저장 ${esc(item.savedAt)}</span>
+    </div>`;
+  });
+  html += '</div>';
+  feed.innerHTML = html;
+  renderSavedPagination(total, filtered.length);
+}
+
+function renderSavedPagination(total, filteredLen) {
+  const el = document.getElementById('savedNewsPaginationEl');
+  if (total <= 1) { el.innerHTML = ''; return; }
+  const s = Math.max(1, savedNewsPage-2), e = Math.min(total, s+4);
+  let h = `<button class="page-btn" onclick="goSavedPage(${savedNewsPage-1})" ${savedNewsPage===1?'disabled':''}>‹</button>`;
+  for (let i=s;i<=e;i++)
+    h += `<button class="page-btn ${i===savedNewsPage?'active':''}" onclick="goSavedPage(${i})">${i}</button>`;
+  h += `<button class="page-btn" onclick="goSavedPage(${savedNewsPage+1})" ${savedNewsPage===total?'disabled':''}>›</button>`;
+  el.innerHTML = h;
+}
+
+function goSavedPage(p) {
+  const q = document.getElementById('savedSearchInput')?.value.toLowerCase() || '';
+  const filtered = savedItems.filter(i =>
+    !q || i.stockName?.toLowerCase().includes(q)
+       || i.stockTicker?.toLowerCase().includes(q)
+       || i.title?.toLowerCase().includes(q)
+  );
+  const total = Math.ceil(filtered.length / NEWS_PER) || 1;
+  if (p < 1 || p > total) return;
+  savedNewsPage = p;
+  renderSavedNews();
 }
 
 function goNewsPage(p) {
