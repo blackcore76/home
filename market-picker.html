@@ -239,26 +239,24 @@ textarea.actual-input::placeholder{color:var(--text3);}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
-/* ══ 뉴스 피드 ══ */
-.news-feed{padding:12px 16px;display:flex;flex-direction:column;gap:12px;}
-.news-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;position:relative;overflow:hidden;animation:fadeIn .3s ease both;}
-.news-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,#ff9100,transparent);border-radius:3px 0 0 3px;}
-.news-date-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
-.news-date-badge{font-family:var(--mono);font-size:12px;font-weight:700;color:#ff9100;background:rgba(255,145,0,.1);border:1px solid rgba(255,145,0,.2);border-radius:6px;padding:4px 12px;}
-.news-meta-badge{font-family:var(--mono);font-size:10px;color:var(--text3);}
-.news-stock-list{display:flex;flex-direction:column;gap:8px;}
-.news-stock-item{padding:10px 12px;background:var(--sf3);border-radius:10px;border:1px solid var(--bd2);}
-.news-stock-header{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
-.news-stock-num{font-family:var(--mono);font-size:10px;color:var(--text3);}
-.news-stock-name{font-size:13px;font-weight:700;color:var(--text);}
+/* ══ 뉴스 브리핑 ══ */
+.news-ctrl-bar{display:flex;align-items:center;gap:10px;padding:14px 16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
+.news-ctrl-label{font-size:12px;color:var(--text2);}
+.btn-news-fetch{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:800;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-news-fetch:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 20px rgba(0,212,255,.4);}
+.btn-news-fetch:disabled{opacity:.5;cursor:not-allowed;}
+.news-fetch-status{padding:10px 16px;font-size:12px;color:var(--text2);font-family:var(--mono);}
+.live-news-feed{display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;}
+.live-news-item{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:13px 14px;position:relative;overflow:hidden;animation:fadeIn .25s ease both;transition:border-color .2s,background .2s;}
+.live-news-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--accent),transparent);border-radius:3px 0 0 3px;}
+.live-news-item:hover{border-color:var(--bd2);background:var(--sf2);}
+.live-news-meta{display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap;}
 .news-stock-ticker{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:1px 6px;}
-.news-stock-adate{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;}
-.news-item-list{display:flex;flex-direction:column;gap:3px;}
-.news-item-link{font-size:11px;color:var(--text2);text-decoration:none;display:block;line-height:1.6;padding:1px 0;}
-.news-item-link::before{content:'• ';color:#ff9100;}
-.news-item-link:hover{color:var(--accent);}
-.news-item-none{font-size:11px;color:var(--text3);font-family:var(--mono);padding:2px 0;}
-.news-item-none::before{content:'• ';}
+.news-stock-name{font-size:12px;font-weight:700;color:var(--text2);}
+.live-news-date{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;}
+.live-news-title{font-size:13px;color:var(--text);text-decoration:none;line-height:1.55;display:block;word-break:keep-all;}
+.live-news-title:hover{color:var(--accent);}
+.live-news-source{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:5px;display:block;}
 .news-empty{text-align:center;padding:60px 20px;color:var(--text3);}
 .news-empty-icon{font-size:48px;opacity:.4;margin-bottom:12px;}
 </style>
@@ -317,8 +315,18 @@ textarea.actual-input::placeholder{color:var(--text3);}
 
 <!-- ══ 뉴스 브리핑 탭 패널 ══ -->
 <div class="tab-panel" id="tabPanelNews">
-  <div class="news-feed" id="newsFeed">
-    <div class="news-empty"><div class="news-empty-icon">📰</div><p>탭을 클릭하면 불러옵니다</p></div>
+  <div class="news-ctrl-bar">
+    <span class="news-ctrl-label">최근</span>
+    <select id="newsStockCount" class="filter-input" style="width:70px;">
+      <option value="5">5개</option>
+      <option value="10">10개</option>
+    </select>
+    <span class="news-ctrl-label">종목 뉴스 조회</span>
+    <button class="btn-news-fetch" id="btnNewsFetch" onclick="fetchLiveNews()">📰 뉴스 찾아보기</button>
+  </div>
+  <div id="newsFetchStatus" style="display:none;" class="news-fetch-status"></div>
+  <div id="newsFeed">
+    <div class="news-empty"><div class="news-empty-icon">📰</div><p>버튼을 눌러 뉴스를 검색하세요</p></div>
   </div>
   <div class="pagination" id="newsPaginationEl"></div>
 </div><!-- /tabPanelNews -->
@@ -1048,99 +1056,111 @@ function switchTab(tab) {
   const capTab = tab.charAt(0).toUpperCase() + tab.slice(1);
   document.getElementById('tabPanel' + capTab).classList.add('active');
   document.getElementById('tabBtn'   + capTab).classList.add('active');
-  if (tab === 'news' && !newsLoaded) loadNews();
+  // 뉴스 탭은 버튼으로 수동 조회
 }
 
 // ════════════════════════════════════════════════
-//  뉴스 브리핑 (Firestore marketNews 컬렉션)
+//  뉴스 브리핑 — 실시간 Google News RSS
 // ════════════════════════════════════════════════
-const NEWS_COL = 'marketNews';
-const NEWS_PER = 5;
-let newsRecords = [], newsPage = 1, newsLoaded = false;
+const NEWS_PER = 10;
+const RSS_PROXY = 'https://api.allorigins.win/raw?url=';
+let liveFeed = [], liveNewsPage = 1;
 
-function loadNews() {
-  document.getElementById('newsFeed').innerHTML =
-    `<div class="news-empty"><div class="news-empty-icon">⏳</div><p>뉴스를 불러오는 중...</p></div>`;
-  db.collection(NEWS_COL).orderBy('date','desc').limit(50).get()
-    .then(snap => {
-      newsRecords = snap.docs.map(d => ({id:d.id,...d.data()}));
-      newsLoaded = true;
-      renderNews();
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById('newsFeed').innerHTML =
-        `<div class="news-empty"><div class="news-empty-icon">⚠️</div><p>불러오기 실패: ${esc(err.message)}</p></div>`;
-    });
+async function fetchLiveNews() {
+  if (!currentUser) { toast('로그인 후 이용 가능합니다.'); return; }
+  const count = parseInt(document.getElementById('newsStockCount').value);
+  const targets = records.slice(0, count);
+  if (!targets.length) { toast('분석 목록이 없습니다.'); return; }
+
+  const btn = document.getElementById('btnNewsFetch');
+  const status = document.getElementById('newsFetchStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ 검색 중…';
+  status.style.display = 'block';
+  liveFeed = [];
+  liveNewsPage = 1;
+  document.getElementById('newsFeed').innerHTML = '';
+  document.getElementById('newsPaginationEl').innerHTML = '';
+
+  for (let i = 0; i < targets.length; i++) {
+    const r = targets[i];
+    status.textContent = `🔍 ${i+1}/${targets.length} — ${r.name} (${r.ticker}) 조회 중…`;
+    const items = await fetchRssItems(r.name, r.ticker);
+    items.forEach(item => liveFeed.push({...item, stockName: r.name, stockTicker: r.ticker}));
+  }
+
+  liveFeed.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+  status.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = '📰 뉴스 찾아보기';
+  renderLiveNews();
 }
 
-function renderNews() {
-  const total = Math.ceil(newsRecords.length / NEWS_PER) || 1;
-  if (newsPage > total) newsPage = total;
-  const slice = newsRecords.slice((newsPage-1)*NEWS_PER, newsPage*NEWS_PER);
-  const feed  = document.getElementById('newsFeed');
+async function fetchRssItems(name, ticker) {
+  const q = encodeURIComponent(`${name} ${ticker}`);
+  const rss = `https://news.google.com/rss/search?q=${q}&hl=ko&gl=KR&ceid=KR:ko`;
+  try {
+    const res  = await fetch(RSS_PROXY + encodeURIComponent(rss));
+    const text = await res.text();
+    const xml  = new DOMParser().parseFromString(text, 'text/xml');
+    return Array.from(xml.querySelectorAll('item')).slice(0, 5).map(el => ({
+      title:   el.querySelector('title')?.textContent || '',
+      url:     el.querySelector('link')?.nextSibling?.nodeValue?.trim() || el.querySelector('link')?.textContent || '',
+      pubDate: el.querySelector('pubDate')?.textContent || '',
+      source:  el.querySelector('source')?.textContent || ''
+    }));
+  } catch { return []; }
+}
 
-  if (!newsRecords.length) {
-    feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">📰</div><p>저장된 뉴스 브리핑이 없습니다</p></div>`;
+function renderLiveNews() {
+  const feed = document.getElementById('newsFeed');
+  if (!liveFeed.length) {
+    feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">📭</div><p>검색된 뉴스가 없습니다</p></div>`;
     document.getElementById('newsPaginationEl').innerHTML = '';
     return;
   }
+  const total = Math.ceil(liveFeed.length / NEWS_PER);
+  if (liveNewsPage > total) liveNewsPage = total;
+  const slice = liveFeed.slice((liveNewsPage-1)*NEWS_PER, liveNewsPage*NEWS_PER);
 
-  let html = '';
-  slice.forEach(entry => {
-    const stocks   = entry.stocks || [];
-    const savedAt  = entry.createdAt?.toDate
-      ? entry.createdAt.toDate().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+  let html = '<div class="live-news-feed">';
+  slice.forEach(item => {
+    const dt = item.pubDate
+      ? new Date(item.pubDate).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
       : '';
-    html += `<div class="news-card">
-      <div class="news-date-header">
-        <span class="news-date-badge">📅 ${esc(entry.date)}</span>
-        ${savedAt ? `<span class="news-meta-badge">저장 ${savedAt} KST</span>` : ''}
-        <span class="news-meta-badge" style="margin-left:auto;">${stocks.length}종목</span>
+    html += `<div class="live-news-item">
+      <div class="live-news-meta">
+        <span class="news-stock-ticker">${esc(item.stockTicker)}</span>
+        <span class="news-stock-name">${esc(item.stockName)}</span>
+        <span class="live-news-date">${dt}</span>
       </div>
-      <div class="news-stock-list">`;
-    stocks.forEach(s => {
-      const jlabel = s.judge || '';
-      const jcls   = jlabel==='매수검토'?'judge-buy':jlabel==='관망'?'judge-watch':'judge-no';
-      html += `<div class="news-stock-item">
-        <div class="news-stock-header">
-          <span class="news-stock-num">${s.num}.</span>
-          <span class="news-stock-name">${esc(s.name)}</span>
-          <span class="news-stock-ticker">${esc(s.ticker)}</span>
-          <span class="judge-badge ${jcls}" style="font-size:9px;padding:1px 8px;">${esc(jlabel)}</span>
-          <span class="news-stock-adate">분석 ${esc(s.analysisDate||s.date||'')}</span>
-        </div>
-        <div class="news-item-list">`;
-      const items = s.news || [];
-      if (!items.length) {
-        html += `<span class="news-item-none">최신 뉴스 없음</span>`;
-      } else {
-        items.forEach(n => {
-          if (n.url && n.url.startsWith('http')) {
-            html += `<a class="news-item-link" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>`;
-          } else {
-            html += `<span class="news-item-none">${esc(n.title)}</span>`;
-          }
-        });
-      }
-      html += `</div></div>`;
-    });
-    html += `</div></div>`;
+      <a class="live-news-title" href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title)}</a>
+      ${item.source ? `<span class="live-news-source">📌 ${esc(item.source)}</span>` : ''}
+    </div>`;
   });
-
+  html += '</div>';
   feed.innerHTML = html;
-  renderNewsPagination(total);
+  renderLiveNewsPagination(total);
 }
 
-function renderNewsPagination(total) {
+function renderLiveNewsPagination(total) {
   const el = document.getElementById('newsPaginationEl');
   if (total <= 1) { el.innerHTML = ''; return; }
-  let h = `<button class="page-btn" onclick="goNewsPage(${newsPage-1})" ${newsPage===1?'disabled':''}>‹</button>`;
-  for (let i = 1; i <= total; i++) {
-    h += `<button class="page-btn ${i===newsPage?'active':''}" onclick="goNewsPage(${i})">${i}</button>`;
-  }
-  h += `<button class="page-btn" onclick="goNewsPage(${newsPage+1})" ${newsPage===total?'disabled':''}>›</button>`;
+  const s = Math.max(1, liveNewsPage - 2);
+  const e = Math.min(total, s + 4);
+  let h = `<button class="page-btn" onclick="goLiveNewsPage(${liveNewsPage-1})" ${liveNewsPage===1?'disabled':''}>‹</button>`;
+  for (let i = s; i <= e; i++)
+    h += `<button class="page-btn ${i===liveNewsPage?'active':''}" onclick="goLiveNewsPage(${i})">${i}</button>`;
+  h += `<button class="page-btn" onclick="goLiveNewsPage(${liveNewsPage+1})" ${liveNewsPage===total?'disabled':''}>›</button>`;
   el.innerHTML = h;
+}
+
+function goLiveNewsPage(p) {
+  const total = Math.ceil(liveFeed.length / NEWS_PER);
+  if (p < 1 || p > total) return;
+  liveNewsPage = p;
+  renderLiveNews();
+  document.getElementById('tabPanelNews').scrollIntoView({behavior:'smooth'});
 }
 
 function goNewsPage(p) {
