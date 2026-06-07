@@ -479,17 +479,6 @@ header {
             </div>
         </div>
 
-        <div class="card" id="lotto-win-card">
-            <div class="card-header">
-                <span class="icon">🏆</span>
-                <h3>실제 최근 10회 당첨번호</h3>
-                <button class="reset-btn" onclick="loadLottoWinHistory()" style="margin-left:auto;">↺ 새로고침</button>
-            </div>
-            <div id="lotto-win-history-list">
-                <div class="empty-state">📡<br>불러오는 중…</div>
-            </div>
-        </div>
-
     </div>
 
     <!-- 연금복권 탭 콘텐츠 (드롭다운 버전) -->
@@ -519,17 +508,6 @@ header {
             </div>
             <div id="pension-history-list">
                 <div class="empty-state">🎱<br>아직 추첨 기록이 없습니다</div>
-            </div>
-        </div>
-
-        <div class="card" id="pension-win-card">
-            <div class="card-header">
-                <span class="icon">🏆</span>
-                <h3>실제 최근 10회 당첨번호</h3>
-                <button class="reset-btn" onclick="loadPensionWinHistory()" style="margin-left:auto;">↺ 새로고침</button>
-            </div>
-            <div id="pension-win-history-list">
-                <div class="empty-state">📡<br>불러오는 중…</div>
             </div>
         </div>
 
@@ -1002,176 +980,10 @@ function switchTab(tab) {
 }
 
 // ============================================================
-// 실제 당첨번호 조회
-// ============================================================
-
-// 로또 첫 회차: 2002-12-07 토요일
-function getLatestLottoDrwNo() {
-    const firstDraw = new Date('2002-12-07T20:35:00+09:00');
-    const now = new Date();
-    return Math.floor((now - firstDraw) / (7 * 24 * 60 * 60 * 1000)) + 1;
-}
-
-async function loadLottoWinHistory() {
-    const list = document.getElementById('lotto-win-history-list');
-    list.innerHTML = '<div class="empty-state">📡<br>불러오는 중…</div>';
-    const latest = getLatestLottoDrwNo();
-    const promises = [];
-    for (let i = 0; i < 10; i++) {
-        const drwNo = latest - i;
-        if (drwNo < 1) break;
-        promises.push(
-            fetch(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drwNo}`)
-                .then(r => r.json())
-                .then(d => d.returnValue === 'success' ? d : null)
-                .catch(() => null)
-        );
-    }
-    const results = (await Promise.all(promises)).filter(Boolean);
-    renderLottoWinHistory(results);
-}
-
-function renderLottoWinHistory(data) {
-    const list = document.getElementById('lotto-win-history-list');
-    if (!data || data.length === 0) {
-        list.innerHTML = '<div class="empty-state">📡<br>데이터를 불러올 수 없습니다<br><span style="font-size:10px;color:var(--text3)">CORS 또는 네트워크 오류</span></div>';
-        return;
-    }
-    list.innerHTML = '';
-    data.forEach(item => {
-        const nums = [item.drwtNo1, item.drwtNo2, item.drwtNo3, item.drwtNo4, item.drwtNo5, item.drwtNo6];
-        const row = document.createElement('div');
-        row.className = 'history-row';
-
-        const info = document.createElement('div');
-        info.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px';
-        const rnd = document.createElement('div');
-        rnd.className = 'history-index';
-        rnd.textContent = `${item.drwNo}회`;
-        const dt = document.createElement('div');
-        dt.style.cssText = 'font-size:9px;color:var(--text3);font-family:var(--mono)';
-        dt.textContent = item.drwNoDate;
-        info.appendChild(rnd); info.appendChild(dt);
-        row.appendChild(info);
-
-        const ballWrap = document.createElement('div');
-        ballWrap.className = 'history-balls';
-        nums.forEach(n => {
-            const mini = document.createElement('div');
-            mini.className = 'mini-ball';
-            mini.style.backgroundColor = getBallColor(n);
-            mini.style.boxShadow = getBallShadow(n);
-            mini.textContent = n;
-            ballWrap.appendChild(mini);
-        });
-        const plus = document.createElement('span');
-        plus.style.cssText = 'color:var(--text3);font-size:12px;align-self:center';
-        plus.textContent = '+';
-        ballWrap.appendChild(plus);
-        const bonus = document.createElement('div');
-        bonus.className = 'mini-ball';
-        bonus.style.backgroundColor = getBallColor(item.bnusNo);
-        bonus.style.boxShadow = getBallShadow(item.bnusNo);
-        bonus.style.outline = '2px dashed rgba(255,255,255,0.4)';
-        bonus.style.outlineOffset = '2px';
-        bonus.textContent = item.bnusNo;
-        ballWrap.appendChild(bonus);
-
-        row.appendChild(ballWrap);
-        list.appendChild(row);
-    });
-}
-
-// 연금복권 첫 회차: 2011-04-07 목요일
-function getLatestPensionRound() {
-    const firstDraw = new Date('2011-04-07T20:00:00+09:00');
-    const now = new Date();
-    return Math.floor((now - firstDraw) / (7 * 24 * 60 * 60 * 1000)) + 1;
-}
-
-async function loadPensionWinHistory() {
-    const list = document.getElementById('pension-win-history-list');
-    list.innerHTML = '<div class="empty-state">📡<br>불러오는 중…</div>';
-    const latest = getLatestPensionRound();
-    const promises = [];
-    for (let i = 0; i < 10; i++) {
-        const round = latest - i;
-        if (round < 1) break;
-        promises.push(
-            fetch(`https://www.dhlottery.co.kr/gameResult.do?method=win720sNumShow&Round=${round}`)
-                .then(r => r.text())
-                .then(html => parsePensionHtml(html, round))
-                .catch(() => null)
-        );
-    }
-    const results = (await Promise.all(promises)).filter(Boolean);
-    renderPensionWinHistory(results);
-}
-
-function parsePensionHtml(html, round) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    // 당첨번호 파싱: .winner_number 혹은 테이블에서 추출
-    const numEls = doc.querySelectorAll('.winner_number span, .lotto_win_result .num span');
-    if (!numEls.length) return null;
-    const nums = Array.from(numEls).map(el => el.textContent.trim()).filter(t => t !== '');
-    if (nums.length < 2) return null;
-    // 날짜
-    const dateEl = doc.querySelector('.date, .winner_date');
-    const date = dateEl ? dateEl.textContent.trim() : '';
-    return { round, date, jo: nums[0], digits: nums.slice(1, 7) };
-}
-
-function renderPensionWinHistory(data) {
-    const list = document.getElementById('pension-win-history-list');
-    if (!data || data.length === 0) {
-        list.innerHTML = '<div class="empty-state">📡<br>데이터를 불러올 수 없습니다<br><span style="font-size:10px;color:var(--text3)">CORS 또는 네트워크 오류</span></div>';
-        return;
-    }
-    list.innerHTML = '';
-    data.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'history-row';
-
-        const info = document.createElement('div');
-        info.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px';
-        const rnd = document.createElement('div');
-        rnd.className = 'history-index';
-        rnd.textContent = `${item.round}회`;
-        const dt = document.createElement('div');
-        dt.style.cssText = 'font-size:9px;color:var(--text3);font-family:var(--mono)';
-        dt.textContent = item.date;
-        info.appendChild(rnd); info.appendChild(dt);
-        row.appendChild(info);
-
-        const ballWrap = document.createElement('div');
-        ballWrap.className = 'history-balls';
-        const jo = document.createElement('div');
-        jo.className = 'pension-mini m-jo';
-        jo.textContent = item.jo;
-        ballWrap.appendChild(jo);
-        const div = document.createElement('span');
-        div.className = 'h-divider';
-        div.textContent = '—';
-        ballWrap.appendChild(div);
-        (item.digits || []).forEach(d => {
-            const mini = document.createElement('div');
-            mini.className = 'pension-mini m-digit';
-            mini.textContent = d;
-            ballWrap.appendChild(mini);
-        });
-        row.appendChild(ballWrap);
-        list.appendChild(row);
-    });
-}
-
-// ============================================================
 // 초기화
 // ============================================================
 buildLottoSlots();
 buildPensionSlots();
-loadLottoWinHistory();
-loadPensionWinHistory();
 </script>
 </body>
 </html>
