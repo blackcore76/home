@@ -1368,6 +1368,7 @@ function buildDet(id) {
       </div>
       ${p ? `<div style="text-align:right;"><div class="pnl-num ${cls}" style="font-size:18px;">${sgn+fKRW(p.d)}</div><div class="pnl-pct ${cls}">${sgn+p.pct.toFixed(2)}%</div></div>` : ''}
     </div></div>
+    <div class="modal-body">
     ${h.curPrice ? `<div class="det-hero"><div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">현재가</div><div class="det-price">${fP(h, h.curPrice)}</div>${h.market==='US' ? `<div style="font-size:10px;color:var(--text3);">≈ ${fKRW(h.curPrice*(fx||h.buyFX||1))}</div>` : ''}</div><div style="text-align:right;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">평가금액</div><div style="font-family:var(--mono);font-size:16px;">${fKRW(curKRW(h))}</div>${h.lastUpd ? `<div style="font-size:9px;color:var(--text3);">${new Date(h.lastUpd).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>` : ''}</div></div>` : ''}
     <button class="fetch-btn" id="fbtn-${h.id}" onclick="doFetchPrice('${h.id}')"><span id="ficon-${h.id}">📡</span><span id="flbl-${h.id}">현재가 조회</span></button>
     <div class="manual-row"><input class="fi" type="number" id="mprice-${h.id}" placeholder="${h.market==='US' ? 'USD 직접 입력' : 'KRW 직접 입력'}" step="any"><button class="apply-btn" onclick="applyManual('${h.id}')">적용</button></div>
@@ -1395,6 +1396,7 @@ function buildDet(id) {
       <button class="btn btn-red" onclick="checkLoginAndDelete('${h.id}')" ${!isOwner ? 'disabled style="opacity:0.5;"' : ''}>삭제</button>
       <button class="btn btn-ghost" onclick="checkLoginAndOpenEdit('${h.id}')" ${!isOwner ? 'disabled style="opacity:0.5;"' : ''}>전체수정</button>
       <button class="btn btn-ghost" onclick="closeOv('ov-det')">닫기</button>
+    </div>
     </div>`;
 }
 
