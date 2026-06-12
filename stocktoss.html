@@ -304,6 +304,9 @@ function renderSummary(holdings, usdToKrw) {
   const krCnt = items.filter(i => i.marketCountry === 'KR').length;
   const usCnt = items.filter(i => i.marketCountry === 'US').length;
 
+  const purchKrw = Number(holdings.totalPurchaseAmount?.krw ?? 0);
+  const purchUsd = Number(holdings.totalPurchaseAmount?.usd ?? 0);
+
   // 총 평가금액: 국내(KRW) + 해외(USD → KRW 환산)
   const totalKrw = usdToKrw > 0
     ? krwStocks + Math.round(usdStocks * usdToKrw)
@@ -314,13 +317,17 @@ function renderSummary(holdings, usdToKrw) {
   const totalDayKrw = usdToKrw > 0
     ? dayKrw + Math.round(dayUsd * usdToKrw)
     : dayKrw;
+  const totalPurchKrw = usdToKrw > 0
+    ? purchKrw + Math.round(purchUsd * usdToKrw)
+    : purchKrw;
+  const computedPnlRate = totalPurchKrw > 0 ? totalPnlKrw / totalPurchKrw : pnlRate;
 
   set('s-total-krw', fKRW(totalKrw), pnlClass(totalPnlKrw));
   set('s-total-usd', usdToKrw > 0
     ? `국내 ${fKRW(krwStocks)} / 해외 ${fUSD(usdStocks)}`
     : fUSD(usdStocks));
   setVal('s-pnl-krw', fKRW(totalPnlKrw), pnlClass(totalPnlKrw));
-  setVal('s-pnl-rate', fPct(pnlRate), pnlClass(pnlRate));
+  setVal('s-pnl-rate', fPct(computedPnlRate), pnlClass(computedPnlRate));
   setVal('s-day-krw', fKRW(totalDayKrw), pnlClass(totalDayKrw));
   setVal('s-day-rate', fPct(dayRate), pnlClass(dayRate));
   set('s-cnt-kr', krCnt + '종목');
@@ -377,6 +384,7 @@ function cardHTML(item) {
   const lastPx = Number(item.lastPrice ?? 0);
   const avgPx = Number(item.averagePurchasePrice ?? 0);
   const qty = Number(item.quantity ?? 0);
+  const evalAmt = Number(item.marketValue?.amount ?? 0);
   const pnlAmt = Number(item.profitLoss?.amount ?? 0);
   const pnlRate = Number(item.profitLoss?.rate ?? 0);
   const dayAmt = Number(item.dailyProfitLoss?.amount ?? 0);
@@ -384,12 +392,12 @@ function cardHTML(item) {
   const dayUp = dayAmt >= 0;
   const pnlUp = pnlAmt >= 0;
 
-  const priceStr = isUS ? fUSD(lastPx) : fKRW(lastPx);
-  const avgStr   = isUS ? fUSD(avgPx)  : fKRW(avgPx);
+  const evalStr  = isUS ? fUSD(evalAmt) : fKRW(evalAmt);
+  const lastStr  = isUS ? fUSD(lastPx)  : fKRW(lastPx);
+  const avgStr   = isUS ? fUSD(avgPx)   : fKRW(avgPx);
   const pnlStr   = (pnlUp ? '+' : '') + (isUS ? fUSD(pnlAmt) : fKRW(pnlAmt));
   const dayStr   = (dayUp ? '+' : '') + (isUS ? fUSD(dayAmt) : fKRW(dayAmt));
 
-  // 수량 표시 (소수점 있으면 유지)
   const qtyStr = qty % 1 === 0 ? qty.toLocaleString() + '주' : qty.toFixed(4) + '주';
 
   return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}">
@@ -400,7 +408,7 @@ function cardHTML(item) {
         <span class="card-mkt">${isUS ? '🇺🇸 US' : '🇰🇷 KR'}</span>
       </div>
       <div class="card-price-box">
-        <div class="card-price ${dayUp ? 'pos' : 'neg'}">${priceStr}</div>
+        <div class="card-price">${evalStr}</div>
         <div class="card-day ${dayUp ? 'pos' : 'neg'}">${dayStr} (${fPct(dayRate)})</div>
       </div>
     </div>
@@ -409,9 +417,10 @@ function cardHTML(item) {
         <div class="cb-lbl">수량</div>
         <div class="cb-val">${qtyStr}</div>
       </div>
-      <div class="cb-item">
-        <div class="cb-lbl">평균단가</div>
-        <div class="cb-val">${avgStr}</div>
+      <div class="cb-item" style="text-align:center;">
+        <div class="cb-lbl">현재가 / 평단</div>
+        <div class="cb-val">${lastStr}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);">${avgStr}</div>
       </div>
       <div class="cb-item" style="text-align:right;">
         <div class="cb-lbl">총 손익</div>
