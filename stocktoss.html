@@ -259,7 +259,7 @@ header{
 // ── 설정 ──────────────────────────────────────────────
 // 맥미니 로컬: 'http://127.0.0.1:7788'
 // Cloudflare Tunnel 연결 후: 'https://xxxx.trycloudflare.com'
-const PROXY = 'https://pills-scales-improve-opponents.trycloudflare.com';
+const PROXY = 'https://open-ordinance-prerequisite-but.trycloudflare.com';
 // ─────────────────────────────────────────────────────
 
 let allItems = [], curTab = 'all';
@@ -291,22 +291,37 @@ function setTab(tab) {
 }
 
 // ── 요약 렌더
-function renderSummary(holdings) {
-  const krw = holdings.marketValue?.amount?.krw ?? 0;
-  const usd = holdings.marketValue?.amount?.usd ?? 0;
-  const pnlKrw = holdings.profitLoss?.amount?.krw ?? 0;
-  const pnlRate = holdings.profitLoss?.rate ?? 0;
-  const dayKrw = holdings.dailyProfitLoss?.amount?.krw ?? 0;
-  const dayRate = holdings.dailyProfitLoss?.rate ?? 0;
+function renderSummary(holdings, usdToKrw) {
+  const krwStocks = Number(holdings.marketValue?.amount?.krw ?? 0);
+  const usdStocks = Number(holdings.marketValue?.amount?.usd ?? 0);
+  const pnlKrw = Number(holdings.profitLoss?.amount?.krw ?? 0);
+  const pnlUsd = Number(holdings.profitLoss?.amount?.usd ?? 0);
+  const pnlRate = Number(holdings.profitLoss?.rate ?? 0);
+  const dayKrw = Number(holdings.dailyProfitLoss?.amount?.krw ?? 0);
+  const dayUsd = Number(holdings.dailyProfitLoss?.amount?.usd ?? 0);
+  const dayRate = Number(holdings.dailyProfitLoss?.rate ?? 0);
   const items = holdings.items ?? [];
   const krCnt = items.filter(i => i.marketCountry === 'KR').length;
   const usCnt = items.filter(i => i.marketCountry === 'US').length;
 
-  set('s-total-krw', fKRW(krw), pnlClass(Number(krw) - (holdings.totalPurchaseAmount?.krw ?? 0)));
-  set('s-total-usd', fUSD(usd));
-  setVal('s-pnl-krw', fKRW(pnlKrw), pnlClass(pnlKrw));
+  // 총 평가금액: 국내(KRW) + 해외(USD → KRW 환산)
+  const totalKrw = usdToKrw > 0
+    ? krwStocks + Math.round(usdStocks * usdToKrw)
+    : krwStocks;
+  const totalPnlKrw = usdToKrw > 0
+    ? pnlKrw + Math.round(pnlUsd * usdToKrw)
+    : pnlKrw;
+  const totalDayKrw = usdToKrw > 0
+    ? dayKrw + Math.round(dayUsd * usdToKrw)
+    : dayKrw;
+
+  set('s-total-krw', fKRW(totalKrw), pnlClass(totalPnlKrw));
+  set('s-total-usd', usdToKrw > 0
+    ? `국내 ${fKRW(krwStocks)} / 해외 ${fUSD(usdStocks)}`
+    : fUSD(usdStocks));
+  setVal('s-pnl-krw', fKRW(totalPnlKrw), pnlClass(totalPnlKrw));
   setVal('s-pnl-rate', fPct(pnlRate), pnlClass(pnlRate));
-  setVal('s-day-krw', fKRW(dayKrw), pnlClass(dayKrw));
+  setVal('s-day-krw', fKRW(totalDayKrw), pnlClass(totalDayKrw));
   setVal('s-day-rate', fPct(dayRate), pnlClass(dayRate));
   set('s-cnt-kr', krCnt + '종목');
   set('s-cnt-us', usCnt + '종목');
@@ -430,9 +445,17 @@ async function load() {
   hideErr();
 
   try {
-    const res = await fetch(`${PROXY}/holdings`, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const holdingsRes = await fetch(`${PROXY}/holdings`, { signal: AbortSignal.timeout(15000) });
+    if (!holdingsRes.ok) throw new Error(`HTTP ${holdingsRes.status}`);
+    const data = await holdingsRes.json();
+
+    // 환율 파싱 (USD→KRW) — holdings 응답에 포함
+    let usdToKrw = 0;
+    const rates = data.exchangeRate ?? [];
+    if (Array.isArray(rates)) {
+      const usd = rates.find(r => (r.currency ?? r.currencyCode) === 'USD');
+      usdToKrw = Number(usd?.basePrice ?? usd?.rate ?? 0);
+    }
 
     // 계좌 첫 번째 holdings 사용 (단일 계좌)
     const acc = data.accounts?.[0];
@@ -441,7 +464,7 @@ async function load() {
     const holdings = acc.holdings;
     allItems = holdings.items ?? [];
 
-    renderSummary(holdings);
+    renderSummary(holdings, usdToKrw);
     renderList();
 
     const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
