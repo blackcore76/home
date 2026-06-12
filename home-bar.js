@@ -149,6 +149,7 @@
     'market-dashboard.html':  '📊 마켓 대시보드',
     'market-picker.html':     '📈 관심 주식 픽',
     'stocklens.html':         '💼 StockLens',
+    'stocktoss.html':         '📱 StockToss',
     'daily-feed.html':        '📝 데일리 피드',
     'blood_fb_auth.html':     '❤️ 혈압 기록부',
     'lotto.html':             '🎰 로또 6/45',
