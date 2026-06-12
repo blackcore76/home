@@ -471,8 +471,10 @@ async function load() {
 
   } catch (e) {
     setStatus('error');
-    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-      showErr('프록시 서버에 연결할 수 없어요. 맥미니 서버가 실행 중인지 확인해주세요. (' + PROXY + ')');
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed')) {
+      showErr('맥미니 서버 연결 실패 — 서버/터널이 꺼져 있어요. (터미널 탭 A·B 확인)');
+    } else if (e.message.includes('403') || e.message.includes('502')) {
+      showErr('토스 API 일시 오류 (' + e.message + ') — 잠시 후 자동 재시도됩니다.');
     } else {
       showErr(e.message);
     }
