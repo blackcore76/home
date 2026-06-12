@@ -449,13 +449,10 @@ async function load() {
     if (!holdingsRes.ok) throw new Error(`HTTP ${holdingsRes.status}`);
     const data = await holdingsRes.json();
 
-    // 환율 파싱 (USD→KRW) — holdings 응답에 포함
+    // 환율 파싱 (USD→KRW) — baseCurrency=KRW, rate=KRW당USD → 역수가 USD→KRW
     let usdToKrw = 0;
-    const rates = data.exchangeRate ?? [];
-    if (Array.isArray(rates)) {
-      const usd = rates.find(r => (r.currency ?? r.currencyCode) === 'USD');
-      usdToKrw = Number(usd?.basePrice ?? usd?.rate ?? 0);
-    }
+    const fx = data.exchangeRate;
+    if (fx?.rate) usdToKrw = Math.round(1 / Number(fx.rate));
 
     // 계좌 첫 번째 holdings 사용 (단일 계좌)
     const acc = data.accounts?.[0];
