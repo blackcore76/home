@@ -304,31 +304,24 @@ function renderSummary(holdings, usdToKrw) {
   const krCnt = items.filter(i => i.marketCountry === 'KR').length;
   const usCnt = items.filter(i => i.marketCountry === 'US').length;
 
-  const purchKrw = Number(holdings.totalPurchaseAmount?.krw ?? 0);
-  const purchUsd = Number(holdings.totalPurchaseAmount?.usd ?? 0);
-
   // 총 평가금액: 국내(KRW) + 해외(USD → KRW 환산)
   const totalKrw = usdToKrw > 0
     ? krwStocks + Math.round(usdStocks * usdToKrw)
     : krwStocks;
-  const totalPnlKrw = usdToKrw > 0
-    ? pnlKrw + Math.round(pnlUsd * usdToKrw)
-    : pnlKrw;
   const totalDayKrw = usdToKrw > 0
     ? dayKrw + Math.round(dayUsd * usdToKrw)
     : dayKrw;
-  const totalPurchKrw = usdToKrw > 0
-    ? purchKrw + Math.round(purchUsd * usdToKrw)
-    : purchKrw;
-  const computedPnlRate = totalPurchKrw > 0 ? totalPnlKrw / totalPurchKrw : pnlRate;
 
-  set('s-total-krw', fKRW(totalKrw), pnlClass(totalPnlKrw));
-  set('s-total-usd', usdToKrw > 0
-    ? `국내 ${fKRW(krwStocks)} / 해외 ${fUSD(usdStocks)}`
-    : fUSD(usdStocks));
-  setVal('s-pnl-krw', fKRW(totalPnlKrw), pnlClass(totalPnlKrw));
-  setVal('s-pnl-rate', fPct(computedPnlRate), pnlClass(computedPnlRate));
-  setVal('s-day-krw', fKRW(totalDayKrw), pnlClass(totalDayKrw));
+  set('s-total-krw', fKRW(totalKrw));
+  set('s-total-usd', `국내 ${fKRW(krwStocks)} / 해외 ${fUSD(usdStocks)}`);
+  // 손익은 통화별로 따로 표시 (매수 환율 불명으로 합산 불정확)
+  setVal('s-pnl-krw',
+    `KR ${fKRW(pnlKrw)}  /  US ${fUSD(pnlUsd)}`,
+    pnlClass(pnlKrw));
+  setVal('s-pnl-rate', fPct(pnlRate), pnlClass(pnlRate));
+  setVal('s-day-krw',
+    `KR ${fKRW(dayKrw)}  /  US ${fUSD(dayUsd)}`,
+    pnlClass(dayKrw + dayUsd));
   setVal('s-day-rate', fPct(dayRate), pnlClass(dayRate));
   set('s-cnt-kr', krCnt + '종목');
   set('s-cnt-us', usCnt + '종목');
@@ -359,10 +352,9 @@ function renderList() {
     return;
   }
 
-  // 일일 손익 절댓값 기준 정렬
+  // 평가금액 높은 순 정렬
   const sorted = [...items].sort((a, b) =>
-    Math.abs(Number(b.dailyProfitLoss?.amount ?? 0)) -
-    Math.abs(Number(a.dailyProfitLoss?.amount ?? 0))
+    Number(b.marketValue?.amount ?? 0) - Number(a.marketValue?.amount ?? 0)
   );
 
   // KR / US 섹션 구분 (전체 탭일 때)
