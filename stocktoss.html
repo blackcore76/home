@@ -106,108 +106,77 @@ header{
 /* ── 컨테이너 */
 .container{max-width:1200px;margin:0 auto;padding:16px 16px;}
 
-/* ── 요약 카드 */
-.summary{
-  background:var(--sf);
-  border:1px solid var(--bd);
-  border-radius:14px;
-  padding:18px 16px;
-  margin-bottom:14px;
-}
-.summary-row1{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
-.sum-label{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
-.sum-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);}
-.sum-val.pos{color:var(--green);}
-.sum-val.neg{color:var(--red);}
-.sum-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:2px;}
-.summary-row2{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  padding-top:14px;
-  border-top:1px solid var(--bd);
-}
-.sum-box{text-align:center;}
-.sum-box .sum-label{text-align:center;}
-.sum-box .sum-v{font-family:var(--mono);font-size:13px;font-weight:600;}
-.sum-box .sum-v.pos{color:var(--green);}
-.sum-box .sum-v.neg{color:var(--red);}
+/* ── 카드 (요약) */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--accent),transparent);border-radius:3px 0 0 3px;}
+.card-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bd);}
+.card-header .icon{font-size:20px;}
+.card-header h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);}
+.card-header .badge{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3);}
+.hero-val{font-family:var(--mono);font-size:28px;font-weight:600;letter-spacing:-1px;margin-bottom:8px;}
+.hero-sub{font-size:12px;color:var(--text3);}
+.chips{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.chip{flex:1;min-width:100px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;}
+.chip-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.08em;margin-bottom:6px;}
+.chip-val{font-family:var(--mono);font-size:14px;font-weight:600;}
+.chip-val.pos{color:var(--green);}
+.chip-val.neg{color:var(--red);}
+
+/* ── 환율 바 */
+.fxbar{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.fx-item{display:flex;align-items:baseline;gap:8px;}
+.fx-lbl{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.fx-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
+.fx-time{font-family:var(--mono);font-size:10px;color:var(--text3);}
 
 /* ── 탭 */
-.tabs{display:flex;gap:6px;margin-bottom:12px;}
-.tab{
-  background:var(--sf);border:1px solid var(--bd);border-radius:20px;
-  padding:6px 16px;font-size:12px;color:var(--text2);cursor:pointer;
-  transition:all .15s;white-space:nowrap;
-}
-.tab:hover{border-color:var(--bd2);color:var(--text);}
-.tab.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;}
+.tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#000;}
+.tab:not(.on):hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── 리스트 헤더 */
+.list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.list-count{font-family:var(--mono);font-size:11px;color:var(--text3);}
 
 /* ── 종목 카드 */
-.stock-list{display:flex;flex-direction:column;gap:8px;}
-.stock-card{
-  background:var(--sf);
-  border:1px solid var(--bd);
-  border-radius:12px;
-  overflow:hidden;
-  transition:border-color .15s;
-}
-.stock-card:hover{border-color:var(--bd2);}
-.stock-card.pos-day{border-left:3px solid var(--green);}
-.stock-card.neg-day{border-left:3px solid var(--red);}
+.stock-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;transition:all .2s;animation:fadeIn .3s ease both;position:relative;overflow:hidden;}
+.stock-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+.stock-card.pos-day::before{background:linear-gradient(to bottom,var(--green),transparent);}
+.stock-card.neg-day::before{background:linear-gradient(to bottom,var(--red),transparent);}
+.stock-card:hover{border-color:var(--bd2);background:var(--sf2);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* 카드 1단: 종목명 / 현재가 */
-.card-top{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 14px 8px;gap:10px;
-}
-.card-sym{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);}
-.card-name{font-size:12px;color:var(--text2);margin-top:1px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
-.card-mkt{
-  display:inline-block;
-  background:var(--sf3);border:1px solid var(--bd2);border-radius:4px;
-  padding:1px 6px;font-size:9px;color:var(--text3);margin-top:3px;
-}
-.card-price-box{text-align:right;flex-shrink:0;}
-.card-price{font-family:var(--mono);font-size:16px;font-weight:700;}
-.card-price.pos{color:var(--green);}
-.card-price.neg{color:var(--red);}
-.card-day{font-family:var(--mono);font-size:11px;margin-top:2px;}
-.card-day.pos{color:var(--green);}
-.card-day.neg{color:var(--red);}
-
-/* 카드 2단: 수량 / 매수가 / 손익 */
-.card-bot{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  background:var(--sf2);
-  border-top:1px solid var(--bd);
-  padding:8px 14px;gap:6px;
-}
-.cb-item{}
-.cb-lbl{font-size:9px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;}
-.cb-val{font-family:var(--mono);font-size:12px;font-weight:500;}
-.cb-val.pos{color:var(--green);}
-.cb-val.neg{color:var(--red);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.card-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.b-ticker{font-family:var(--mono);font-size:11px;font-weight:600;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 8px;color:var(--accent);}
+.b-mkt{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--sf3);border:1px solid var(--bd);}
+.b-mkt.kr{color:var(--gold);}
+.b-mkt.us{color:var(--green);}
+.card-name{font-size:15px;font-weight:600;margin-bottom:2px;}
+.card-pnl{text-align:right;flex-shrink:0;}
+.pnl-num{font-family:var(--mono);font-size:15px;font-weight:600;}
+.pnl-pct{font-family:var(--mono);font-size:12px;}
+.pos{color:var(--green);}
+.neg{color:var(--red);}
+.bar-wrap{margin-top:10px;margin-bottom:12px;}
+.bar-track{height:3px;background:var(--bd2);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width .3s;}
+.card-bot{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:12px;padding-top:12px;border-top:1px solid var(--bd);}
+.s-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:3px;}
+.s-val{font-family:var(--mono);font-size:12px;font-weight:500;}
 
 /* ── 빈 상태 */
 .empty{text-align:center;padding:60px 20px;color:var(--text3);}
 .empty .ico{font-size:36px;margin-bottom:12px;}
 
 /* ── 에러 배너 */
-.err-banner{
-  background:rgba(255,82,82,.08);border:1px solid rgba(255,82,82,.25);
-  border-radius:10px;padding:12px 16px;margin-bottom:14px;
-  font-size:12px;color:var(--red);display:none;
-}
+.err-banner{background:rgba(255,82,82,.08);border:1px solid rgba(255,82,82,.25);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--red);display:none;}
 .err-banner.show{display:block;}
 
 /* ── 섹션 구분선 */
-.sec-label{
-  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--text3);
-  display:flex;align-items:center;gap:8px;margin:14px 0 8px;
-}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:8px;margin:14px 0 8px;}
 .sec-label::after{content:'';flex:1;height:1px;background:var(--bd);}
 
 /* ── 스켈레톤 */
@@ -216,19 +185,11 @@ header{
 .skel.w40{width:40%;}
 @keyframes sk{0%,100%{opacity:.5}50%{opacity:1}}
 
-/* ── 프록시 설정 배너 */
-.proxy-banner{
-  background:rgba(255,202,40,.07);
-  border:1px solid rgba(255,202,40,.25);
-  border-radius:10px;padding:12px 16px;margin-bottom:14px;
-  font-size:12px;color:var(--gold);
-}
-.proxy-banner a{color:var(--gold);text-decoration:underline;}
-
-@media(max-width:480px){
-  .summary-row2{grid-template-columns:repeat(3,1fr);}
-  .sum-val{font-size:18px;}
-  .card-bot{grid-template-columns:repeat(3,1fr);}
+@media(max-width:600px){
+  .container{padding:12px 12px;}
+  .hero-val{font-size:22px;}
+  .chips{gap:6px;}
+  .chip{min-width:80px;}
 }
 </style>
 </head>
@@ -255,40 +216,27 @@ header{
 
 <div class="container">
 
-  <!-- 요약 -->
-  <div class="summary" id="summary">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-      <span style="font-family:var(--mono);font-size:11px;color:var(--text3);" id="last-upd">–</span>
+  <!-- 포트폴리오 요약 카드 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📊</span>
+      <h3>포트폴리오 요약</h3>
+      <span class="badge" id="s-counts">– 종목</span>
     </div>
+    <div class="hero-val" id="s-total-krw">–</div>
+    <div class="hero-sub" id="s-total-sub">–</div>
+    <div class="chips">
+      <div class="chip"><div class="chip-lbl">국내 손익 (KRW)</div><div class="chip-val" id="s-pnl-kr">–</div></div>
+      <div class="chip"><div class="chip-lbl">해외 손익 (USD)</div><div class="chip-val" id="s-pnl-us">–</div></div>
+      <div class="chip"><div class="chip-lbl">일일 손익 KR</div><div class="chip-val" id="s-day-kr">–</div></div>
+      <div class="chip"><div class="chip-lbl">일일 손익 US</div><div class="chip-val" id="s-day-us">–</div></div>
+    </div>
+  </div>
 
-    <div class="summary-row1">
-      <div>
-        <div class="sum-label">총 평가금액</div>
-        <div class="sum-val" id="s-total-krw">–</div>
-        <div class="sum-sub" id="s-total-usd">–</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="sum-label">총 손익</div>
-        <div class="sum-val" id="s-pnl-krw">–</div>
-        <div class="sum-sub" id="s-pnl-rate">–</div>
-      </div>
-    </div>
-
-    <div class="summary-row2">
-      <div class="sum-box">
-        <div class="sum-label">일일 손익</div>
-        <div class="sum-v" id="s-day-krw">–</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:1px;" id="s-day-rate">–</div>
-      </div>
-      <div class="sum-box">
-        <div class="sum-label">국내 종목</div>
-        <div class="sum-v" id="s-cnt-kr">–</div>
-      </div>
-      <div class="sum-box">
-        <div class="sum-label">해외 종목</div>
-        <div class="sum-v" id="s-cnt-us">–</div>
-      </div>
-    </div>
+  <!-- 환율 바 -->
+  <div class="fxbar">
+    <div class="fx-item"><span class="fx-lbl">USD/KRW</span><span class="fx-val" id="fx-val">–</span></div>
+    <div class="fx-item"><span class="fx-lbl">기준시각</span><span class="fx-time" id="last-upd">–</span></div>
   </div>
 
   <!-- 에러 배너 -->
@@ -296,19 +244,23 @@ header{
 
   <!-- 탭 -->
   <div class="tabs">
-    <div class="tab active" data-tab="all" onclick="setTab('all')">전체</div>
-    <div class="tab" data-tab="KR" onclick="setTab('KR')">🇰🇷 국내</div>
-    <div class="tab" data-tab="US" onclick="setTab('US')">🇺🇸 해외</div>
+    <button class="tab on" onclick="setTab('all',this)">전체</button>
+    <button class="tab" onclick="setTab('KR',this)">🇰🇷 국내</button>
+    <button class="tab" onclick="setTab('US',this)">🇺🇸 해외</button>
+  </div>
+
+  <!-- 리스트 헤더 -->
+  <div class="list-head">
+    <span class="list-count" id="list-count">종목 0개</span>
   </div>
 
   <!-- 종목 리스트 -->
-  <div class="stock-list" id="stock-list">
-    <!-- 스켈레톤 -->
-    <div class="stock-card" style="padding:14px;">
+  <div id="list">
+    <div class="stock-card" style="padding:16px;">
       <div class="skel w60" style="margin-bottom:8px;"></div>
       <div class="skel w40"></div>
     </div>
-    <div class="stock-card" style="padding:14px;">
+    <div class="stock-card" style="padding:16px;">
       <div class="skel w60" style="margin-bottom:8px;"></div>
       <div class="skel w40"></div>
     </div>
@@ -323,9 +275,9 @@ header{
 const PROXY = 'https://open-ordinance-prerequisite-but.trycloudflare.com';
 // ─────────────────────────────────────────────────────
 
-let allItems = [], curTab = 'all';
+let allItems = [], curTab = 'all', curUsdToKrw = 0;
 let autoTimer = null;
-const AUTO_INTERVAL = 60; // 초
+const AUTO_INTERVAL = 60;
 
 // ── 포맷
 function fKRW(n) {
@@ -340,146 +292,127 @@ function fPct(r) {
   const p = (Number(r) * 100).toFixed(2);
   return (p >= 0 ? '+' : '') + p + '%';
 }
-function pnlClass(n) { return Number(n) >= 0 ? 'pos' : 'neg'; }
+function pnlCls(n) { return Number(n) >= 0 ? 'pos' : 'neg'; }
+function setEl(id, txt, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  if (cls !== undefined) el.className = el.className.replace(/\bpos\b|\bneg\b/g, '').trim() + (cls ? ' ' + cls : '');
+}
+function setChip(id, txt, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  el.className = 'chip-val' + (cls ? ' ' + cls : '');
+}
 
 // ── 탭
-function setTab(tab) {
+function setTab(tab, el) {
   curTab = tab;
-  document.querySelectorAll('.tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.tab === tab)
-  );
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  if (el) el.classList.add('on');
   renderList();
 }
 
 // ── 요약 렌더
 function renderSummary(holdings, usdToKrw) {
+  curUsdToKrw = usdToKrw;
   const krwStocks = Number(holdings.marketValue?.amount?.krw ?? 0);
   const usdStocks = Number(holdings.marketValue?.amount?.usd ?? 0);
-  const pnlKrw = Number(holdings.profitLoss?.amount?.krw ?? 0);
-  const pnlUsd = Number(holdings.profitLoss?.amount?.usd ?? 0);
-  const pnlRate = Number(holdings.profitLoss?.rate ?? 0);
-  const dayKrw = Number(holdings.dailyProfitLoss?.amount?.krw ?? 0);
-  const dayUsd = Number(holdings.dailyProfitLoss?.amount?.usd ?? 0);
-  const dayRate = Number(holdings.dailyProfitLoss?.rate ?? 0);
-  const items = holdings.items ?? [];
-  const krCnt = items.filter(i => i.marketCountry === 'KR').length;
-  const usCnt = items.filter(i => i.marketCountry === 'US').length;
+  const pnlKrw    = Number(holdings.profitLoss?.amount?.krw ?? 0);
+  const pnlUsd    = Number(holdings.profitLoss?.amount?.usd ?? 0);
+  const dayKrw    = Number(holdings.dailyProfitLoss?.amount?.krw ?? 0);
+  const dayUsd    = Number(holdings.dailyProfitLoss?.amount?.usd ?? 0);
+  const items     = holdings.items ?? [];
+  const krCnt     = items.filter(i => i.marketCountry === 'KR').length;
+  const usCnt     = items.filter(i => i.marketCountry === 'US').length;
 
-  // 총 평가금액: 국내(KRW) + 해외(USD → KRW 환산)
-  const totalKrw = usdToKrw > 0
-    ? krwStocks + Math.round(usdStocks * usdToKrw)
-    : krwStocks;
-  const totalDayKrw = usdToKrw > 0
-    ? dayKrw + Math.round(dayUsd * usdToKrw)
-    : dayKrw;
+  const totalKrw = usdToKrw > 0 ? krwStocks + Math.round(usdStocks * usdToKrw) : krwStocks;
 
-  set('s-total-krw', fKRW(totalKrw));
-  set('s-total-usd', `국내 ${fKRW(krwStocks)} / 해외 ${fUSD(usdStocks)}`);
-  // 손익은 통화별로 따로 표시 (매수 환율 불명으로 합산 불정확)
-  setVal('s-pnl-krw',
-    `KR ${fKRW(pnlKrw)}  /  US ${fUSD(pnlUsd)}`,
-    pnlClass(pnlKrw));
-  setVal('s-pnl-rate', fPct(pnlRate), pnlClass(pnlRate));
-  setVal('s-day-krw',
-    `KR ${fKRW(dayKrw)}  /  US ${fUSD(dayUsd)}`,
-    pnlClass(dayKrw + dayUsd));
-  setVal('s-day-rate', fPct(dayRate), pnlClass(dayRate));
-  set('s-cnt-kr', krCnt + '종목');
-  set('s-cnt-us', usCnt + '종목');
-}
+  setEl('s-total-krw', fKRW(totalKrw));
+  setEl('s-total-sub', `국내 ${fKRW(krwStocks)}  /  해외 ${fUSD(usdStocks)}` + (usdToKrw > 0 ? `  (USD/KRW ${usdToKrw.toLocaleString()})` : ''));
+  setEl('s-counts', `${krCnt + usCnt}종목`);
+  setChip('s-pnl-kr', fKRW(pnlKrw), pnlCls(pnlKrw));
+  setChip('s-pnl-us', fUSD(pnlUsd), pnlCls(pnlUsd));
+  setChip('s-day-kr', fKRW(dayKrw), pnlCls(dayKrw));
+  setChip('s-day-us', fUSD(dayUsd), pnlCls(dayUsd));
 
-function set(id, txt, cls) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = txt;
-  if (cls) el.className = el.className.replace(/\bpos\b|\bneg\b/g, '').trim() + ' ' + cls;
-}
-function setVal(id, txt, cls) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = txt;
-  el.className = 'sum-v' + (cls ? ' ' + cls : '');
+  if (usdToKrw > 0) {
+    setEl('fx-val', usdToKrw.toLocaleString('ko-KR') + '원');
+  }
 }
 
 // ── 종목 카드 렌더
 function renderList() {
-  const list = document.getElementById('stock-list');
-  const items = curTab === 'all'
-    ? allItems
-    : allItems.filter(i => i.marketCountry === curTab);
+  const listEl = document.getElementById('list');
+  const items = curTab === 'all' ? allItems : allItems.filter(i => i.marketCountry === curTab);
+
+  setEl('list-count', `종목 ${items.length}개`);
 
   if (!items.length) {
-    list.innerHTML = `<div class="empty"><div class="ico">📭</div>보유 종목이 없습니다.</div>`;
+    listEl.innerHTML = `<div class="empty"><div class="ico">📭</div>보유 종목이 없습니다.</div>`;
     return;
   }
 
-  // 평가금액 높은 순 정렬
   const sorted = [...items].sort((a, b) =>
     Number(b.marketValue?.amount ?? 0) - Number(a.marketValue?.amount ?? 0)
   );
 
-  // KR / US 섹션 구분 (전체 탭일 때)
   let html = '';
   if (curTab === 'all') {
     const kr = sorted.filter(i => i.marketCountry === 'KR');
     const us = sorted.filter(i => i.marketCountry === 'US');
-    if (kr.length) html += `<div class="sec-label">🇰🇷 국내 ${kr.length}종목</div>` + kr.map(cardHTML).join('');
-    if (us.length) html += `<div class="sec-label">🇺🇸 해외 ${us.length}종목</div>` + us.map(cardHTML).join('');
+    if (kr.length) html += `<div class="sec-label">🇰🇷 국내 ${kr.length}종목</div>` + kr.map((c,i) => cardHTML(c,i)).join('');
+    if (us.length) html += `<div class="sec-label">🇺🇸 해외 ${us.length}종목</div>` + us.map((c,i) => cardHTML(c,i + (sorted.filter(x=>x.marketCountry==='KR').length))).join('');
   } else {
-    html = sorted.map(cardHTML).join('');
+    html = sorted.map((c,i) => cardHTML(c,i)).join('');
   }
-
-  list.innerHTML = html;
+  listEl.innerHTML = html;
 }
 
-function cardHTML(item) {
-  const isUS = item.marketCountry === 'US';
-  const lastPx = Number(item.lastPrice ?? 0);
-  const avgPx = Number(item.averagePurchasePrice ?? 0);
-  const qty = Number(item.quantity ?? 0);
+function cardHTML(item, idx) {
+  const isUS    = item.marketCountry === 'US';
+  const lastPx  = Number(item.lastPrice ?? 0);
+  const avgPx   = Number(item.averagePurchasePrice ?? 0);
+  const qty     = Number(item.quantity ?? 0);
   const evalAmt = Number(item.marketValue?.amount ?? 0);
-  const pnlAmt = Number(item.profitLoss?.amount ?? 0);
+  const pnlAmt  = Number(item.profitLoss?.amount ?? 0);
   const pnlRate = Number(item.profitLoss?.rate ?? 0);
-  const dayAmt = Number(item.dailyProfitLoss?.amount ?? 0);
+  const dayAmt  = Number(item.dailyProfitLoss?.amount ?? 0);
   const dayRate = Number(item.dailyProfitLoss?.rate ?? 0);
-  const dayUp = dayAmt >= 0;
-  const pnlUp = pnlAmt >= 0;
+  const dayUp   = dayAmt >= 0;
+  const pnlUp   = pnlAmt >= 0;
 
-  const evalStr  = isUS ? fUSD(evalAmt) : fKRW(evalAmt);
-  const lastStr  = isUS ? fUSD(lastPx)  : fKRW(lastPx);
-  const avgStr   = isUS ? fUSD(avgPx)   : fKRW(avgPx);
-  const pnlStr   = (pnlUp ? '+' : '') + (isUS ? fUSD(pnlAmt) : fKRW(pnlAmt));
-  const dayStr   = (dayUp ? '+' : '') + (isUS ? fUSD(dayAmt) : fKRW(dayAmt));
+  const evalStr = isUS ? fUSD(evalAmt) : fKRW(evalAmt);
+  const lastStr = isUS ? fUSD(lastPx)  : fKRW(lastPx);
+  const avgStr  = isUS ? fUSD(avgPx)   : fKRW(avgPx);
+  const pnlStr  = (pnlUp ? '+' : '') + (isUS ? fUSD(pnlAmt) : fKRW(pnlAmt));
+  const dayStr  = (dayUp ? '+' : '') + (isUS ? fUSD(dayAmt) : fKRW(dayAmt));
+  const qtyStr  = qty % 1 === 0 ? qty.toLocaleString() + '주' : qty.toFixed(4) + '주';
 
-  const qtyStr = qty % 1 === 0 ? qty.toLocaleString() + '주' : qty.toFixed(4) + '주';
+  const bw = Math.min(Math.abs(pnlRate) * 100 * 2, 100);
+  const bc = pnlUp ? 'var(--green)' : 'var(--red)';
 
-  return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}">
+  return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}" style="animation-delay:${(idx??0)*.04}s">
     <div class="card-top">
-      <div>
-        <div class="card-sym">${item.symbol}</div>
+      <div class="card-left">
+        <div class="card-badges">
+          <span class="b-ticker">${item.symbol}</span>
+          <span class="b-mkt ${isUS ? 'us' : 'kr'}">${isUS ? '🇺🇸 US' : '🇰🇷 KR'}</span>
+        </div>
         <div class="card-name">${item.name}</div>
-        <span class="card-mkt">${isUS ? '🇺🇸 US' : '🇰🇷 KR'}</span>
       </div>
-      <div class="card-price-box">
-        <div class="card-price">${evalStr}</div>
-        <div class="card-day ${dayUp ? 'pos' : 'neg'}">${dayStr} (${fPct(dayRate)})</div>
+      <div class="card-pnl">
+        <div class="pnl-num ${dayUp ? 'pos' : 'neg'}">${evalStr}</div>
+        <div class="pnl-pct ${dayUp ? 'pos' : 'neg'}">${dayStr} (${fPct(dayRate)})</div>
       </div>
     </div>
+    <div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${bw}%;background:${bc}"></div></div></div>
     <div class="card-bot">
-      <div class="cb-item">
-        <div class="cb-lbl">수량</div>
-        <div class="cb-val">${qtyStr}</div>
-      </div>
-      <div class="cb-item" style="text-align:center;">
-        <div class="cb-lbl">현재가 / 평단</div>
-        <div class="cb-val">${lastStr}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);">${avgStr}</div>
-      </div>
-      <div class="cb-item" style="text-align:right;">
-        <div class="cb-lbl">총 손익</div>
-        <div class="cb-val ${pnlUp ? 'pos' : 'neg'}">${pnlStr}</div>
-        <div style="font-family:var(--mono);font-size:10px;${pnlUp ? 'color:var(--green)' : 'color:var(--red)'};">${fPct(pnlRate)}</div>
-      </div>
+      <div><div class="s-lbl">수량</div><div class="s-val">${qtyStr}</div></div>
+      <div><div class="s-lbl">평균단가</div><div class="s-val">${avgStr}</div></div>
+      <div><div class="s-lbl">현재가</div><div class="s-val">${lastStr}</div></div>
+      <div><div class="s-lbl">총 손익</div><div class="s-val ${pnlUp ? 'pos' : 'neg'}">${pnlStr}</div><div class="s-val ${pnlUp ? 'pos' : 'neg'}" style="font-size:10px;">${fPct(pnlRate)}</div></div>
     </div>
   </div>`;
 }
@@ -582,11 +515,10 @@ function startAutoTimer() {
   cdVal = AUTO_INTERVAL;
   autoTimer = setInterval(() => {
     cdVal--;
-    const btn = document.getElementById('btn-refresh');
     if (cdVal > 0) {
-      btn.textContent = `↺ ${cdVal}초`;
+      const txt = document.getElementById('syncTxt');
+      if (txt && txt.textContent !== '연결 중...') txt.textContent = `● 실시간 (${cdVal}s)`;
     } else {
-      btn.textContent = '↺ 새로고침';
       clearInterval(autoTimer);
       load();
     }
