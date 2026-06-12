@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StockToss">
+<title>StockToss — 토스증권 계좌</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="home-bar.js"></script>
+<style>
+:root {
+  --bg:    #080c14;
+  --sf:    #0e1422;
+  --sf2:   #131b2d;
+  --sf3:   #181f30;
+  --bd:    #1e2d45;
+  --bd2:   #263548;
+  --text:  #c8d6e8;
+  --text2: #7a91a8;
+  --text3: #4a5f74;
+  --accent:#00d4ff;
+  --green: #00e676;
+  --red:   #ff5252;
+  --gold:  #ffca28;
+  --mono:  'JetBrains Mono', monospace;
+  --sans:  'Noto Sans KR', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:60px;}
+
+/* ── 헤더 */
+header{
+  position:sticky;top:36px;z-index:50;
+  background:rgba(8,12,20,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--bd);
+  padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.logo{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);}
+.logo-dot.loading{animation:pulse .6s ease-in-out infinite;}
+.logo-dot.error{background:var(--red);box-shadow:0 0 8px var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.hdr-r{display:flex;align-items:center;gap:8px;}
+.last-upd{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.btn-refresh{
+  background:transparent;border:1px solid var(--bd2);border-radius:6px;
+  padding:5px 10px;color:var(--text2);font-family:var(--mono);font-size:11px;
+  cursor:pointer;transition:all .15s;
+}
+.btn-refresh:hover{border-color:var(--accent);color:var(--accent);}
+.btn-refresh:disabled{opacity:.4;cursor:default;}
+
+/* ── 컨테이너 */
+.container{max-width:720px;margin:0 auto;padding:16px 14px;}
+
+/* ── 요약 카드 */
+.summary{
+  background:var(--sf);
+  border:1px solid var(--bd);
+  border-radius:14px;
+  padding:18px 16px;
+  margin-bottom:14px;
+}
+.summary-row1{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.sum-label{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+.sum-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);}
+.sum-val.pos{color:var(--green);}
+.sum-val.neg{color:var(--red);}
+.sum-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:2px;}
+.summary-row2{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  padding-top:14px;
+  border-top:1px solid var(--bd);
+}
+.sum-box{text-align:center;}
+.sum-box .sum-label{text-align:center;}
+.sum-box .sum-v{font-family:var(--mono);font-size:13px;font-weight:600;}
+.sum-box .sum-v.pos{color:var(--green);}
+.sum-box .sum-v.neg{color:var(--red);}
+
+/* ── 탭 */
+.tabs{display:flex;gap:6px;margin-bottom:12px;}
+.tab{
+  background:var(--sf);border:1px solid var(--bd);border-radius:20px;
+  padding:6px 16px;font-size:12px;color:var(--text2);cursor:pointer;
+  transition:all .15s;white-space:nowrap;
+}
+.tab:hover{border-color:var(--bd2);color:var(--text);}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;}
+
+/* ── 종목 카드 */
+.stock-list{display:flex;flex-direction:column;gap:8px;}
+.stock-card{
+  background:var(--sf);
+  border:1px solid var(--bd);
+  border-radius:12px;
+  overflow:hidden;
+  transition:border-color .15s;
+}
+.stock-card:hover{border-color:var(--bd2);}
+.stock-card.pos-day{border-left:3px solid var(--green);}
+.stock-card.neg-day{border-left:3px solid var(--red);}
+
+/* 카드 1단: 종목명 / 현재가 */
+.card-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px 8px;gap:10px;
+}
+.card-sym{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);}
+.card-name{font-size:12px;color:var(--text2);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.card-mkt{
+  display:inline-block;
+  background:var(--sf3);border:1px solid var(--bd2);border-radius:4px;
+  padding:1px 6px;font-size:9px;color:var(--text3);margin-top:3px;
+}
+.card-price-box{text-align:right;flex-shrink:0;}
+.card-price{font-family:var(--mono);font-size:16px;font-weight:700;}
+.card-price.pos{color:var(--green);}
+.card-price.neg{color:var(--red);}
+.card-day{font-family:var(--mono);font-size:11px;margin-top:2px;}
+.card-day.pos{color:var(--green);}
+.card-day.neg{color:var(--red);}
+
+/* 카드 2단: 수량 / 매수가 / 손익 */
+.card-bot{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--sf2);
+  border-top:1px solid var(--bd);
+  padding:8px 14px;gap:6px;
+}
+.cb-item{}
+.cb-lbl{font-size:9px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;}
+.cb-val{font-family:var(--mono);font-size:12px;font-weight:500;}
+.cb-val.pos{color:var(--green);}
+.cb-val.neg{color:var(--red);}
+
+/* ── 빈 상태 */
+.empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.empty .ico{font-size:36px;margin-bottom:12px;}
+
+/* ── 에러 배너 */
+.err-banner{
+  background:rgba(255,82,82,.08);border:1px solid rgba(255,82,82,.25);
+  border-radius:10px;padding:12px 16px;margin-bottom:14px;
+  font-size:12px;color:var(--red);display:none;
+}
+.err-banner.show{display:block;}
+
+/* ── 섹션 구분선 */
+.sec-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text3);
+  display:flex;align-items:center;gap:8px;margin:14px 0 8px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--bd);}
+
+/* ── 스켈레톤 */
+.skel{height:14px;background:var(--sf3);border-radius:4px;animation:sk 1.2s ease-in-out infinite;}
+.skel.w60{width:60%;}
+.skel.w40{width:40%;}
+@keyframes sk{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* ── 프록시 설정 배너 */
+.proxy-banner{
+  background:rgba(255,202,40,.07);
+  border:1px solid rgba(255,202,40,.25);
+  border-radius:10px;padding:12px 16px;margin-bottom:14px;
+  font-size:12px;color:var(--gold);
+}
+.proxy-banner a{color:var(--gold);text-decoration:underline;}
+
+@media(max-width:480px){
+  .summary-row2{grid-template-columns:repeat(3,1fr);}
+  .sum-val{font-size:18px;}
+  .card-bot{grid-template-columns:repeat(3,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 요약 -->
+  <div class="summary" id="summary">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <div class="logo-dot" id="ldot"></div>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text3);" id="last-upd">–</span>
+      <div style="flex:1;"></div>
+      <button class="btn-refresh" id="btn-refresh" onclick="load()">↺ 새로고침</button>
+    </div>
+
+    <div class="summary-row1">
+      <div>
+        <div class="sum-label">총 평가금액</div>
+        <div class="sum-val" id="s-total-krw">–</div>
+        <div class="sum-sub" id="s-total-usd">–</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="sum-label">총 손익</div>
+        <div class="sum-val" id="s-pnl-krw">–</div>
+        <div class="sum-sub" id="s-pnl-rate">–</div>
+      </div>
+    </div>
+
+    <div class="summary-row2">
+      <div class="sum-box">
+        <div class="sum-label">일일 손익</div>
+        <div class="sum-v" id="s-day-krw">–</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:1px;" id="s-day-rate">–</div>
+      </div>
+      <div class="sum-box">
+        <div class="sum-label">국내 종목</div>
+        <div class="sum-v" id="s-cnt-kr">–</div>
+      </div>
+      <div class="sum-box">
+        <div class="sum-label">해외 종목</div>
+        <div class="sum-v" id="s-cnt-us">–</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 에러 배너 -->
+  <div class="err-banner" id="err-banner"></div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <div class="tab active" data-tab="all" onclick="setTab('all')">전체</div>
+    <div class="tab" data-tab="KR" onclick="setTab('KR')">🇰🇷 국내</div>
+    <div class="tab" data-tab="US" onclick="setTab('US')">🇺🇸 해외</div>
+  </div>
+
+  <!-- 종목 리스트 -->
+  <div class="stock-list" id="stock-list">
+    <!-- 스켈레톤 -->
+    <div class="stock-card" style="padding:14px;">
+      <div class="skel w60" style="margin-bottom:8px;"></div>
+      <div class="skel w40"></div>
+    </div>
+    <div class="stock-card" style="padding:14px;">
+      <div class="skel w60" style="margin-bottom:8px;"></div>
+      <div class="skel w40"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── 설정 ──────────────────────────────────────────────
+// 맥미니 로컬: 'http://127.0.0.1:7788'
+// Cloudflare Tunnel 연결 후: 'https://xxxx.trycloudflare.com'
+const PROXY = 'http://127.0.0.1:7788';
+// ─────────────────────────────────────────────────────
+
+let allItems = [], curTab = 'all';
+let autoTimer = null;
+const AUTO_INTERVAL = 60; // 초
+
+// ── 포맷
+function fKRW(n) {
+  n = Math.round(Number(n));
+  return (n < 0 ? '-' : '') + '₩' + Math.abs(n).toLocaleString('ko-KR');
+}
+function fUSD(n) {
+  n = Number(n);
+  return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fPct(r) {
+  const p = (Number(r) * 100).toFixed(2);
+  return (p >= 0 ? '+' : '') + p + '%';
+}
+function pnlClass(n) { return Number(n) >= 0 ? 'pos' : 'neg'; }
+
+// ── 탭
+function setTab(tab) {
+  curTab = tab;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab)
+  );
+  renderList();
+}
+
+// ── 요약 렌더
+function renderSummary(holdings) {
+  const krw = holdings.marketValue?.amount?.krw ?? 0;
+  const usd = holdings.marketValue?.amount?.usd ?? 0;
+  const pnlKrw = holdings.profitLoss?.amount?.krw ?? 0;
+  const pnlRate = holdings.profitLoss?.rate ?? 0;
+  const dayKrw = holdings.dailyProfitLoss?.amount?.krw ?? 0;
+  const dayRate = holdings.dailyProfitLoss?.rate ?? 0;
+  const items = holdings.items ?? [];
+  const krCnt = items.filter(i => i.marketCountry === 'KR').length;
+  const usCnt = items.filter(i => i.marketCountry === 'US').length;
+
+  set('s-total-krw', fKRW(krw), pnlClass(Number(krw) - (holdings.totalPurchaseAmount?.krw ?? 0)));
+  set('s-total-usd', fUSD(usd));
+  setVal('s-pnl-krw', fKRW(pnlKrw), pnlClass(pnlKrw));
+  setVal('s-pnl-rate', fPct(pnlRate), pnlClass(pnlRate));
+  setVal('s-day-krw', fKRW(dayKrw), pnlClass(dayKrw));
+  setVal('s-day-rate', fPct(dayRate), pnlClass(dayRate));
+  set('s-cnt-kr', krCnt + '종목');
+  set('s-cnt-us', usCnt + '종목');
+}
+
+function set(id, txt, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  if (cls) el.className = el.className.replace(/\bpos\b|\bneg\b/g, '').trim() + ' ' + cls;
+}
+function setVal(id, txt, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  el.className = 'sum-v' + (cls ? ' ' + cls : '');
+}
+
+// ── 종목 카드 렌더
+function renderList() {
+  const list = document.getElementById('stock-list');
+  const items = curTab === 'all'
+    ? allItems
+    : allItems.filter(i => i.marketCountry === curTab);
+
+  if (!items.length) {
+    list.innerHTML = `<div class="empty"><div class="ico">📭</div>보유 종목이 없습니다.</div>`;
+    return;
+  }
+
+  // 일일 손익 절댓값 기준 정렬
+  const sorted = [...items].sort((a, b) =>
+    Math.abs(Number(b.dailyProfitLoss?.amount ?? 0)) -
+    Math.abs(Number(a.dailyProfitLoss?.amount ?? 0))
+  );
+
+  // KR / US 섹션 구분 (전체 탭일 때)
+  let html = '';
+  if (curTab === 'all') {
+    const kr = sorted.filter(i => i.marketCountry === 'KR');
+    const us = sorted.filter(i => i.marketCountry === 'US');
+    if (kr.length) html += `<div class="sec-label">🇰🇷 국내 ${kr.length}종목</div>` + kr.map(cardHTML).join('');
+    if (us.length) html += `<div class="sec-label">🇺🇸 해외 ${us.length}종목</div>` + us.map(cardHTML).join('');
+  } else {
+    html = sorted.map(cardHTML).join('');
+  }
+
+  list.innerHTML = html;
+}
+
+function cardHTML(item) {
+  const isUS = item.marketCountry === 'US';
+  const lastPx = Number(item.lastPrice ?? 0);
+  const avgPx = Number(item.averagePurchasePrice ?? 0);
+  const qty = Number(item.quantity ?? 0);
+  const pnlAmt = Number(item.profitLoss?.amount ?? 0);
+  const pnlRate = Number(item.profitLoss?.rate ?? 0);
+  const dayAmt = Number(item.dailyProfitLoss?.amount ?? 0);
+  const dayRate = Number(item.dailyProfitLoss?.rate ?? 0);
+  const dayUp = dayAmt >= 0;
+  const pnlUp = pnlAmt >= 0;
+
+  const priceStr = isUS ? fUSD(lastPx) : fKRW(lastPx);
+  const avgStr   = isUS ? fUSD(avgPx)  : fKRW(avgPx);
+  const pnlStr   = (pnlUp ? '+' : '') + (isUS ? fUSD(pnlAmt) : fKRW(pnlAmt));
+  const dayStr   = (dayUp ? '+' : '') + (isUS ? fUSD(dayAmt) : fKRW(dayAmt));
+
+  // 수량 표시 (소수점 있으면 유지)
+  const qtyStr = qty % 1 === 0 ? qty.toLocaleString() + '주' : qty.toFixed(4) + '주';
+
+  return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}">
+    <div class="card-top">
+      <div>
+        <div class="card-sym">${item.symbol}</div>
+        <div class="card-name">${item.name}</div>
+        <span class="card-mkt">${isUS ? '🇺🇸 US' : '🇰🇷 KR'}</span>
+      </div>
+      <div class="card-price-box">
+        <div class="card-price ${dayUp ? 'pos' : 'neg'}">${priceStr}</div>
+        <div class="card-day ${dayUp ? 'pos' : 'neg'}">${dayStr} (${fPct(dayRate)})</div>
+      </div>
+    </div>
+    <div class="card-bot">
+      <div class="cb-item">
+        <div class="cb-lbl">수량</div>
+        <div class="cb-val">${qtyStr}</div>
+      </div>
+      <div class="cb-item">
+        <div class="cb-lbl">평균단가</div>
+        <div class="cb-val">${avgStr}</div>
+      </div>
+      <div class="cb-item" style="text-align:right;">
+        <div class="cb-lbl">총 손익</div>
+        <div class="cb-val ${pnlUp ? 'pos' : 'neg'}">${pnlStr}</div>
+        <div style="font-family:var(--mono);font-size:10px;${pnlUp ? 'color:var(--green)' : 'color:var(--red)'};">${fPct(pnlRate)}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── 상태 표시
+function setStatus(state) {
+  const dot = document.getElementById('ldot');
+  dot.className = 'logo-dot' + (state === 'loading' ? ' loading' : state === 'error' ? ' error' : '');
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err-banner');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+}
+function hideErr() {
+  document.getElementById('err-banner').classList.remove('show');
+}
+
+// ── 데이터 로드
+async function load() {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true;
+  setStatus('loading');
+  hideErr();
+
+  try {
+    const res = await fetch(`${PROXY}/holdings`, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // 계좌 첫 번째 holdings 사용 (단일 계좌)
+    const acc = data.accounts?.[0];
+    if (!acc) throw new Error('계좌 데이터 없음');
+
+    const holdings = acc.holdings;
+    allItems = holdings.items ?? [];
+
+    renderSummary(holdings);
+    renderList();
+
+    const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('last-upd').textContent = now + ' 기준';
+    setStatus('live');
+
+  } catch (e) {
+    setStatus('error');
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      showErr('프록시 서버에 연결할 수 없어요. 맥미니 서버가 실행 중인지 확인해주세요. (' + PROXY + ')');
+    } else {
+      showErr(e.message);
+    }
+  } finally {
+    btn.disabled = false;
+    startAutoTimer();
+  }
+}
+
+// ── 자동 갱신
+let cdVal = AUTO_INTERVAL;
+function startAutoTimer() {
+  clearInterval(autoTimer);
+  cdVal = AUTO_INTERVAL;
+  autoTimer = setInterval(() => {
+    cdVal--;
+    const btn = document.getElementById('btn-refresh');
+    if (cdVal > 0) {
+      btn.textContent = `↺ ${cdVal}초`;
+    } else {
+      btn.textContent = '↺ 새로고침';
+      clearInterval(autoTimer);
+      load();
+    }
+  }, 1000);
+}
+
+// ── 초기화
+load();
+</script>
+</body>
+</html>
