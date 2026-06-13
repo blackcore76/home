@@ -456,28 +456,7 @@ function setStatus(state) {
   if (btn) btn.disabled = (state === 'loading');
 }
 
-// ── 티커테이프 업데이트
-function updateTicker(items) {
-  if (!items.length) return;
-  const track = document.getElementById('tickerTrack');
-  const makeItems = () => items.map(item => {
-    const isUS = item.marketCountry === 'US';
-    const evalAmt = Number(item.marketValue?.amount ?? 0);
-    const dayRate = Number(item.dailyProfitLoss?.rate ?? 0);
-    const dayUp = dayRate >= 0;
-    const evalStr = isUS
-      ? '$' + evalAmt.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})
-      : '₩' + Math.round(evalAmt).toLocaleString('ko-KR');
-    const chgStr = (dayUp ? '+' : '') + (dayRate * 100).toFixed(2) + '%';
-    return `<span class="ticker-item">
-      <span class="tk-sym">${item.symbol}</span>
-      <span class="tk-val">${evalStr}</span>
-      <span class="tk-chg ${dayUp ? 'up' : 'dn'}">${chgStr}</span>
-    </span>`;
-  }).join('');
-  // 두 번 복사해서 끊김 없이 순환
-  track.innerHTML = makeItems() + makeItems();
-}
+// 티커테이프는 별도 script 블록에서 야후파이낸스로 독립 구동
 
 function showErr(msg) {
   const el = document.getElementById('err-banner');
@@ -513,12 +492,10 @@ async function load() {
     allItems = holdings.items ?? [];
 
     document.getElementById('mainContent').style.display = '';
-    document.getElementById('tickerWrap').style.display = '';
     document.getElementById('offlinePage').classList.remove('show');
 
     renderSummary(holdings, usdToKrw);
     renderList();
-    updateTicker(allItems);
 
     const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     document.getElementById('last-upd').textContent = now + ' 기준';
@@ -529,7 +506,6 @@ async function load() {
     const isOffline = e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed');
     if (isOffline) {
       document.getElementById('mainContent').style.display = 'none';
-      document.getElementById('tickerWrap').style.display = 'none';
       document.getElementById('offlinePage').classList.add('show');
     } else if (e.message.includes('403') || e.message.includes('502')) {
       showErr('토스 API 일시 오류 (' + e.message + ') — 잠시 후 자동 재시도됩니다.');
@@ -561,6 +537,77 @@ function startAutoTimer() {
 
 // ── 초기화
 load();
+</script>
+
+<script>
+/* ── 티커 테이프 (야후파이낸스 — 서버 무관) ── */
+(function() {
+    const TICKER_INSTR = [
+        { name:'NASDAQ', sym:'^IXIC', isVix:false, fmt:'int', pre:'' },
+        { name:'S&P500', sym:'^GSPC', isVix:false, fmt:'int', pre:'' },
+        { name:'DOW',    sym:'^DJI',  isVix:false, fmt:'int', pre:'' },
+        { name:'VIX',    sym:'^VIX',  isVix:true,  fmt:'d2',  pre:'' },
+        { name:'KOSPI',  sym:'^KS11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'KOSDAQ', sym:'^KQ11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'금 현물', sym:'GC=F',  isVix:false, fmt:'d2',  pre:'$' },
+        { name:'환율',   sym:'KRW=X', isVix:false, fmt:'d2',  pre:'₩' },
+        { name:'WTI원유', sym:'CL=F',  isVix:true,  fmt:'d2',  pre:'$' },
+    ];
+    const PROXIES = [
+        u => `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
+        u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    ];
+    let winPx = null;
+    function tkFmt(val, f, pre) {
+        if (val == null) return '—';
+        let s = f === 'int' ? Math.round(val).toLocaleString('en-US') : val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return pre + s;
+    }
+    async function fetchOne(pfn, sym) {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`;
+        const res = await fetch(pfn(url), { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error(res.status);
+        const d = await res.json();
+        const m = d?.chart?.result?.[0]?.meta;
+        if (!m) throw new Error('no meta');
+        return m;
+    }
+    async function fetchSym(sym) {
+        const order = winPx !== null ? [PROXIES[winPx], ...PROXIES.filter((_,i) => i !== winPx)] : PROXIES;
+        for (let i = 0; i < order.length; i++) {
+            try {
+                const m = await fetchOne(order[i], sym);
+                if (winPx === null) winPx = PROXIES.indexOf(order[i]);
+                return m;
+            } catch(e) {}
+        }
+        return null;
+    }
+    function buildHTML(items) {
+        const parts = items.map(it => {
+            const { name, pre, fmt: f, isVix, px, prv } = it;
+            if (px == null) return `<span class="ticker-item"><span class="tk-sym">${name}</span><span class="tk-chg nt">—</span></span>`;
+            const chg = px - prv, pct = prv ? (chg/prv)*100 : 0, up = chg >= 0;
+            const sg = up ? '+' : '';
+            const cls = isVix ? (up ? 'up' : 'dn') : (up ? 'up' : 'dn');
+            return `<span class="ticker-item"><span class="tk-sym">${name}</span><span class="tk-val">${tkFmt(px,f,pre)}</span><span class="tk-chg ${cls}">${up?'▲':'▼'} ${sg}${pct.toFixed(2)}%</span></span>`;
+        });
+        return parts.join('') + parts.join('');
+    }
+    async function loadTicker() {
+        const results = await Promise.allSettled(TICKER_INSTR.map(inst => fetchSym(inst.sym)));
+        const items = TICKER_INSTR.map((inst, i) => {
+            const m = results[i].status === 'fulfilled' ? results[i].value : null;
+            return { ...inst, px: m?.regularMarketPrice ?? null, prv: m?.chartPreviousClose ?? m?.previousClose ?? null };
+        });
+        const track = document.getElementById('tickerTrack');
+        if (track) track.innerHTML = buildHTML(items);
+    }
+    loadTicker();
+    setInterval(loadTicker, 60000);
+})();
 </script>
 </body>
 </html>
