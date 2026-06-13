@@ -185,6 +185,16 @@ header{
 .skel.w40{width:40%;}
 @keyframes sk{0%,100%{opacity:.5}50%{opacity:1}}
 
+/* ── 오프라인 안내 */
+.offline-page{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 24px;}
+.offline-page.show{display:flex;}
+.offline-icon{font-size:64px;margin-bottom:24px;opacity:.7;}
+.offline-title{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--text);margin-bottom:12px;}
+.offline-msg{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:28px;}
+.offline-hint{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:16px 20px;text-align:left;line-height:2;max-width:420px;width:100%;}
+.offline-retry{margin-top:24px;background:var(--accent);border:none;border-radius:8px;padding:10px 28px;font-family:var(--mono);font-size:12px;font-weight:600;color:#000;cursor:pointer;transition:opacity .15s;}
+.offline-retry:hover{opacity:.8;}
+
 @media(max-width:600px){
   .container{padding:12px 12px;}
   .hero-val{font-size:22px;}
@@ -214,7 +224,7 @@ header{
 </div>
 <div style="height:30px;flex-shrink:0"></div>
 
-<div class="container">
+<div class="container" id="mainContent">
 
   <!-- 포트폴리오 요약 카드 -->
   <div class="card">
@@ -264,6 +274,23 @@ header{
       <div class="skel w60" style="margin-bottom:8px;"></div>
       <div class="skel w40"></div>
     </div>
+  </div>
+
+  <!-- 오프라인 안내 -->
+  <div class="offline-page" id="offlinePage">
+    <div class="offline-icon">🔌</div>
+    <div class="offline-title">현재 로컬 서버가 작동중이지 않습니다</div>
+    <div class="offline-msg">
+      맥미니 프록시 서버 또는 Cloudflare Tunnel이 실행되지 않아<br>
+      토스증권 데이터를 불러올 수 없습니다.<br>
+      잠시 후 다시 접속해주세요.
+    </div>
+    <div class="offline-hint">
+      1. 터미널 탭 A → <code>cd ~/BlackCore/toss-proxy-local && node server.js</code><br>
+      2. 터미널 탭 B → <code>cloudflared tunnel --url http://127.0.0.1:7788</code><br>
+      3. 새 터널 URL → stocktoss.html PROXY 업데이트 후 push
+    </div>
+    <button class="offline-retry" onclick="location.reload()">↺ 다시 연결</button>
   </div>
 
 </div>
@@ -485,6 +512,10 @@ async function load() {
     const holdings = acc.holdings;
     allItems = holdings.items ?? [];
 
+    document.getElementById('mainContent').style.display = '';
+    document.getElementById('tickerWrap').style.display = '';
+    document.getElementById('offlinePage').classList.remove('show');
+
     renderSummary(holdings, usdToKrw);
     renderList();
     updateTicker(allItems);
@@ -495,8 +526,11 @@ async function load() {
 
   } catch (e) {
     setStatus('error');
-    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed')) {
-      showErr('맥미니 서버 연결 실패 — 서버/터널이 꺼져 있어요. (터미널 탭 A·B 확인)');
+    const isOffline = e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed');
+    if (isOffline) {
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('tickerWrap').style.display = 'none';
+      document.getElementById('offlinePage').classList.add('show');
     } else if (e.message.includes('403') || e.message.includes('502')) {
       showErr('토스 API 일시 오류 (' + e.message + ') — 잠시 후 자동 재시도됩니다.');
     } else {
