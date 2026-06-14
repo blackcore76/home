@@ -955,6 +955,7 @@ function saveRecord(){
     document.getElementById("in-memo").value="";
     onVitalChange();
     showToast("✅ 저장되었습니다");
+    setTimeout(()=>{ goTab(1); window.scrollTo({top:0,behavior:'smooth'}); }, 2000);
   }).catch(()=>{setSyncStatus("err");showToast("❗ 저장 실패 — 네트워크를 확인하세요")});
 }
 
