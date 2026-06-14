@@ -154,6 +154,7 @@
     'blood_fb_auth.html':     '❤️ 혈압 기록부',
     'lotto.html':             '🎰 로또 6/45',
     'bookmarks.html':         '🌐 즐겨찾기',
+    'cpap.html':              '😴 양압기 보고서',
   };
 
   var filename = location.pathname.split('/').pop() || 'index.html';

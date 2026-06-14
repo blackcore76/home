@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CPAP Report">
+<title>CPAP 치료보고서</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="home-bar.js"></script>
+<style>
+:root {
+  --bg:#080c14;--sf:#0e1422;--sf2:#131b2d;--sf3:#181f30;
+  --bd:#1e2d45;--bd2:#263548;
+  --text:#c8d6e8;--text2:#7a91a8;--text3:#4a5f74;
+  --accent:#00d4ff;--accent2:#0099cc;
+  --green:#00e676;--red:#ff5252;--yellow:#ffca28;--orange:#ff9800;
+  --mono:'JetBrains Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:80px}
+
+header{position:sticky;top:36px;z-index:50;background:rgba(8,12,20,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--bd);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px}
+.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
+.hbtn-group{display:flex;gap:8px;align-items:center}
+.user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px}
+
+.container{max-width:1200px;margin:0 auto;padding:16px}
+
+/* 카드 */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--accent),transparent);border-radius:3px 0 0 3px}
+.card-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bd)}
+.card-header .icon{font-size:20px}
+.card-header h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.card-header .badge{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3)}
+
+/* 탭 */
+.tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#000}
+.tab:not(.on):hover{border-color:var(--accent);color:var(--accent)}
+
+/* 장치 정보 그리드 */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.info-item{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}
+.info-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.08em;margin-bottom:4px}
+.info-val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)}
+
+/* 입력 폼 */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.06em}
+.fi{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--accent)}
+.fi::placeholder{color:var(--text3)}
+select.fi{cursor:pointer}
+.btn-save{width:100%;padding:14px;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top:8px}
+.btn-save:hover{opacity:.85}
+.btn-save:active{transform:scale(.99)}
+
+/* 평가 카드 */
+.eval-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.eval-card{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:16px;transition:border-color .2s}
+.eval-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.eval-title{font-size:13px;font-weight:600}
+.eval-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px}
+.eval-badge.excellent{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+.eval-badge.good{background:rgba(0,212,255,.15);color:var(--accent);border:1px solid rgba(0,212,255,.3)}
+.eval-badge.caution{background:rgba(255,202,40,.15);color:var(--yellow);border:1px solid rgba(255,202,40,.3)}
+.eval-badge.warning{background:rgba(255,152,0,.15);color:var(--orange);border:1px solid rgba(255,152,0,.3)}
+.eval-badge.danger{background:rgba(255,82,82,.15);color:var(--red);border:1px solid rgba(255,82,82,.3)}
+.eval-num{font-family:var(--mono);font-size:24px;font-weight:700;margin-bottom:6px}
+.eval-desc{font-size:12px;color:var(--text2);line-height:1.6}
+.eval-bar{height:4px;background:var(--bd2);border-radius:2px;margin-top:10px;overflow:hidden}
+.eval-fill{height:100%;border-radius:2px;transition:width .4s}
+
+/* 히스토리 리스트 */
+.hist-item{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.hist-item:hover{border-color:var(--bd2);background:var(--sf2)}
+.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.hist-date{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)}
+.hist-period{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:4px;padding:2px 8px}
+.hist-chips{display:flex;gap:8px;flex-wrap:wrap}
+.hist-chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd)}
+.hist-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px;transition:color .15s}
+.hist-del:hover{color:var(--red)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty .ico{font-size:36px;margin-bottom:12px}
+
+/* 토스트 */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--sf2);border:1px solid var(--bd2);color:var(--text);padding:12px 24px;border-radius:14px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+@media(max-width:600px){
+  .container{padding:12px}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .eval-grid{grid-template-columns:1fr}
+  .info-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>CPAP Report</div>
+  <div class="hbtn-group">
+    <div class="user-badge"><span>👤</span><span>blackcore</span></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 장치 정보 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">🫁</span>
+      <h3>장치 / 환자 정보</h3>
+      <span class="badge">BMC G2S A20</span>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><div class="info-lbl">모델명</div><div class="info-val">G2S A20</div></div>
+      <div class="info-item"><div class="info-lbl">일련번호</div><div class="info-val">ES4BD701161</div></div>
+      <div class="info-item"><div class="info-lbl">치료모드</div><div class="info-val">AutoCPAP</div></div>
+      <div class="info-item"><div class="info-lbl">마스크타입</div><div class="info-val">나잘 (Nasal)</div></div>
+      <div class="info-item"><div class="info-lbl">Min APAP</div><div class="info-val">5.5 cmH2O</div></div>
+      <div class="info-item"><div class="info-lbl">Max APAP</div><div class="info-val">15.0 cmH2O</div></div>
+      <div class="info-item"><div class="info-lbl">Ramp Time</div><div class="info-val">15분</div></div>
+      <div class="info-item"><div class="info-lbl">EPR / Reslex</div><div class="info-val">2</div></div>
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <button class="tab on" onclick="goTab(0,this)">📝 기록 입력</button>
+    <button class="tab" onclick="goTab(1,this)">📊 최근 보고서</button>
+    <button class="tab" onclick="goTab(2,this)">📋 기록 이력</button>
+  </div>
+
+  <!-- 탭0: 입력 -->
+  <div class="page" id="page-input">
+    <div class="card">
+      <div class="card-header">
+        <span class="icon">📝</span>
+        <h3>치료 데이터 입력</h3>
+        <span class="badge">수동 입력</span>
+      </div>
+      <div class="form-grid">
+        <div class="fg"><label class="fl">보고 날짜</label><input class="fi" type="date" id="f-date"></div>
+        <div class="fg"><label class="fl">기간</label>
+          <select class="fi" id="f-period">
+            <option value="1">1일</option>
+            <option value="7">7일</option>
+            <option value="30" selected>30일</option>
+            <option value="60">60일</option>
+            <option value="90">90일</option>
+            <option value="182">182일 (6개월)</option>
+            <option value="365">365일 (1년)</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">사용일수</label><input class="fi" type="number" id="f-days" placeholder="예: 30"></div>
+        <div class="fg"><label class="fl">총 일수 대비 %사용</label><input class="fi" type="number" step="0.1" id="f-pct-use" placeholder="예: 100.0"></div>
+        <div class="fg"><label class="fl">4시간 이상 사용 %</label><input class="fi" type="number" step="0.1" id="f-pct4h" placeholder="예: 90.0"></div>
+        <div class="fg"><label class="fl">평균 일일사용 (시간)</label><input class="fi" type="number" step="0.1" id="f-avg-hrs" placeholder="예: 6.6"></div>
+        <div class="fg"><label class="fl">AHI (무호흡/저호흡 지수)</label><input class="fi" type="number" step="0.1" id="f-ahi" placeholder="예: 4.2"></div>
+        <div class="fg"><label class="fl">무호흡지수 (AI)</label><input class="fi" type="number" step="0.1" id="f-ai" placeholder="예: 3.2"></div>
+        <div class="fg"><label class="fl">저호흡지수 (HI)</label><input class="fi" type="number" step="0.1" id="f-hi" placeholder="예: 1.0"></div>
+        <div class="fg"><label class="fl">중추성무호흡지수 (CAI)</label><input class="fi" type="number" step="0.1" id="f-cai" placeholder="예: 0.1"></div>
+        <div class="fg"><label class="fl">평균 치료압력 (cmH2O)</label><input class="fi" type="number" step="0.1" id="f-avg-p" placeholder="예: 7.5"></div>
+        <div class="fg"><label class="fl">P95 압력 (cmH2O)</label><input class="fi" type="number" step="0.1" id="f-p95" placeholder="예: 9.0"></div>
+        <div class="fg"><label class="fl">평균 누출 (L/분)</label><input class="fi" type="number" step="0.1" id="f-leak" placeholder="예: 2.7"></div>
+        <div class="fg"><label class="fl">95% 누출 (L/분)</label><input class="fi" type="number" step="0.1" id="f-leak95" placeholder="예: 14.3"></div>
+      </div>
+      <button class="btn-save" onclick="saveReport()">💾 저장 및 평가 보기</button>
+    </div>
+  </div>
+
+  <!-- 탭1: 최근 보고서 평가 -->
+  <div class="page" id="page-eval" style="display:none">
+    <div id="eval-content">
+      <div class="empty"><div class="ico">📭</div>저장된 보고서가 없습니다.<br>입력 탭에서 데이터를 기록해주세요.</div>
+    </div>
+  </div>
+
+  <!-- 탭2: 이력 -->
+  <div class="page" id="page-history" style="display:none">
+    <div id="hist-list">
+      <div class="empty"><div class="ico">📭</div>기록된 이력이 없습니다.</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const LS_KEY = 'bc_cpap_reports_v1';
+
+function loadData() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } }
+function saveData(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+
+// 탭 전환
+function goTab(n, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  if (el) el.classList.add('on');
+  document.querySelectorAll('.page').forEach((p, i) => p.style.display = i === n ? '' : 'none');
+  if (n === 1) renderEval();
+  if (n === 2) renderHistory();
+}
+
+// 오늘 날짜
+document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+
+// 저장
+function saveReport() {
+  const get = id => document.getElementById(id).value;
+  const getN = id => { const v = parseFloat(get(id)); return isNaN(v) ? null : v; };
+
+  const date = get('f-date');
+  const period = parseInt(get('f-period'));
+  const days = getN('f-days');
+  const pctUse = getN('f-pct-use');
+  const pct4h = getN('f-pct4h');
+  const avgHrs = getN('f-avg-hrs');
+  const ahi = getN('f-ahi');
+  const ai = getN('f-ai');
+  const hi = getN('f-hi');
+  const cai = getN('f-cai');
+  const avgP = getN('f-avg-p');
+  const p95 = getN('f-p95');
+  const leak = getN('f-leak');
+  const leak95 = getN('f-leak95');
+
+  if (!date || ahi === null || avgHrs === null) {
+    showToast('날짜, AHI, 평균 사용시간은 필수입니다'); return;
+  }
+
+  const report = { id: Date.now(), date, period, days, pctUse, pct4h, avgHrs, ahi, ai, hi, cai, avgP, p95, leak, leak95 };
+
+  const data = loadData();
+  data.unshift(report);
+  saveData(data);
+
+  showToast('저장되었습니다');
+  setTimeout(() => { goTab(1, document.querySelectorAll('.tab')[1]); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 1500);
+}
+
+// 평가 기준
+function evalAHI(v) {
+  if (v === null) return { grade: '-', cls: '', text: '데이터 없음' };
+  if (v < 2) return { grade: '우수', cls: 'excellent', text: '매우 잘 조절되고 있습니다. 거의 무호흡 이벤트가 없는 상태입니다.' };
+  if (v < 5) return { grade: '정상', cls: 'good', text: '정상 범위입니다. 양압기 치료가 효과적으로 작동하고 있습니다. (기준: AHI < 5)' };
+  if (v < 10) return { grade: '경미', cls: 'caution', text: '경증 수준입니다. 마스크 피팅이나 압력 설정 점검을 권장합니다.' };
+  if (v < 15) return { grade: '주의', cls: 'warning', text: '경증~중등도 수준입니다. 담당 의사와 설정 조정을 상의해주세요.' };
+  return { grade: '위험', cls: 'danger', text: '중등도 이상입니다. 빠른 시일 내 담당 의사 상담이 필요합니다.' };
+}
+
+function evalUsage(hrs) {
+  if (hrs === null) return { grade: '-', cls: '', text: '데이터 없음' };
+  if (hrs >= 7) return { grade: '우수', cls: 'excellent', text: '하루 7시간 이상 사용 중입니다. 충분한 수면 시간 동안 치료가 이루어지고 있습니다.' };
+  if (hrs >= 6) return { grade: '양호', cls: 'good', text: '하루 6시간 이상으로 권장 사용 시간을 충족합니다.' };
+  if (hrs >= 4) return { grade: '적정', cls: 'caution', text: '보험 기준(4시간)은 충족하지만, 6시간 이상 사용을 권장합니다.' };
+  return { grade: '부족', cls: 'danger', text: '하루 4시간 미만은 치료 효과가 충분하지 않습니다. 사용 시간을 늘려주세요.' };
+}
+
+function evalCompliance(pct) {
+  if (pct === null) return { grade: '-', cls: '', text: '데이터 없음' };
+  if (pct >= 90) return { grade: '우수', cls: 'excellent', text: `${pct}% — 거의 매일 4시간 이상 사용하고 계십니다. 훌륭한 순응도입니다.` };
+  if (pct >= 70) return { grade: '양호', cls: 'good', text: `${pct}% — 보험 기준(70%)을 충족합니다. 꾸준히 유지해주세요.` };
+  if (pct >= 50) return { grade: '주의', cls: 'warning', text: `${pct}% — 보험 기준(70%)에 미달합니다. 사용 빈도를 높여주세요.` };
+  return { grade: '위험', cls: 'danger', text: `${pct}% — 양압기를 충분히 사용하지 않고 계십니다. 매일 착용을 목표로 해주세요.` };
+}
+
+function evalLeak(v) {
+  if (v === null) return { grade: '-', cls: '', text: '데이터 없음' };
+  if (v <= 5) return { grade: '우수', cls: 'excellent', text: `평균 ${v} L/분 — 마스크 밀착 상태가 매우 좋습니다.` };
+  if (v <= 12) return { grade: '양호', cls: 'good', text: `평균 ${v} L/분 — 정상 범위입니다.` };
+  if (v <= 24) return { grade: '주의', cls: 'caution', text: `평균 ${v} L/분 — 약간의 누출이 있습니다. 마스크 피팅을 확인해주세요.` };
+  return { grade: '위험', cls: 'danger', text: `평균 ${v} L/분 — 과도한 누출입니다. 마스크 교체나 사이즈 조정이 필요합니다.` };
+}
+
+function evalPressure(avg, p95) {
+  if (avg === null) return { grade: '-', cls: '', text: '데이터 없음' };
+  let text = `평균 ${avg} / P95 ${p95 ?? '-'} cmH2O — `;
+  if (avg <= 8 && (p95 === null || p95 <= 12)) {
+    return { grade: '안정', cls: 'good', text: text + '안정적인 압력 범위입니다. 기도 유지에 적절합니다.' };
+  }
+  if (avg <= 12) {
+    return { grade: '적정', cls: 'caution', text: text + '다소 높은 편이지만 무호흡 조절을 위해 필요할 수 있습니다.' };
+  }
+  return { grade: '높음', cls: 'warning', text: text + '압력이 높습니다. 불편감이 있다면 의사와 상의해주세요.' };
+}
+
+function evalCAI(v) {
+  if (v === null || v === 0) return null;
+  if (v < 0.5) return { grade: '정상', cls: 'good', text: `중추성 무호흡 ${v}회/시간 — 임상적으로 유의하지 않은 수준입니다.` };
+  if (v < 5) return { grade: '주의', cls: 'caution', text: `중추성 무호흡 ${v}회/시간 — 추적 관찰이 권장됩니다.` };
+  return { grade: '위험', cls: 'danger', text: `중추성 무호흡 ${v}회/시간 — 담당 의사 상담이 필요합니다.` };
+}
+
+// 평가 렌더
+function renderEval() {
+  const data = loadData();
+  const el = document.getElementById('eval-content');
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="ico">📭</div>저장된 보고서가 없습니다.<br>입력 탭에서 데이터를 기록해주세요.</div>';
+    return;
+  }
+  const r = data[0];
+  const periodLabel = { 1:'1일', 7:'7일', 30:'30일', 60:'60일', 90:'90일', 182:'6개월', 365:'1년' };
+
+  const evals = [
+    { title: '무호흡-저호흡 지수 (AHI)', val: r.ahi, unit: '회/시간', ...evalAHI(r.ahi), max: 30 },
+    { title: '평균 일일 사용시간', val: r.avgHrs, unit: '시간', ...evalUsage(r.avgHrs), max: 10 },
+    { title: '순응도 (4시간 이상 사용률)', val: r.pct4h, unit: '%', ...evalCompliance(r.pct4h), max: 100 },
+    { title: '마스크 누출', val: r.leak, unit: 'L/분', ...evalLeak(r.leak), max: 40 },
+    { title: '치료 압력', val: r.avgP, unit: 'cmH2O', ...evalPressure(r.avgP, r.p95), max: 20 },
+  ];
+
+  const caiEval = evalCAI(r.cai);
+  if (caiEval) evals.push({ title: '중추성 무호흡', val: r.cai, unit: '회/시간', ...caiEval, max: 10 });
+
+  const barColor = { excellent: 'var(--green)', good: 'var(--accent)', caution: 'var(--yellow)', warning: 'var(--orange)', danger: 'var(--red)' };
+
+  let html = `<div class="card">
+    <div class="card-header">
+      <span class="icon">📊</span>
+      <h3>치료 평가 보고서</h3>
+      <span class="badge">${r.date} · ${periodLabel[r.period] || r.period + '일'} 기준</span>
+    </div>
+    <div class="eval-grid">`;
+
+  for (const e of evals) {
+    const pct = e.val !== null ? Math.min((e.val / e.max) * 100, 100) : 0;
+    html += `<div class="eval-card">
+      <div class="eval-head">
+        <div class="eval-title">${e.title}</div>
+        <span class="eval-badge ${e.cls}">${e.grade}</span>
+      </div>
+      <div class="eval-num" style="color:${barColor[e.cls] || 'var(--text)'}">${e.val !== null ? e.val : '—'} <span style="font-size:12px;color:var(--text3)">${e.unit}</span></div>
+      <div class="eval-desc">${e.text}</div>
+      <div class="eval-bar"><div class="eval-fill" style="width:${pct}%;background:${barColor[e.cls] || 'var(--bd2)'}"></div></div>
+    </div>`;
+  }
+
+  // 종합 평가
+  const scores = evals.map(e => ({ excellent: 5, good: 4, caution: 3, warning: 2, danger: 1 }[e.cls] || 0));
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  let overall, overallCls, overallText;
+  if (avg >= 4.5) { overall = '매우 우수'; overallCls = 'excellent'; overallText = '양압기 치료가 매우 효과적으로 이루어지고 있습니다. 현재 상태를 잘 유지해주세요!'; }
+  else if (avg >= 3.5) { overall = '양호'; overallCls = 'good'; overallText = '전반적으로 양호한 치료 상태입니다. 작은 개선으로 더 나은 결과를 얻을 수 있습니다.'; }
+  else if (avg >= 2.5) { overall = '개선 필요'; overallCls = 'caution'; overallText = '일부 항목에서 개선이 필요합니다. 마스크 피팅, 사용 시간 등을 점검해보세요.'; }
+  else { overall = '상담 권고'; overallCls = 'danger'; overallText = '여러 항목에서 주의가 필요합니다. 담당 수면 전문의와 상담을 권장합니다.'; }
+
+  html += `</div></div>`;
+
+  html += `<div class="card">
+    <div class="card-header"><span class="icon">🏥</span><h3>종합 평가</h3><span class="eval-badge ${overallCls}" style="font-size:12px;padding:4px 14px">${overall}</span></div>
+    <div style="font-size:14px;line-height:1.8;color:var(--text2)">${overallText}</div>`;
+
+  // AHI 상세
+  if (r.ai !== null || r.hi !== null) {
+    html += `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:8px">AHI 구성 상세</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">`;
+    if (r.ai !== null) html += `<div style="font-family:var(--mono);font-size:12px"><span style="color:var(--text3)">폐쇄성 무호흡</span> <span style="color:var(--text)">${r.ai}회/h</span></div>`;
+    if (r.hi !== null) html += `<div style="font-family:var(--mono);font-size:12px"><span style="color:var(--text3)">저호흡</span> <span style="color:var(--text)">${r.hi}회/h</span></div>`;
+    if (r.cai !== null) html += `<div style="font-family:var(--mono);font-size:12px"><span style="color:var(--text3)">중추성 무호흡</span> <span style="color:var(--text)">${r.cai}회/h</span></div>`;
+    html += `</div></div>`;
+  }
+
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+// 이력 렌더
+function renderHistory() {
+  const data = loadData();
+  const el = document.getElementById('hist-list');
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="ico">📭</div>기록된 이력이 없습니다.</div>';
+    return;
+  }
+
+  const periodLabel = { 1:'1일', 7:'7일', 30:'30일', 60:'60일', 90:'90일', 182:'6개월', 365:'1년' };
+  el.innerHTML = data.map((r, i) => {
+    const ahiE = evalAHI(r.ahi);
+    const usageE = evalUsage(r.avgHrs);
+    return `<div class="hist-item" onclick="viewReport(${i})">
+      <div class="hist-top">
+        <span class="hist-date">${r.date}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="hist-period">${periodLabel[r.period] || r.period + '일'}</span>
+          <button class="hist-del" onclick="event.stopPropagation();delReport(${i})" title="삭제">×</button>
+        </div>
+      </div>
+      <div class="hist-chips">
+        <span class="hist-chip">AHI <span class="eval-badge ${ahiE.cls}" style="margin-left:4px">${r.ahi}</span></span>
+        <span class="hist-chip">사용 <span class="eval-badge ${usageE.cls}" style="margin-left:4px">${r.avgHrs}h</span></span>
+        ${r.pct4h !== null ? `<span class="hist-chip">순응 ${r.pct4h}%</span>` : ''}
+        ${r.leak !== null ? `<span class="hist-chip">누출 ${r.leak}L</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewReport(idx) {
+  const data = loadData();
+  if (!data[idx]) return;
+  const tmp = data.splice(idx, 1)[0];
+  data.unshift(tmp);
+  saveData(data);
+  goTab(1, document.querySelectorAll('.tab')[1]);
+}
+
+function delReport(idx) {
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  const data = loadData();
+  data.splice(idx, 1);
+  saveData(data);
+  renderHistory();
+  showToast('삭제되었습니다');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
