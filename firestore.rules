@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 관리자 확인
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == 'fMwpI4CKNqQSppnVONmCVTjPcTg1';
+    }
+
+    // ── kr_stocks
+    match /kr_stocks/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // ── market_stock_records
+    match /market_stock_records/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── market_aibriefings (소유자 필드 없음 → 관리자만 수정/삭제)
+    match /market_aibriefings/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── market_scanner_reports (소유자 필드 없음 → 관리자만 수정/삭제)
+    match /market_scanner_reports/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── dailyfeed (userId 필드)
+    match /dailyfeed/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if (request.auth != null
+        && request.auth.uid == resource.data.userId) || isAdmin();
+    }
+
+    // ── picknote (레거시 — 읽기만 허용, 신규 쓰기 차단)
+    match /picknote/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── stocklens (userId 필드)
+    match /stocklens/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if (request.auth != null
+        && request.auth.uid == resource.data.userId) || isAdmin();
+    }
+
+    // ── users (민감정보 — 본인만)
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+
+      // ── cpap_reports (양압기 치료보고서 — 본인만)
+      match /cpap_reports/{docId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // ── bookmarks (userId 필드)
+    match /bookmarks/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if (request.auth != null
+        && request.auth.uid == resource.data.userId) || isAdmin();
+    }
+
+    // ── market-alerts (의도적 전체 개방)
+    match /market-alerts/{docId} {
+      allow read, write: if true;
+    }
+
+    // ── photos (ownerUid 필드)
+    match /photos/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if (request.auth != null
+        && request.auth.uid == resource.data.ownerUid) || isAdmin();
+    }
+
+    // ── virtualPortfolio (uid 필드)
+    match /virtualPortfolio/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if (request.auth != null
+        && request.auth.uid == resource.data.uid) || isAdmin();
+    }
+
+    // ── marketNewsBriefing
+    match /marketNewsBriefing/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+
+    // ── marketPicker (uid 필드)
+    match /marketPicker/{docId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if (request.auth != null
+        && request.auth.uid == resource.data.uid) || isAdmin();
+    }
+  }
+}
