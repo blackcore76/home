@@ -10,6 +10,19 @@
 <title>CPAP 치료보고서</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
+    authDomain:        "my-bp-tracker-3d595.firebaseapp.com",
+    projectId:         "my-bp-tracker-3d595",
+    storageBucket:     "my-bp-tracker-3d595.firebasestorage.app",
+    messagingSenderId: "1016360206319",
+    appId:             "1:1016360206319:web:5f5df2e2c45b30694a401a"
+  });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="home-bar.js"></script>
@@ -64,6 +77,7 @@ input[type="date"].fi{padding:10px 12px;min-height:48px;font-size:15px}
 .fi:focus{border-color:var(--accent)}
 .fi::placeholder{color:var(--text3)}
 select.fi{cursor:pointer}
+.section-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px;padding-left:2px}
 .btn-save{width:100%;padding:14px;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top:8px}
 .btn-save:hover{opacity:.85}
 .btn-save:active{transform:scale(.99)}
@@ -169,16 +183,28 @@ select.fi{cursor:pointer}
             <option value="365">365일 (1년)</option>
           </select>
         </div>
+      </div>
+      <div class="section-label">총사용량</div>
+      <div class="form-grid">
         <div class="fg"><label class="fl">사용일수</label><input class="fi" type="number" id="f-days" placeholder="예: 30"></div>
         <div class="fg"><label class="fl">총 일수 대비 %사용</label><input class="fi" type="number" step="0.1" id="f-pct-use" placeholder="예: 100.0"></div>
         <div class="fg"><label class="fl">4시간 이상 사용 %</label><input class="fi" type="number" step="0.1" id="f-pct4h" placeholder="예: 90.0"></div>
         <div class="fg"><label class="fl">평균 일일사용 (시간)</label><input class="fi" type="number" step="0.1" id="f-avg-hrs" placeholder="예: 6.6"></div>
+      </div>
+      <div class="section-label">압력</div>
+      <div class="form-grid">
+        <div class="fg"><label class="fl">평균 치료압력 (cmH2O)</label><input class="fi" type="number" step="0.1" id="f-avg-p" placeholder="예: 7.5"></div>
+        <div class="fg"><label class="fl">P95 압력 (cmH2O)</label><input class="fi" type="number" step="0.1" id="f-p95" placeholder="예: 9.0"></div>
+      </div>
+      <div class="section-label">호흡지수</div>
+      <div class="form-grid">
         <div class="fg"><label class="fl">AHI (무호흡/저호흡 지수)</label><input class="fi" type="number" step="0.1" id="f-ahi" placeholder="예: 4.2"></div>
         <div class="fg"><label class="fl">무호흡지수 (AI)</label><input class="fi" type="number" step="0.1" id="f-ai" placeholder="예: 3.2"></div>
         <div class="fg"><label class="fl">저호흡지수 (HI)</label><input class="fi" type="number" step="0.1" id="f-hi" placeholder="예: 1.0"></div>
         <div class="fg"><label class="fl">중추성무호흡지수 (CAI)</label><input class="fi" type="number" step="0.1" id="f-cai" placeholder="예: 0.1"></div>
-        <div class="fg"><label class="fl">평균 치료압력 (cmH2O)</label><input class="fi" type="number" step="0.1" id="f-avg-p" placeholder="예: 7.5"></div>
-        <div class="fg"><label class="fl">P95 압력 (cmH2O)</label><input class="fi" type="number" step="0.1" id="f-p95" placeholder="예: 9.0"></div>
+      </div>
+      <div class="section-label">누출</div>
+      <div class="form-grid">
         <div class="fg"><label class="fl">평균 누출 (L/분)</label><input class="fi" type="number" step="0.1" id="f-leak" placeholder="예: 2.7"></div>
         <div class="fg"><label class="fl">95% 누출 (L/분)</label><input class="fi" type="number" step="0.1" id="f-leak95" placeholder="예: 14.3"></div>
       </div>
@@ -205,10 +231,30 @@ select.fi{cursor:pointer}
 <div id="toast"></div>
 
 <script>
-const LS_KEY = 'bc_cpap_reports_v1';
+const db = firebase.firestore();
+let cachedData = null;
 
-function loadData() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } }
-function saveData(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+function getUid() {
+  const u = firebase.auth().currentUser;
+  return u ? u.uid : null;
+}
+
+function colRef() {
+  const uid = getUid();
+  if (!uid) return null;
+  return db.collection('users').doc(uid).collection('cpap_reports');
+}
+
+async function loadData() {
+  const ref = colRef();
+  if (!ref) return [];
+  if (cachedData) return cachedData;
+  const snap = await ref.orderBy('createdAt', 'desc').get();
+  cachedData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return cachedData;
+}
+
+function invalidateCache() { cachedData = null; }
 
 // 탭 전환
 function goTab(n, el) {
@@ -223,7 +269,10 @@ function goTab(n, el) {
 document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
 
 // 저장
-function saveReport() {
+async function saveReport() {
+  const ref = colRef();
+  if (!ref) { showToast('로그인이 필요합니다'); return; }
+
   const get = id => document.getElementById(id).value;
   const getN = id => { const v = parseFloat(get(id)); return isNaN(v) ? null : v; };
 
@@ -246,14 +295,16 @@ function saveReport() {
     showToast('날짜, AHI, 평균 사용시간은 필수입니다'); return;
   }
 
-  const report = { id: Date.now(), date, period, days, pctUse, pct4h, avgHrs, ahi, ai, hi, cai, avgP, p95, leak, leak95 };
+  const report = { date, period, days, pctUse, pct4h, avgHrs, ahi, ai, hi, cai, avgP, p95, leak, leak95, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
 
-  const data = loadData();
-  data.unshift(report);
-  saveData(data);
-
-  showToast('저장되었습니다');
-  setTimeout(() => { goTab(1, document.querySelectorAll('.tab')[1]); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 1500);
+  try {
+    await ref.add(report);
+    invalidateCache();
+    showToast('저장되었습니다');
+    setTimeout(() => { goTab(1, document.querySelectorAll('.tab')[1]); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 1500);
+  } catch (e) {
+    showToast('저장 실패: ' + e.message);
+  }
 }
 
 // 평가 기준
@@ -310,8 +361,8 @@ function evalCAI(v) {
 }
 
 // 평가 렌더
-function renderEval() {
-  const data = loadData();
+async function renderEval() {
+  const data = await loadData();
   const el = document.getElementById('eval-content');
   if (!data.length) {
     el.innerHTML = '<div class="empty"><div class="ico">📭</div>저장된 보고서가 없습니다.<br>입력 탭에서 데이터를 기록해주세요.</div>';
@@ -386,8 +437,8 @@ function renderEval() {
 }
 
 // 이력 렌더
-function renderHistory() {
-  const data = loadData();
+async function renderHistory() {
+  const data = await loadData();
   const el = document.getElementById('hist-list');
   if (!data.length) {
     el.innerHTML = '<div class="empty"><div class="ico">📭</div>기록된 이력이 없습니다.</div>';
@@ -416,22 +467,29 @@ function renderHistory() {
   }).join('');
 }
 
-function viewReport(idx) {
-  const data = loadData();
+async function viewReport(idx) {
+  const data = await loadData();
   if (!data[idx]) return;
-  const tmp = data.splice(idx, 1)[0];
-  data.unshift(tmp);
-  saveData(data);
+  const selected = data[idx];
+  cachedData = [selected, ...data.filter((_, i) => i !== idx)];
   goTab(1, document.querySelectorAll('.tab')[1]);
 }
 
-function delReport(idx) {
+async function delReport(idx) {
   if (!confirm('이 기록을 삭제하시겠습니까?')) return;
-  const data = loadData();
-  data.splice(idx, 1);
-  saveData(data);
-  renderHistory();
-  showToast('삭제되었습니다');
+  const data = await loadData();
+  const target = data[idx];
+  if (!target) return;
+  const ref = colRef();
+  if (!ref) return;
+  try {
+    await ref.doc(target.id).delete();
+    invalidateCache();
+    renderHistory();
+    showToast('삭제되었습니다');
+  } catch (e) {
+    showToast('삭제 실패: ' + e.message);
+  }
 }
 
 let toastTimer;
@@ -443,5 +501,6 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 </script>
+<script src="auth.js"></script>
 </body>
 </html>
