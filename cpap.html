@@ -208,6 +208,7 @@ select.fi{cursor:pointer}
         <div class="fg"><label class="fl">평균 누출 (L/분)</label><input class="fi" type="number" step="0.1" id="f-leak" placeholder="예: 2.7"></div>
         <div class="fg"><label class="fl">95% 누출 (L/분)</label><input class="fi" type="number" step="0.1" id="f-leak95" placeholder="예: 14.3"></div>
       </div>
+      <br>
       <button class="btn-save" onclick="saveReport()">💾 저장 및 평가 보기</button>
     </div>
   </div>
@@ -463,7 +464,6 @@ async function renderHistory() {
         ${r.pct4h !== null ? `<span class="hist-chip">순응 ${r.pct4h}%</span>` : ''}
         ${r.leak !== null ? `<span class="hist-chip">누출 ${r.leak}L</span>` : ''}
       </div>
-      <br>
     </div>`;
   }).join('');
 }
