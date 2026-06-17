@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script>
   firebase.initializeApp({
     apiKey:            "AIzaSyCIQKMbhnQY2sIdDthFrm-dznnVMs5pb30",
@@ -137,6 +138,33 @@ textarea::placeholder { color: var(--text3); }
 }
 .btn-submit:hover { background: #33ddff; }
 .btn-submit:disabled { opacity: .4; pointer-events: none; }
+.photo-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.btn-photo {
+  background: var(--sf3); border: 1px solid var(--bd); border-radius: 8px;
+  padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text2);
+  font-family: var(--sans); transition: all .15s; display: flex; align-items: center; gap: 5px;
+}
+.btn-photo:hover { border-color: var(--accent); color: var(--accent); }
+.photo-preview {
+  position: relative; display: inline-block; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--bd2); max-width: 120px;
+}
+.photo-preview img { display: block; width: 100%; height: auto; }
+.photo-preview .remove-photo {
+  position: absolute; top: 2px; right: 2px; width: 20px; height: 20px;
+  background: rgba(0,0,0,.7); border: none; border-radius: 50%; color: #fff;
+  font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.feed-image {
+  margin-top: 10px; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--bd); cursor: pointer; max-width: 100%;
+}
+.feed-image img { display: block; width: 100%; height: auto; }
+.feed-image-full {
+  position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.9);
+  display: flex; align-items: center; justify-content: center; cursor: zoom-out;
+}
+.feed-image-full img { max-width: 95%; max-height: 90vh; border-radius: 8px; }
 
 .filter-bar {
   padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
@@ -417,6 +445,11 @@ textarea::placeholder { color: var(--text3); }
       <button class="mood-btn" data-mood="😊">😊 좋음</button>
       <button class="mood-btn" data-mood="📝">📝 메모</button>
     </div>
+    <div class="photo-row">
+      <button class="btn-photo" onclick="document.getElementById('photoInput').click()">📷 사진 첨부</button>
+      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewPhoto(this)">
+      <div id="photoPreview"></div>
+    </div>
     <textarea id="inText" placeholder="오늘의 생각을 기록하세요..." rows="4" oninput="updateChar()"></textarea>
     <div class="input-footer">
       <span class="char-count" id="charCount">0 / 3000</span>
@@ -453,6 +486,7 @@ textarea::placeholder { color: var(--text3); }
 
 <script>
 const db  = firebase.firestore();
+const storage = firebase.storage();
 const COL = 'dailyfeed';
 
 let feeds   = [];
@@ -480,6 +514,64 @@ document.querySelectorAll('.mood-btn').forEach(btn => {
     }
   });
 });
+
+let pendingPhoto = null;
+
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  pendingPhoto = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('photoPreview').innerHTML =
+      `<div class="photo-preview"><img src="${e.target.result}"><button class="remove-photo" onclick="clearPhoto()">×</button></div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPhoto() {
+  pendingPhoto = null;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoPreview').innerHTML = '';
+}
+
+function resizeImage(file, maxSize) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const img = new Image();
+    reader.onload = e => img.src = e.target.result;
+    reader.onerror = reject;
+    img.onerror = reject;
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSize) { h *= maxSize / w; w = maxSize; }
+      else if (h > maxSize) { w *= maxSize / h; h = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject('resize fail'), 'image/jpeg', 0.8);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadFeedPhoto(file, uid) {
+  const ts = Date.now();
+  const imgBlob = await resizeImage(file, 1200);
+  const path = `dailyfeed/${uid}/${ts}.jpg`;
+  const sRef = storage.ref(path);
+  await sRef.put(imgBlob);
+  const url = await sRef.getDownloadURL();
+  return { url, path };
+}
+
+function openFullImage(url) {
+  const div = document.createElement('div');
+  div.className = 'feed-image-full';
+  div.onclick = () => div.remove();
+  div.innerHTML = `<img src="${url}">`;
+  document.body.appendChild(div);
+}
 
 function updateChar() {
   const len = document.getElementById('inText').value.length;
@@ -609,6 +701,13 @@ async function submitFeed() {
 
   document.getElementById('btnSubmit').disabled = true;
   try {
+    let imageUrl = null, imagePath = null;
+    if (pendingPhoto) {
+      toast('📷 사진 업로드 중...');
+      const result = await uploadFeedPhoto(pendingPhoto, currentUser.uid);
+      imageUrl = result.url;
+      imagePath = result.path;
+    }
     await db.collection(COL).add({
       date,
       mood:      selMood || '',
@@ -616,10 +715,12 @@ async function submitFeed() {
       userId:    currentUser.uid,
       userEmail: currentUser.email,
       createdAt: new Date().toISOString(),
+      ...(imageUrl && { imageUrl, imagePath }),
     });
     document.getElementById('inText').value = '';
     selMood = '';
     document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('on'));
+    clearPhoto();
     updateChar();
     toast('✅ 게시 완료!');
   } catch(e) {
@@ -641,6 +742,9 @@ async function deleteFeed(id) {
 
   if (!confirm('이 기록을 삭제하시겠습니까?')) return;
   try {
+    if (feed.imagePath) {
+      try { await storage.ref(feed.imagePath).delete(); } catch(e) {}
+    }
     await db.collection(COL).doc(id).delete();
     toast('🗑️ 삭제되었습니다');
   } catch(e) {
@@ -764,6 +868,7 @@ function renderFeedWithPagination() {
             </div>
           </div>
           <div class="feed-content">${escHtml(f.text)}</div>
+          ${f.imageUrl ? `<div class="feed-image" onclick="openFullImage('${f.imageUrl}')"><img src="${f.imageUrl}" loading="lazy"></div>` : ''}
           <div class="edit-area">
             <textarea class="edit-textarea" rows="4">${escHtml(f.text)}</textarea>
             <div class="edit-footer">
