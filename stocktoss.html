@@ -645,9 +645,9 @@ async function loadCandles(symbol, count) {
     });
 
     chartSeries = chartInstance.addCandlestickSeries({
-      upColor: '#00e676', downColor: '#ff5252',
-      borderUpColor: '#00e676', borderDownColor: '#ff5252',
-      wickUpColor: '#00e676', wickDownColor: '#ff5252',
+      upColor: '#ff5252', downColor: '#448aff',
+      borderUpColor: '#ff5252', borderDownColor: '#448aff',
+      wickUpColor: '#ff5252', wickDownColor: '#448aff',
     });
     chartSeries.setData(candles);
 
@@ -659,7 +659,7 @@ async function loadCandles(symbol, count) {
     chartVolSeries.setData(candles.map(c => ({
       time: c.time,
       value: c.volume,
-      color: c.close >= c.open ? 'rgba(0,230,118,.25)' : 'rgba(255,82,82,.25)',
+      color: c.close >= c.open ? 'rgba(255,82,82,.25)' : 'rgba(68,138,255,.25)',
     })));
 
     chartInstance.timeScale().fitContent();
