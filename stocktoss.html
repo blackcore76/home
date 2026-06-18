@@ -145,6 +145,7 @@ header{
 .stock-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
 .stock-card.pos-day::before{background:linear-gradient(to bottom,var(--green),transparent);}
 .stock-card.neg-day::before{background:linear-gradient(to bottom,var(--red),transparent);}
+.stock-card{cursor:pointer;}
 .stock-card:hover{border-color:var(--bd2);background:var(--sf2);}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
@@ -195,11 +196,31 @@ header{
 .offline-retry{margin-top:24px;background:var(--accent);border:none;border-radius:8px;padding:10px 28px;font-family:var(--mono);font-size:12px;font-weight:600;color:#000;cursor:pointer;transition:opacity .15s;}
 .offline-retry:hover{opacity:.8;}
 
+/* ── 차트 모달 */
+.chart-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px;}
+.chart-overlay.show{display:flex;}
+.chart-modal{background:var(--sf);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;}
+.chart-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd);}
+.chart-head-left{display:flex;align-items:center;gap:10px;}
+.chart-sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 8px;}
+.chart-name{font-size:15px;font-weight:600;}
+.chart-price{font-family:var(--mono);font-size:13px;color:var(--text2);}
+.chart-close{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text2);transition:all .15s;}
+.chart-close:hover{border-color:var(--red);color:var(--red);}
+.chart-tabs{display:flex;gap:6px;padding:12px 20px 0;flex-wrap:wrap;}
+.chart-tab{font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:14px;border:1px solid var(--bd);background:var(--sf2);color:var(--text3);cursor:pointer;transition:all .15s;}
+.chart-tab.on{background:var(--accent);border-color:var(--accent);color:#000;}
+.chart-tab:not(.on):hover{border-color:var(--accent);color:var(--accent);}
+.chart-body{flex:1;min-height:350px;padding:12px 16px 16px;}
+.chart-loading{display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--mono);font-size:12px;color:var(--text3);}
+
 @media(max-width:600px){
   .container{padding:12px 12px;}
   .hero-val{font-size:22px;}
   .chips{gap:6px;}
   .chip{min-width:80px;}
+  .chart-modal{max-height:95vh;border-radius:12px;}
+  .chart-body{min-height:280px;}
 }
 </style>
 </head>
@@ -294,6 +315,30 @@ header{
   </div>
 
 </div>
+
+<!-- 차트 모달 -->
+<div class="chart-overlay" id="chartOverlay" onclick="if(event.target===this)closeChart()">
+  <div class="chart-modal">
+    <div class="chart-head">
+      <div class="chart-head-left">
+        <span class="chart-sym" id="chart-sym">–</span>
+        <span class="chart-name" id="chart-name">–</span>
+        <span class="chart-price" id="chart-price"></span>
+      </div>
+      <button class="chart-close" onclick="closeChart()">✕</button>
+    </div>
+    <div class="chart-tabs" id="chartTabs">
+      <button class="chart-tab" data-count="30" onclick="switchChartRange(this)">1M</button>
+      <button class="chart-tab on" data-count="90" onclick="switchChartRange(this)">3M</button>
+      <button class="chart-tab" data-count="200" onclick="switchChartRange(this)">MAX</button>
+    </div>
+    <div class="chart-body" id="chartBody">
+      <div class="chart-loading">차트를 불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 
 <script>
 // ── 설정 ──────────────────────────────────────────────
@@ -420,7 +465,7 @@ function cardHTML(item, idx) {
   const bw = Math.min(Math.abs(pnlRate) * 100 * 2, 100);
   const bc = pnlUp ? 'var(--green)' : 'var(--red)';
 
-  return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}" style="animation-delay:${(idx??0)*.04}s">
+  return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}" style="animation-delay:${(idx??0)*.04}s" onclick="openChart('${item.symbol}')">
     <div class="card-top">
       <div class="card-left">
         <div class="card-badges">
@@ -534,6 +579,101 @@ function startAutoTimer() {
     }
   }, 1000);
 }
+
+// ── 차트 ──────────────────────────────────────────────
+let chartInstance = null, chartSeries = null, chartVolSeries = null;
+let chartCurrentSymbol = '', chartCurrentItem = null;
+
+function openChart(symbol) {
+  const item = allItems.find(i => i.symbol === symbol);
+  if (!item) return;
+  chartCurrentItem = item;
+  chartCurrentSymbol = symbol;
+  const isUS = item.marketCountry === 'US';
+  document.getElementById('chart-sym').textContent = symbol;
+  document.getElementById('chart-name').textContent = item.name;
+  const lastPx = Number(item.lastPrice ?? 0);
+  document.getElementById('chart-price').textContent = isUS ? fUSD(lastPx) : fKRW(lastPx);
+  document.getElementById('chartOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  const activeTab = document.querySelector('.chart-tab.on');
+  const count = activeTab ? activeTab.dataset.count : '90';
+  loadCandles(symbol, count);
+}
+
+function closeChart() {
+  document.getElementById('chartOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  if (chartInstance) { chartInstance.remove(); chartInstance = null; }
+}
+
+function switchChartRange(el) {
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  loadCandles(chartCurrentSymbol, el.dataset.count);
+}
+
+async function loadCandles(symbol, count) {
+  const body = document.getElementById('chartBody');
+  body.innerHTML = '<div class="chart-loading">차트를 불러오는 중...</div>';
+  if (chartInstance) { chartInstance.remove(); chartInstance = null; }
+
+  try {
+    const res = await fetch(`${PROXY}/candles?symbol=${encodeURIComponent(symbol)}&interval=1d&count=${count}`, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const raw = data.result?.candles ?? data.candles ?? [];
+    if (!raw.length) { body.innerHTML = '<div class="chart-loading">캔들 데이터가 없습니다.</div>'; return; }
+
+    const candles = raw.map(c => ({
+      time: c.timestamp.slice(0, 10),
+      open: Number(c.openPrice),
+      high: Number(c.highPrice),
+      low: Number(c.lowPrice),
+      close: Number(c.closePrice),
+      volume: Number(c.volume ?? 0),
+    })).sort((a, b) => a.time.localeCompare(b.time));
+
+    body.innerHTML = '';
+    chartInstance = LightweightCharts.createChart(body, {
+      layout: { background: { type: 'solid', color: '#0e1422' }, textColor: '#7a91a8', fontFamily: "'JetBrains Mono', monospace", fontSize: 11 },
+      grid: { vertLines: { color: 'rgba(30,45,69,.5)' }, horzLines: { color: 'rgba(30,45,69,.5)' } },
+      crosshair: { mode: 0 },
+      rightPriceScale: { borderColor: '#1e2d45' },
+      timeScale: { borderColor: '#1e2d45', timeVisible: false },
+      handleScroll: { vertTouchDrag: false },
+    });
+
+    chartSeries = chartInstance.addCandlestickSeries({
+      upColor: '#00e676', downColor: '#ff5252',
+      borderUpColor: '#00e676', borderDownColor: '#ff5252',
+      wickUpColor: '#00e676', wickDownColor: '#ff5252',
+    });
+    chartSeries.setData(candles);
+
+    chartVolSeries = chartInstance.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+    });
+    chartVolSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    chartVolSeries.setData(candles.map(c => ({
+      time: c.time,
+      value: c.volume,
+      color: c.close >= c.open ? 'rgba(0,230,118,.25)' : 'rgba(255,82,82,.25)',
+    })));
+
+    chartInstance.timeScale().fitContent();
+
+    new ResizeObserver(() => {
+      if (chartInstance) chartInstance.applyOptions({ width: body.clientWidth, height: body.clientHeight });
+    }).observe(body);
+
+  } catch (e) {
+    body.innerHTML = `<div class="chart-loading">차트 로드 실패: ${e.message}</div>`;
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChart(); });
 
 // ── 초기화
 load();
