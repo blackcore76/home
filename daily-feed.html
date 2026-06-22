@@ -751,6 +751,8 @@ async function deleteFeed(id) {
   }
 }
 
+let editPhotoState = {};
+
 function startEdit(id) {
   if (!currentUser) return;
 
@@ -761,12 +763,37 @@ function startEdit(id) {
     return;
   }
 
+  editPhotoState[id] = { file: null, removed: false, existing: feed.imageUrl || null };
+
   const item = document.getElementById('item-' + id);
   if (!item) return;
   item.querySelector('.feed-content').classList.add('editing');
   const ea = item.querySelector('.edit-area');
   ea.classList.add('active');
   ea.querySelector('textarea').focus();
+}
+
+function previewEditPhoto(id, input) {
+  const file = input.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  if (!editPhotoState[id]) editPhotoState[id] = {};
+  editPhotoState[id].file = file;
+  editPhotoState[id].removed = false;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('editPhotoPreview-' + id).innerHTML =
+      `<div class="photo-preview" style="margin-bottom:8px"><img src="${e.target.result}"><button class="remove-photo" onclick="clearEditPhoto('${id}')">×</button></div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearEditPhoto(id) {
+  if (!editPhotoState[id]) editPhotoState[id] = {};
+  editPhotoState[id].file = null;
+  editPhotoState[id].removed = true;
+  document.getElementById('editPhotoPreview-' + id).innerHTML = '';
+  const inp = document.getElementById('editPhotoInput-' + id);
+  if (inp) inp.value = '';
 }
 
 function cancelEdit(id) {
@@ -790,11 +817,28 @@ async function saveEdit(id) {
   if (!item) return;
   const newText = item.querySelector('.edit-area textarea').value.trim();
   if (!newText) { toast('내용을 입력해주세요'); return; }
+
+  const ps = editPhotoState[id] || {};
+  const updateData = { text: newText, updatedAt: new Date().toISOString() };
+
   try {
-    await db.collection(COL).doc(id).update({
-      text: newText,
-      updatedAt: new Date().toISOString(),
-    });
+    if (ps.file) {
+      if (feed.imagePath) {
+        try { await storage.ref(feed.imagePath).delete(); } catch(e) {}
+      }
+      const result = await uploadFeedPhoto(ps.file, currentUser.uid);
+      updateData.imageUrl = result.url;
+      updateData.imagePath = result.path;
+    } else if (ps.removed && feed.imageUrl) {
+      if (feed.imagePath) {
+        try { await storage.ref(feed.imagePath).delete(); } catch(e) {}
+      }
+      updateData.imageUrl = firebase.firestore.FieldValue.delete();
+      updateData.imagePath = firebase.firestore.FieldValue.delete();
+    }
+
+    await db.collection(COL).doc(id).update(updateData);
+    delete editPhotoState[id];
     toast('✅ 수정되었습니다');
   } catch(e) {
     toast('❌ 수정 실패');
@@ -870,8 +914,11 @@ function renderFeedWithPagination() {
           ${f.imageUrl ? `<div class="feed-image" onclick="openFullImage('${f.imageUrl}')"><img src="${f.imageUrl}" loading="lazy"></div>` : ''}
           <div class="edit-area">
             <textarea class="edit-textarea" rows="4">${escHtml(f.text)}</textarea>
+            <div id="editPhotoPreview-${f.id}">${f.imageUrl ? `<div class="photo-preview" style="margin-bottom:8px"><img src="${f.imageUrl}"><button class="remove-photo" onclick="clearEditPhoto('${f.id}')">×</button></div>` : ''}</div>
+            <input type="file" id="editPhotoInput-${f.id}" accept="image/*" style="display:none" onchange="previewEditPhoto('${f.id}',this)">
             <div class="edit-footer">
               <button class="btn-edit-cancel" onclick="cancelEdit('${f.id}')">취소</button>
+              <button class="btn-photo" onclick="document.getElementById('editPhotoInput-${f.id}').click()" style="font-size:12px;padding:5px 10px">📷</button>
               <button class="btn-edit-save" onclick="saveEdit('${f.id}')">저장</button>
             </div>
           </div>
