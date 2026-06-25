@@ -7,31 +7,38 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="flip-clock-manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
 <title>Dual Market Clock</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
 body{background:#0a0a0a;color:#f0f0f0;
-  font-family:'Arial Black','Helvetica Neue',Arial,sans-serif;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:clamp(12px,3vh,32px);user-select:none;-webkit-user-select:none}
+  font-family:'Noto Sans KR',sans-serif;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none}
 
-.clock-block{text-align:center}
-.region{font-size:clamp(11px,1.6vw,18px);color:#888;letter-spacing:.2em;
-  text-transform:uppercase;margin-bottom:clamp(2px,0.5vh,6px)}
-.time{font-size:clamp(48px,12vw,120px);font-weight:900;letter-spacing:.04em;
-  line-height:1;color:#fff;font-variant-numeric:tabular-nums}
-.time .sec{font-size:.45em;color:#666;vertical-align:baseline;margin-left:4px}
-.date{font-size:clamp(11px,1.6vw,16px);color:#666;margin-top:clamp(2px,0.5vh,6px);
-  font-weight:700;letter-spacing:.08em}
+.wrap{display:flex;width:1080px;height:300px;gap:0}
 
-.badges{display:flex;gap:clamp(4px,0.8vw,8px);justify-content:center;
-  margin-top:clamp(4px,1vh,10px);flex-wrap:wrap}
-.badge{padding:clamp(3px,0.5vh,6px) clamp(8px,1.2vw,14px);
-  border-radius:20px;font-size:clamp(9px,1.2vw,13px);font-weight:700;
-  letter-spacing:.05em;border:1.5px solid transparent;
-  transition:none}
-.badge.off{background:#1a1a1a;color:#444;border-color:#222}
+.clock{flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:0 32px}
+.clock:first-child{border-right:1px solid #1a1a1a}
+
+.header{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.region{font-size:13px;color:#888;letter-spacing:.15em}
+.date{font-size:13px;color:#555;letter-spacing:.06em}
+
+.time-row{display:flex;align-items:center;gap:16px}
+.time{font-size:64px;font-weight:600;color:#fff;letter-spacing:.02em;
+  line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.time .sec{font-size:28px;color:#666;margin-left:4px}
+
+.badge-col{display:flex;flex-direction:column;gap:3px}
+.badge{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;
+  letter-spacing:.02em;white-space:nowrap;
+  border:1px solid transparent}
+.badge.off{background:#141414;color:#3a3a3a;border-color:#1a1a1a}
 .badge.on{color:#fff}
 
 .badge.on[data-c="pre"]{background:#1a3a2a;border-color:#2d7a4f;color:#4ade80}
@@ -42,35 +49,41 @@ body{background:#0a0a0a;color:#f0f0f0;
 .badge.on[data-c="regularUS"]{background:#1a2a3a;border-color:#2563eb;color:#60a5fa}
 .badge.on[data-c="afterUS"]{background:#3a2a1a;border-color:#d97706;color:#fbbf24}
 .badge.on[data-c="dayUS"]{background:#2a1a2a;border-color:#9333ea;color:#c084fc}
-
-.divider{width:clamp(200px,60vw,600px);height:1px;background:#1a1a1a}
 </style>
 </head>
 <body>
 
-<div class="clock-block" id="krBlock">
-  <div class="region">KOREA · KRX</div>
-  <div class="time" id="krTime">--:--<span class="sec">--</span></div>
-  <div class="date" id="krDate"></div>
-  <div class="badges" id="krBadges">
-    <span class="badge off" data-c="pre" data-s="30600" data-e="32400">장전 시간외</span>
-    <span class="badge off" data-c="regular" data-s="32400" data-e="55800">정규장</span>
-    <span class="badge off" data-c="post" data-s="56400" data-e="57600">장후 시간외</span>
-    <span class="badge off" data-c="single" data-s="57600" data-e="64800">시간외 단일가</span>
+<div class="wrap">
+  <div class="clock">
+    <div class="header">
+      <span class="region">KOREA · KRX</span>
+      <span class="date" id="krDate"></span>
+    </div>
+    <div class="time-row">
+      <div class="time" id="krTime">--:--<span class="sec">--</span></div>
+      <div class="badge-col" id="krBadges">
+        <span class="badge off" data-c="pre" data-s="30600" data-e="32400">장전 시간외</span>
+        <span class="badge off" data-c="regular" data-s="32400" data-e="55800">정규장</span>
+        <span class="badge off" data-c="post" data-s="56400" data-e="57600">장후 시간외</span>
+        <span class="badge off" data-c="single" data-s="57600" data-e="64800">시간외 단일가</span>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="divider"></div>
-
-<div class="clock-block" id="usBlock">
-  <div class="region">USA · NYSE</div>
-  <div class="time" id="usTime">--:--<span class="sec">--</span></div>
-  <div class="date" id="usDate"></div>
-  <div class="badges" id="usBadges">
-    <span class="badge off" data-c="dayUS" data-s="14400" data-e="25200">데이마켓</span>
-    <span class="badge off" data-c="preUS" data-s="25200" data-e="34200">프리마켓</span>
-    <span class="badge off" data-c="regularUS" data-s="34200" data-e="57600">정규장</span>
-    <span class="badge off" data-c="afterUS" data-s="57600" data-e="72000">애프터마켓</span>
+  <div class="clock">
+    <div class="header">
+      <span class="region">USA · NYSE</span>
+      <span class="date" id="usDate"></span>
+    </div>
+    <div class="time-row">
+      <div class="time" id="usTime">--:--<span class="sec">--</span></div>
+      <div class="badge-col" id="usBadges">
+        <span class="badge off" data-c="dayUS" data-s="72000" data-e="14400" data-wrap="1">데이마켓</span>
+        <span class="badge off" data-c="preUS" data-s="14400" data-e="34200">프리마켓</span>
+        <span class="badge off" data-c="regularUS" data-s="34200" data-e="57600">정규장</span>
+        <span class="badge off" data-c="afterUS" data-s="57600" data-e="72000">애프터마켓</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -87,22 +100,16 @@ const usBadges = document.querySelectorAll('#usBadges .badge');
 
 function getTimeParts(tz) {
   const d = new Date();
-  const h = d.toLocaleString('en-GB', {timeZone: tz, hour: '2-digit', hour12: false});
-  const m = d.toLocaleString('en-GB', {timeZone: tz, minute: '2-digit'});
-  const s = d.toLocaleString('en-GB', {timeZone: tz, second: '2-digit'});
-  return {h: h.padStart(2,'0'), m: m.padStart(2,'0'), s: s.padStart(2,'0')};
-}
-
-function getSecondsOfDay(tz) {
-  const d = new Date();
-  const p = getTimeParts(tz);
-  return parseInt(p.h)*3600 + parseInt(p.m)*60 + parseInt(p.s);
+  const f = new Intl.DateTimeFormat('en-GB', {timeZone:tz, hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+  const p = f.formatToParts(d);
+  const obj = {};
+  p.forEach(x => { if(x.type!=='literal') obj[x.type]=x.value; });
+  return obj;
 }
 
 function formatDate(tz) {
-  const d = new Date();
-  return d.toLocaleDateString('ko-KR', {
-    timeZone: tz, month: 'long', day: 'numeric', weekday: 'short'
+  return new Date().toLocaleDateString('ko-KR', {
+    timeZone:tz, month:'long', day:'numeric', weekday:'short'
   });
 }
 
@@ -110,13 +117,12 @@ function updateBadges(badges, sod) {
   badges.forEach(b => {
     const s = parseInt(b.dataset.s);
     const e = parseInt(b.dataset.e);
-    const isOn = sod >= s && sod < e;
+    const wrap = b.dataset.wrap === '1';
+    const isOn = wrap ? (sod >= s || sod < e) : (sod >= s && sod < e);
     if (isOn && b.classList.contains('off')) {
-      b.classList.remove('off');
-      b.classList.add('on');
+      b.classList.remove('off'); b.classList.add('on');
     } else if (!isOn && b.classList.contains('on')) {
-      b.classList.remove('on');
-      b.classList.add('off');
+      b.classList.remove('on'); b.classList.add('off');
     }
   });
 }
@@ -127,22 +133,22 @@ function tick() {
   const kr = getTimeParts(KR_TZ);
   const us = getTimeParts(US_TZ);
 
-  krTimeEl.innerHTML = kr.h + ':' + kr.m + '<span class="sec">' + kr.s + '</span>';
-  usTimeEl.innerHTML = us.h + ':' + us.m + '<span class="sec">' + us.s + '</span>';
+  krTimeEl.innerHTML = kr.hour+':'+kr.minute+'<span class="sec">'+kr.second+'</span>';
+  usTimeEl.innerHTML = us.hour+':'+us.minute+'<span class="sec">'+us.second+'</span>';
 
-  const krSod = parseInt(kr.h)*3600 + parseInt(kr.m)*60 + parseInt(kr.s);
-  const usSod = parseInt(us.h)*3600 + parseInt(us.m)*60 + parseInt(us.s);
+  const krSod = parseInt(kr.hour)*3600+parseInt(kr.minute)*60+parseInt(kr.second);
+  const usSod = parseInt(us.hour)*3600+parseInt(us.minute)*60+parseInt(us.second);
 
   updateBadges(krBadges, krSod);
   updateBadges(usBadges, usSod);
 
-  if (kr.m + kr.s === '0000' || lastKrDate === '') {
+  if (kr.second==='00' || lastKrDate==='') {
     const kd = formatDate(KR_TZ);
-    if (kd !== lastKrDate) { krDateEl.textContent = kd; lastKrDate = kd; }
+    if(kd!==lastKrDate){krDateEl.textContent=kd;lastKrDate=kd;}
   }
-  if (us.m + us.s === '0000' || lastUsDate === '') {
+  if (us.second==='00' || lastUsDate==='') {
     const ud = formatDate(US_TZ);
-    if (ud !== lastUsDate) { usDateEl.textContent = ud; lastUsDate = ud; }
+    if(ud!==lastUsDate){usDateEl.textContent=ud;lastUsDate=ud;}
   }
 }
 
@@ -150,21 +156,18 @@ tick();
 setInterval(tick, 1000);
 
 if ('wakeLock' in navigator) {
-  (async () => {
-    try {
-      let wl = await navigator.wakeLock.request('screen');
-      document.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible') {
-          try { wl = await navigator.wakeLock.request('screen'); } catch(e) {}
-        }
+  (async()=>{
+    try{let wl=await navigator.wakeLock.request('screen');
+      document.addEventListener('visibilitychange',async()=>{
+        if(document.visibilityState==='visible')
+          try{wl=await navigator.wakeLock.request('screen')}catch(e){}
       });
-    } catch(e) {}
+    }catch(e){}
   })();
 }
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('flip-clock-sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator)
+  navigator.serviceWorker.register('flip-clock-sw.js').catch(()=>{});
 </script>
 </body>
 </html>
