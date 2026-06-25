@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="flip-clock-manifest.json">
+<title>Dual Flip Clock</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:#0a0a0a;font-family:'SF Mono','Menlo','Consolas',monospace;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(16px,4vh,48px);user-select:none;-webkit-user-select:none}
+
+.clock-row{display:flex;align-items:center;gap:clamp(4px,1vw,12px)}
+.label{color:#555;font-size:clamp(10px,1.4vw,16px);text-transform:uppercase;
+  letter-spacing:.15em;text-align:center;margin-bottom:6px}
+
+.flip-card{position:relative;width:clamp(36px,8vw,90px);height:clamp(52px,11vw,130px);
+  perspective:300px}
+.flip-card .top,.flip-card .bottom,.flip-card .flip-top,.flip-card .flip-bottom{
+  position:absolute;left:0;width:100%;height:50%;overflow:hidden;
+  background:#1a1a1a;color:#e0e0e0;
+  font-size:clamp(28px,6.5vw,80px);font-weight:700;line-height:0;
+  border-radius:6px}
+.flip-card .top{top:0;border-bottom:1px solid #0a0a0a;border-radius:6px 6px 0 0}
+.flip-card .top span{position:relative;top:calc(clamp(52px,11vw,130px)*0.5)}
+.flip-card .bottom{bottom:0;border-top:1px solid #111;border-radius:0 0 6px 6px}
+.flip-card .bottom span{position:relative;top:calc(clamp(52px,11vw,130px)*-0.01)}
+.flip-card .flip-top,.flip-card .flip-bottom{
+  position:absolute;left:0;width:100%;height:50%;overflow:hidden;
+  background:#1a1a1a;color:#e0e0e0;
+  font-size:clamp(28px,6.5vw,80px);font-weight:700;line-height:0;
+  backface-visibility:hidden;z-index:2}
+.flip-card .flip-top{top:0;transform-origin:bottom center;border-radius:6px 6px 0 0;
+  border-bottom:1px solid #0a0a0a}
+.flip-card .flip-top span{position:relative;top:calc(clamp(52px,11vw,130px)*0.5)}
+.flip-card .flip-bottom{bottom:0;transform-origin:top center;transform:rotateX(180deg);
+  border-radius:0 0 6px 6px;border-top:1px solid #111}
+.flip-card .flip-bottom span{position:relative;top:calc(clamp(52px,11vw,130px)*-0.01)}
+
+.flip-card.flip .flip-top{animation:foldTop .3s ease-in forwards}
+.flip-card.flip .flip-bottom{animation:unfoldBottom .3s .3s ease-out forwards}
+
+@keyframes foldTop{to{transform:rotateX(-180deg)}}
+@keyframes unfoldBottom{to{transform:rotateX(0)}}
+
+.colon{font-size:clamp(24px,5vw,64px);color:#333;font-weight:700;
+  line-height:1;padding:0 2px;align-self:center}
+
+.date-line{color:#444;font-size:clamp(10px,1.4vw,15px);letter-spacing:.1em;text-align:center}
+
+.settings-btn{position:fixed;top:12px;right:12px;background:none;border:none;
+  color:#333;font-size:18px;cursor:pointer;padding:8px;z-index:10;
+  transition:color .2s}
+.settings-btn:hover{color:#888}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px;
+  width:min(360px,90vw);color:#ccc;font-size:14px}
+.modal h3{margin-bottom:16px;color:#eee;font-size:16px}
+.modal label{display:block;margin:12px 0 4px;color:#888;font-size:12px}
+.modal select,.modal input{width:100%;padding:8px;background:#111;border:1px solid #333;
+  border-radius:6px;color:#eee;font-size:14px}
+.modal-actions{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+.modal-actions button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;
+  font-size:13px}
+.btn-cancel{background:#333;color:#ccc}
+.btn-save{background:#2563eb;color:#fff}
+</style>
+</head>
+<body>
+
+<button class="settings-btn" id="settingsBtn">&#9881;</button>
+
+<div id="clock1"></div>
+<div id="clock2"></div>
+<div class="date-line" id="dateLine"></div>
+
+<div class="modal-overlay" id="modal">
+<div class="modal">
+  <h3>Settings</h3>
+  <label>Clock 1 — Timezone</label>
+  <select id="tz1"></select>
+  <label>Clock 1 — Label</label>
+  <input id="lbl1" type="text" maxlength="20">
+  <label>Clock 2 — Timezone</label>
+  <select id="tz2"></select>
+  <label>Clock 2 — Label</label>
+  <input id="lbl2" type="text" maxlength="20">
+  <div class="modal-actions">
+    <button class="btn-cancel" id="cancelBtn">Cancel</button>
+    <button class="btn-save" id="saveBtn">Save</button>
+  </div>
+</div>
+</div>
+
+<script>
+const TZLIST = [
+  'Asia/Seoul','Asia/Tokyo','Asia/Shanghai','Asia/Hong_Kong','Asia/Singapore',
+  'Asia/Kolkata','Asia/Dubai','Asia/Jakarta',
+  'Europe/London','Europe/Paris','Europe/Berlin','Europe/Moscow',
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'America/Sao_Paulo','Pacific/Auckland','Pacific/Honolulu','Australia/Sydney',
+  'UTC'
+];
+
+const DEFAULTS = {tz1:'Asia/Seoul',lbl1:'SEOUL',tz2:'America/New_York',lbl2:'NEW YORK'};
+
+function loadCfg(){
+  try{const s=localStorage.getItem('dfc');return s?JSON.parse(s):DEFAULTS}
+  catch(e){return DEFAULTS}
+}
+function saveCfg(c){localStorage.setItem('dfc',JSON.stringify(c))}
+
+let cfg = loadCfg();
+
+function buildClockDOM(container, label){
+  container.innerHTML = '';
+  const lbl = document.createElement('div');
+  lbl.className = 'label';
+  lbl.textContent = label;
+  const row = document.createElement('div');
+  row.className = 'clock-row';
+  const cards = [];
+  for(let i=0;i<6;i++){
+    if(i===2||i===4){
+      const c=document.createElement('div');c.className='colon';c.textContent=':';
+      row.appendChild(c);
+    }
+    const card=document.createElement('div');
+    card.className='flip-card';
+    card.innerHTML=`<div class="top"><span>0</span></div>
+      <div class="bottom"><span>0</span></div>
+      <div class="flip-top"><span>0</span></div>
+      <div class="flip-bottom"><span>0</span></div>`;
+    row.appendChild(card);
+    cards.push(card);
+  }
+  container.appendChild(lbl);
+  container.appendChild(row);
+  return cards;
+}
+
+let cards1, cards2;
+
+function initClocks(){
+  cards1 = buildClockDOM(document.getElementById('clock1'), cfg.lbl1);
+  cards2 = buildClockDOM(document.getElementById('clock2'), cfg.lbl2);
+}
+
+function flipCard(card, newVal){
+  const topSpan = card.querySelector('.top span');
+  const bottomSpan = card.querySelector('.bottom span');
+  const flipTopSpan = card.querySelector('.flip-top span');
+  const flipBottomSpan = card.querySelector('.flip-bottom span');
+  const oldVal = topSpan.textContent;
+  if(oldVal === newVal) return;
+  flipTopSpan.textContent = oldVal;
+  flipBottomSpan.textContent = newVal;
+  card.classList.remove('flip');
+  void card.offsetWidth;
+  card.classList.add('flip');
+  setTimeout(()=>{
+    topSpan.textContent = newVal;
+    bottomSpan.textContent = newVal;
+    card.classList.remove('flip');
+  }, 600);
+}
+
+function getTimeDigits(tz){
+  const d = new Date();
+  const s = d.toLocaleTimeString('en-GB',{timeZone:tz,hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  return s.replace(/:/g,'').split('');
+}
+
+function updateDate(){
+  const d = new Date();
+  const s = d.toLocaleDateString('en-US',{timeZone:cfg.tz1,weekday:'short',year:'numeric',month:'short',day:'numeric'});
+  document.getElementById('dateLine').textContent = s;
+}
+
+function tick(){
+  const d1 = getTimeDigits(cfg.tz1);
+  const d2 = getTimeDigits(cfg.tz2);
+  for(let i=0;i<6;i++){flipCard(cards1[i],d1[i]);flipCard(cards2[i],d2[i])}
+  if(d1[4]==='0'&&d1[5]==='0') updateDate();
+}
+
+initClocks();
+updateDate();
+
+/* 초기값 즉시 세팅 (애니메이션 없이) */
+(function setInitial(){
+  const d1=getTimeDigits(cfg.tz1), d2=getTimeDigits(cfg.tz2);
+  [cards1,cards2].forEach((cards,ci)=>{
+    const dg=ci===0?d1:d2;
+    cards.forEach((card,i)=>{
+      card.querySelectorAll('span').forEach(s=>s.textContent=dg[i]);
+    });
+  });
+})();
+
+setInterval(tick, 1000);
+
+/* Settings modal */
+const modal=document.getElementById('modal');
+const tz1Sel=document.getElementById('tz1'), tz2Sel=document.getElementById('tz2');
+const lbl1In=document.getElementById('lbl1'), lbl2In=document.getElementById('lbl2');
+
+TZLIST.forEach(tz=>{
+  tz1Sel.add(new Option(tz,tz));
+  tz2Sel.add(new Option(tz,tz));
+});
+
+document.getElementById('settingsBtn').onclick=()=>{
+  tz1Sel.value=cfg.tz1; tz2Sel.value=cfg.tz2;
+  lbl1In.value=cfg.lbl1; lbl2In.value=cfg.lbl2;
+  modal.classList.add('open');
+};
+document.getElementById('cancelBtn').onclick=()=>modal.classList.remove('open');
+document.getElementById('saveBtn').onclick=()=>{
+  cfg={tz1:tz1Sel.value,lbl1:lbl1In.value||'CLOCK 1',
+       tz2:tz2Sel.value,lbl2:lbl2In.value||'CLOCK 2'};
+  saveCfg(cfg); initClocks(); updateDate();
+  const d1=getTimeDigits(cfg.tz1),d2=getTimeDigits(cfg.tz2);
+  [cards1,cards2].forEach((cards,ci)=>{
+    const dg=ci===0?d1:d2;
+    cards.forEach((card,i)=>{card.querySelectorAll('span').forEach(s=>s.textContent=dg[i])});
+  });
+  modal.classList.remove('open');
+};
+
+/* Wake lock — 화면 꺼짐 방지 */
+(async function acquireWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{let wl=await navigator.wakeLock.request('screen');
+    document.addEventListener('visibilitychange',async()=>{
+      if(document.visibilityState==='visible'){
+        try{wl=await navigator.wakeLock.request('screen')}catch(e){}
+      }
+    });
+  }catch(e){}
+})();
+
+/* SW 등록 */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('flip-clock-sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>

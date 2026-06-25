@@ -1,0 +1,12 @@
+{
+  "name": "Dual Flip Clock",
+  "short_name": "FlipClock",
+  "start_url": "flip-clock.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {"src": "flip-clock-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "flip-clock-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
