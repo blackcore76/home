@@ -16,8 +16,27 @@
 html,body{height:100%;overflow:hidden}
 body{background:#0a0a0a;color:#f0f0f0;
   font-family:'Noto Sans KR',sans-serif;font-weight:600;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
   user-select:none;-webkit-user-select:none}
+
+.ticker-wrap{position:fixed;top:0;left:0;right:0;height:30px;z-index:95;
+  background:rgba(10,10,10,.97);border-bottom:1px solid #1a1a1a;
+  overflow:hidden;display:flex;align-items:center}
+.ticker-track{display:flex;align-items:center;white-space:nowrap;
+  animation:ticker-scroll 55s linear infinite;will-change:transform}
+.ticker-track:hover{animation-play-state:paused}
+@keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 20px;
+  font-family:'Noto Sans KR',sans-serif;font-size:13px;
+  border-right:1px solid rgba(255,255,255,.06)}
+.tk-name{color:#7a91a8;font-weight:500;letter-spacing:.04em}
+.tk-price{color:#c8d6e8;font-weight:600}
+.tk-chg{font-size:11px;font-weight:500}
+.tk-chg.c-up{color:#ff3b5c}
+.tk-chg.c-dn{color:#448aff}
+.tk-chg.c-vup{color:#448aff}
+.tk-chg.c-vdn{color:#ff3b5c}
+.tk-chg.c-nt{color:#4a607a}
 
 .wrap{display:flex;width:1080px;height:300px;gap:0}
 
@@ -52,6 +71,12 @@ body{background:#0a0a0a;color:#f0f0f0;
 </style>
 </head>
 <body>
+
+<div class="ticker-wrap" id="tickerWrap">
+  <div class="ticker-track" id="tickerTrack">
+    <span class="tk-name" style="padding:0 16px;opacity:.4">로딩 중…</span>
+  </div>
+</div>
 
 <div class="wrap">
   <div class="clock">
@@ -168,6 +193,75 @@ if ('wakeLock' in navigator) {
 
 if ('serviceWorker' in navigator)
   navigator.serviceWorker.register('flip-clock-sw.js').catch(()=>{});
+
+// ── 티커 테이프 ──
+(function(){
+    const TICKER_INSTR = [
+        { name:'NASDAQ', sym:'^IXIC', isVix:false, fmt:'int', pre:'' },
+        { name:'S&P500', sym:'^GSPC', isVix:false, fmt:'int', pre:'' },
+        { name:'DOW',    sym:'^DJI',  isVix:false, fmt:'int', pre:'' },
+        { name:'VIX',    sym:'^VIX',  isVix:true,  fmt:'d2',  pre:'' },
+        { name:'KOSPI',  sym:'^KS11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'KOSDAQ', sym:'^KQ11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'금 현물', sym:'GC=F',  isVix:false, fmt:'d2',  pre:'$' },
+        { name:'환율',   sym:'KRW=X', isVix:false, fmt:'d2',  pre:'₩' },
+        { name:'WTI원유', sym:'CL=F',  isVix:true,  fmt:'d2',  pre:'$' },
+    ];
+    const PROXIES = [
+        u => `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
+        u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    ];
+    let winPx = null;
+    function tkFmt(val, f, pre) {
+        if (val == null) return '—';
+        let s = f === 'int' ? Math.round(val).toLocaleString('en-US') : val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return pre + s;
+    }
+    async function fetchOne(pfn, sym) {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`;
+        const res = await fetch(pfn(url), { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error(res.status);
+        const d = await res.json();
+        const m = d?.chart?.result?.[0]?.meta;
+        if (!m) throw new Error('no meta');
+        return m;
+    }
+    async function fetchSym(sym) {
+        const order = winPx !== null ? [PROXIES[winPx], ...PROXIES.filter((_,i) => i !== winPx)] : PROXIES;
+        for (let i = 0; i < order.length; i++) {
+            try {
+                const m = await fetchOne(order[i], sym);
+                if (winPx === null) winPx = PROXIES.indexOf(order[i]);
+                return m;
+            } catch(e) {}
+        }
+        return null;
+    }
+    function buildHTML(items) {
+        const parts = items.map(it => {
+            const { name, pre, fmt: f, isVix, px, prv } = it;
+            if (px == null) return `<span class="ticker-item"><span class="tk-name">${name}</span><span class="tk-price tk-chg c-nt">—</span></span>`;
+            const chg = px - prv, pct = prv ? (chg/prv)*100 : 0, up = chg >= 0;
+            const sg = up ? '+' : '';
+            const cls = isVix ? (up ? 'c-vup' : 'c-vdn') : (up ? 'c-up' : 'c-dn');
+            return `<span class="ticker-item"><span class="tk-name">${name}</span><span class="tk-price">${tkFmt(px,f,pre)}</span><span class="tk-chg ${cls}">${up?'▲':'▼'} ${sg}${pct.toFixed(2)}%</span></span>`;
+        });
+        return parts.join('') + parts.join('');
+    }
+    async function loadTicker() {
+        const results = await Promise.allSettled(TICKER_INSTR.map(inst => fetchSym(inst.sym)));
+        const items = TICKER_INSTR.map((inst, i) => {
+            const m = results[i].status === 'fulfilled' ? results[i].value : null;
+            return { ...inst, px: m?.regularMarketPrice ?? null, prv: m?.chartPreviousClose ?? m?.previousClose ?? null };
+        });
+        const track = document.getElementById('tickerTrack');
+        if (track) track.innerHTML = buildHTML(items);
+    }
+    loadTicker();
+    setInterval(loadTicker, 60000);
+})();
 </script>
 </body>
 </html>
