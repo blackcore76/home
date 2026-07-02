@@ -38,15 +38,15 @@ body{background:#0a0a0a;color:#f0f0f0;
 .tk-chg.c-vdn{color:#ff3b5c}
 .tk-chg.c-nt{color:#4a607a}
 
-.wrap{display:flex;width:1080px;height:300px;gap:0}
+.wrap{display:flex;width:100%;max-width:1080px;height:300px;gap:0;padding:0 8px}
 
 .clock{flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:center}
 .clock:first-child{border-right:1px solid #1a1a1a}
 
 .header{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
-.region{font-size:13px;color:#bbb;letter-spacing:.15em}
-.date{font-size:13px;color:#999;letter-spacing:.06em}
+.region{font-size:24px;color:#bbb;letter-spacing:.15em}
+.date{font-size:24px;color:#999;letter-spacing:.06em}
 
 .time-row{display:flex;align-items:center;gap:16px}
 .time{font-size:84px;font-weight:600;color:#fff;letter-spacing:.02em;
@@ -68,6 +68,28 @@ body{background:#0a0a0a;color:#f0f0f0;
 .badge.on[data-c="regularUS"]{background:#1a2a3a;border-color:#2563eb;color:#60a5fa}
 .badge.on[data-c="afterUS"]{background:#3a2a1a;border-color:#d97706;color:#fbbf24}
 .badge.on[data-c="dayUS"]{background:#2a1a2a;border-color:#9333ea;color:#c084fc}
+
+@media(max-width:760px){
+  .ticker-wrap{height:24px}
+  .ticker-item{font-size:11px;padding:0 12px;gap:4px}
+  .tk-chg{font-size:9px}
+  .wrap{height:auto;padding:0 4px}
+  .header{gap:6px;margin-bottom:4px}
+  .region{font-size:14px!important}
+  .date{font-size:14px!important}
+  .time-row{gap:8px}
+  .time{font-size:48px}
+  .time .sec{font-size:20px;margin-left:2px}
+  .badge-col{gap:2px}
+  .badge{padding:2px 6px;font-size:9px;border-radius:6px}
+}
+@media(max-width:480px){
+  .region{font-size:11px!important}
+  .date{font-size:11px!important}
+  .time{font-size:36px}
+  .time .sec{font-size:16px}
+  .badge{padding:1px 5px;font-size:8px}
+}
 </style>
 </head>
 <body>
@@ -81,8 +103,8 @@ body{background:#0a0a0a;color:#f0f0f0;
 <div class="wrap">
   <div class="clock">
     <div class="header">
-      <span class="region" style="font-size:24px">KOREA · KRX</span>
-      <span class="date" id="krDate" style="font-size:24px"></span>
+      <span class="region">KOREA · KRX</span>
+      <span class="date" id="krDate"></span>
     </div>
     <div class="time-row">
       <div class="time" id="krTime">--:--<span class="sec">--</span></div>
@@ -97,8 +119,8 @@ body{background:#0a0a0a;color:#f0f0f0;
 
   <div class="clock">
     <div class="header">
-      <span class="region" style="font-size:24px">USA · NYSE</span>
-      <span class="date" id="usDate" style="font-size:24px"></span>
+      <span class="region">USA · NYSE</span>
+      <span class="date" id="usDate"></span>
     </div>
     <div class="time-row">
       <div class="time" id="usTime">--:--<span class="sec">--</span></div>
