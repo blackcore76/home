@@ -122,27 +122,32 @@ function computeTriggers(conditions, prices, prevState) {
   return { triggers, nextState };
 }
 
-async function runMarketAlertCheck({ dryRun = false } = {}) {
+async function runMarketAlertCheck({ dryRun = false, forceTest = false } = {}) {
   const db = getFirestore();
   const alertsRef = db.collection('market-alerts');
 
-  const [condSnap, tokensSnap, stateSnap, prices] = await Promise.all([
-    alertsRef.doc('conditions').get(),
-    alertsRef.doc('fcm-tokens').get(),
-    alertsRef.doc('alert-state').get(),
-    fetchAllPrices(),
-  ]);
-
-  const conditions = condSnap.exists ? condSnap.data() : {};
+  const tokensSnap = await alertsRef.doc('fcm-tokens').get();
   const tokens = tokensSnap.exists ? (tokensSnap.data().tokens || []) : [];
-  const prevState = stateSnap.exists ? stateSnap.data() : {};
-
   console.log(`marketAlertCheck: FCM 토큰 ${tokens.length}개 로드`);
 
-  const { triggers, nextState } = computeTriggers(conditions, prices, prevState);
-
-  if (!dryRun) {
-    await alertsRef.doc('alert-state').set(nextState);
+  let triggers;
+  if (forceTest) {
+    // 실제 조건/상태는 건드리지 않고 발송 경로(FCM 전송 + 중복 방지)만 검증하기 위한
+    // 가짜 트리거. 실제 종목·임계값과 무관하며 alert-state에도 기록하지 않는다.
+    triggers = [{ key: 'kospi', dir: 'upper', cur: 0, threshold: 0, test: true }];
+  } else {
+    const [condSnap, stateSnap, prices] = await Promise.all([
+      alertsRef.doc('conditions').get(),
+      alertsRef.doc('alert-state').get(),
+      fetchAllPrices(),
+    ]);
+    const conditions = condSnap.exists ? condSnap.data() : {};
+    const prevState = stateSnap.exists ? stateSnap.data() : {};
+    const result = computeTriggers(conditions, prices, prevState);
+    triggers = result.triggers;
+    if (!dryRun) {
+      await alertsRef.doc('alert-state').set(result.nextState);
+    }
   }
 
   if (!triggers.length) {
@@ -152,12 +157,16 @@ async function runMarketAlertCheck({ dryRun = false } = {}) {
 
   console.log(`marketAlertCheck: 총 ${triggers.length}건 × ${tokens.length}기기 발송 예정${dryRun ? ' (dry-run, 실제 발송 안 함)' : ''}`);
 
-  const title = triggers.length === 1
-    ? `📈 ${ITEM_LABEL[triggers[0].key]} 알림`
-    : `📈 시세 알림 ${triggers.length}건`;
-  const body = triggers
-    .map(t => `${ITEM_LABEL[t.key]} ${t.dir === 'upper' ? '▲' : '▼'} ${fmtValue(t.key, t.cur)} (기준 ${fmtValue(t.key, t.threshold)})`)
-    .join('\n');
+  const title = forceTest
+    ? '🔔 테스트 알림'
+    : triggers.length === 1
+      ? `📈 ${ITEM_LABEL[triggers[0].key]} 알림`
+      : `📈 시세 알림 ${triggers.length}건`;
+  const body = forceTest
+    ? '발송 경로 테스트입니다 (실제 시세와 무관).'
+    : triggers
+      .map(t => `${ITEM_LABEL[t.key]} ${t.dir === 'upper' ? '▲' : '▼'} ${fmtValue(t.key, t.cur)} (기준 ${fmtValue(t.key, t.threshold)})`)
+      .join('\n');
 
   let successCount = 0;
   let failureCount = 0;
@@ -201,12 +210,14 @@ exports.marketAlertCheck = onSchedule(
 );
 
 // 수동 테스트용 — ?key=TEST_SECRET&dryRun=1 로 실제 발송 없이 트리거 판정만 확인 가능
+// forceTest=1 을 더하면 실제 조건과 무관한 가짜 알림 1건으로 발송 경로(중복 여부)만 검증
 exports.testMarketAlertCheck = onRequest({ region: REGION }, async (req, res) => {
   if (req.query.key !== TEST_SECRET.value()) {
     res.status(403).send('forbidden');
     return;
   }
   const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
-  const result = await runMarketAlertCheck({ dryRun });
-  res.json({ ok: true, dryRun, ...result });
+  const forceTest = req.query.forceTest === '1' || req.query.forceTest === 'true';
+  const result = await runMarketAlertCheck({ dryRun, forceTest });
+  res.json({ ok: true, dryRun, forceTest, ...result });
 });
