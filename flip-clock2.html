@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+<title>Dual Market Clock — HD8</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;width:100%;overflow:hidden;background:#000}
+body{color:#fff;
+  font-family:'Noto Sans KR','Helvetica Neue',Arial,sans-serif;
+  font-weight:700;
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent}
+
+/* ────── 상단 티커 (기존 대비 약 2배) ────── */
+.ticker-wrap{position:fixed;top:0;left:0;right:0;
+  height:11vh;min-height:38px;z-index:95;
+  background:#000;border-bottom:2px solid #1c1c1c;
+  overflow:hidden;display:flex;align-items:center}
+.ticker-track{display:flex;align-items:center;white-space:nowrap;
+  animation:ticker-scroll 70s linear infinite;will-change:transform}
+.ticker-track:hover,.ticker-track:active{animation-play-state:paused}
+@keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+.ticker-item{display:inline-flex;align-items:baseline;
+  padding:0 3.2vh;
+  border-right:1px solid #1c1c1c}
+.tk-name{color:#9db2c8;font-weight:500;font-size:4.4vh;
+  letter-spacing:.02em;margin-right:1.4vh}
+.tk-price{color:#fff;font-weight:700;font-size:4.8vh;
+  font-variant-numeric:tabular-nums;margin-right:1vh}
+.tk-chg{font-size:3.6vh;font-weight:700}
+.tk-chg.c-up{color:#ff5064}
+.tk-chg.c-dn{color:#5ba4ff}
+.tk-chg.c-vup{color:#5ba4ff}
+.tk-chg.c-vdn{color:#ff5064}
+.tk-chg.c-nt{color:#555}
+
+/* ────── 본문: 위 미국 / 아래 한국 ────── */
+.stack{position:absolute;top:11vh;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column}
+.clock{flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:0 2vh}
+.clock+.clock{border-top:2px solid #1c1c1c}
+
+.label{display:flex;align-items:baseline;
+  font-weight:500;font-size:4.2vh;color:#8d99a6;
+  letter-spacing:.1em;line-height:1;margin-bottom:.6vh}
+.label .dt{color:#6d7784;letter-spacing:.02em;margin-left:2.4vh}
+
+.time{font-weight:900;font-size:29vh;line-height:.92;
+  color:#fff;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.time .sec{font-size:.38em;color:#6d7784;font-weight:700;margin-left:.12em}
+
+.badges{display:flex;align-items:center;margin-top:1vh}
+.badges .badge+.badge{margin-left:1.2vh}
+.badge{padding:.7vh 1.8vh;border-radius:1.6vh;
+  font-size:3.1vh;font-weight:700;line-height:1;white-space:nowrap;
+  border:1px solid #1c1c1c;background:#0b0b0b;color:#3d3d3d}
+.badge.on{border-width:2px}
+.badge.on[data-c="pre"],.badge.on[data-c="preUS"]{background:#0f3d24;border-color:#3ddc84;color:#6ff0a8}
+.badge.on[data-c="regular"],.badge.on[data-c="regularUS"]{background:#0e2c52;border-color:#4d94ff;color:#8fc2ff}
+.badge.on[data-c="post"],.badge.on[data-c="afterUS"]{background:#4a2f06;border-color:#ffab2e;color:#ffcd70}
+.badge.on[data-c="single"],.badge.on[data-c="dayUS"]{background:#3a1450;border-color:#c07bff;color:#dbb0ff}
+
+/* ────── 전체화면 버튼 ────── */
+#fsBtn{position:fixed;right:1.6vh;bottom:1.6vh;z-index:99;
+  width:7vh;height:7vh;min-width:38px;min-height:38px;
+  border-radius:50%;background:rgba(255,255,255,.09);
+  color:#9aa7b4;font-size:3.4vh;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;-webkit-transition:opacity .4s;transition:opacity .4s;opacity:.3}
+#fsBtn:active{background:rgba(255,255,255,.2)}
+#fsBtn.hide{opacity:0;pointer-events:none}
+
+/* ────── 세로로 들었을 때 안내 ────── */
+#rot{display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:120;background:#000;
+  align-items:center;justify-content:center;text-align:center;
+  color:#6d7784;font-size:3.4vh;font-weight:500;line-height:1.7;
+  padding:0 6vw}
+@media (orientation:portrait){
+  #rot{display:flex}
+  .time{font-size:16vh}
+  .tk-name{font-size:2.6vh}
+  .tk-price{font-size:2.8vh}
+  .tk-chg{font-size:2.1vh}
+}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap">
+  <div class="ticker-track" id="tickerTrack">
+    <span class="tk-name" style="padding:0 3vh;opacity:.4">로딩 중…</span>
+  </div>
+</div>
+
+<div class="stack">
+
+  <div class="clock">
+    <div class="label"><span>USA · NYSE</span><span class="dt" id="usDate"></span></div>
+    <div class="time" id="usTime">--:--<span class="sec">--</span></div>
+    <div class="badges" id="usBadges">
+      <span class="badge" data-c="dayUS"     data-s="72000" data-e="14400" data-wrap="1">데이</span>
+      <span class="badge" data-c="preUS"     data-s="14400" data-e="34200">프리</span>
+      <span class="badge" data-c="regularUS" data-s="34200" data-e="57600">정규장</span>
+      <span class="badge" data-c="afterUS"   data-s="57600" data-e="72000">애프터</span>
+    </div>
+  </div>
+
+  <div class="clock">
+    <div class="label"><span>KOREA · KRX</span><span class="dt" id="krDate"></span></div>
+    <div class="time" id="krTime">--:--<span class="sec">--</span></div>
+    <div class="badges" id="krBadges">
+      <span class="badge" data-c="pre"     data-s="30600" data-e="32400">장전</span>
+      <span class="badge" data-c="regular" data-s="32400" data-e="55800">정규장</span>
+      <span class="badge" data-c="post"    data-s="56400" data-e="57600">장후</span>
+      <span class="badge" data-c="single"  data-s="57600" data-e="64800">단일가</span>
+    </div>
+  </div>
+
+</div>
+
+<div id="fsBtn" title="전체화면">⛶</div>
+<div id="rot">가로로 돌려주세요<br>↻</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   Dual Market Clock — Fire HD8 가로 전용
+   ES5 수준 문법만 사용 (구형 WebView 호환)
+   ══════════════════════════════════════════════ */
+
+/* ?nosw=1 을 붙이면 예전 서비스워커 캐시를 해제해요 */
+if (location.search.indexOf('nosw') !== -1 && navigator.serviceWorker) {
+  navigator.serviceWorker.getRegistrations().then(function(rs){
+    for (var i = 0; i < rs.length; i++) rs[i].unregister();
+  }, function(){});
+}
+
+var KR_TZ = 'Asia/Seoul';
+var US_TZ = 'America/New_York';
+
+var krTimeEl = document.getElementById('krTime');
+var usTimeEl = document.getElementById('usTime');
+var krDateEl = document.getElementById('krDate');
+var usDateEl = document.getElementById('usDate');
+var krBadges = document.querySelectorAll('#krBadges .badge');
+var usBadges = document.querySelectorAll('#usBadges .badge');
+
+function getTimeParts(tz) {
+  var d = new Date();
+  var f = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit',
+    second: '2-digit', hour12: false
+  });
+  var p = f.formatToParts(d);
+  var obj = {};
+  for (var i = 0; i < p.length; i++) {
+    if (p[i].type !== 'literal') obj[p[i].type] = p[i].value;
+  }
+  return obj;
+}
+
+function formatDate(tz) {
+  return new Date().toLocaleDateString('ko-KR', {
+    timeZone: tz, month: 'long', day: 'numeric', weekday: 'short'
+  });
+}
+
+function updateBadges(badges, sod) {
+  for (var i = 0; i < badges.length; i++) {
+    var b = badges[i];
+    var s = parseInt(b.getAttribute('data-s'), 10);
+    var e = parseInt(b.getAttribute('data-e'), 10);
+    var wrap = b.getAttribute('data-wrap') === '1';
+    var isOn = wrap ? (sod >= s || sod < e) : (sod >= s && sod < e);
+    var has = b.className.indexOf('on') !== -1;
+    if (isOn && !has) b.className = 'badge on';
+    else if (!isOn && has) b.className = 'badge';
+  }
+}
+
+var lastKrDate = '', lastUsDate = '';
+
+function tick() {
+  var kr = getTimeParts(KR_TZ);
+  var us = getTimeParts(US_TZ);
+
+  krTimeEl.innerHTML = kr.hour + ':' + kr.minute + '<span class="sec">' + kr.second + '</span>';
+  usTimeEl.innerHTML = us.hour + ':' + us.minute + '<span class="sec">' + us.second + '</span>';
+
+  var krSod = parseInt(kr.hour, 10) * 3600 + parseInt(kr.minute, 10) * 60 + parseInt(kr.second, 10);
+  var usSod = parseInt(us.hour, 10) * 3600 + parseInt(us.minute, 10) * 60 + parseInt(us.second, 10);
+
+  updateBadges(krBadges, krSod);
+  updateBadges(usBadges, usSod);
+
+  if (kr.second === '00' || lastKrDate === '') {
+    var kd = formatDate(KR_TZ);
+    if (kd !== lastKrDate) { krDateEl.textContent = kd; lastKrDate = kd; }
+  }
+  if (us.second === '00' || lastUsDate === '') {
+    var ud = formatDate(US_TZ);
+    if (ud !== lastUsDate) { usDateEl.textContent = ud; lastUsDate = ud; }
+  }
+}
+
+tick();
+setInterval(tick, 1000);
+
+/* ── 화면 꺼짐 방지 (지원 기기에서만) ── */
+if (navigator.wakeLock && navigator.wakeLock.request) {
+  (function(){
+    function req() {
+      try { navigator.wakeLock.request('screen').then(function(){}, function(){}); } catch (e) {}
+    }
+    req();
+    document.addEventListener('visibilitychange', function(){
+      if (document.visibilityState === 'visible') req();
+    });
+  })();
+}
+
+/* ── 티커 테이프 (구형 WebView 호환판) ── */
+(function(){
+    var DEBUG = location.search.indexOf('debug') !== -1;
+    var lastErr = '';
+
+    var TICKER_INSTR = [
+        { name:'NASDAQ',  sym:'^IXIC', isVix:false, fmt:'int', pre:'' },
+        { name:'S&P500',  sym:'^GSPC', isVix:false, fmt:'int', pre:'' },
+        { name:'DOW',     sym:'^DJI',  isVix:false, fmt:'int', pre:'' },
+        { name:'VIX',     sym:'^VIX',  isVix:true,  fmt:'d2',  pre:'' },
+        { name:'KOSPI',   sym:'^KS11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'KOSDAQ',  sym:'^KQ11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'금 현물', sym:'GC=F',  isVix:false, fmt:'d2',  pre:'$' },
+        { name:'환율',    sym:'KRW=X', isVix:false, fmt:'d2',  pre:'₩' },
+        { name:'WTI원유', sym:'CL=F',  isVix:true,  fmt:'d2',  pre:'$' }
+    ];
+
+    var PROXIES = [
+        function(u){ return 'https://lotto-proxy.blackcore-ff6.workers.dev/?url=' + encodeURIComponent(u); },
+        function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); },
+        function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+        function(u){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); }
+    ];
+    var winPx = null;
+
+    function tkFmt(val, f, pre) {
+        if (val === null || val === undefined) return '—';
+        var s = (f === 'int')
+            ? Math.round(val).toLocaleString('en-US')
+            : val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return pre + s;
+    }
+
+    /* fetch / AbortSignal 유무와 무관하게 동작하는 GET */
+    function httpGet(url, ms) {
+        return new Promise(function(resolve, reject){
+            var done = false, ctrl = null, xhr = null;
+            var timer = setTimeout(function(){
+                if (done) return;
+                done = true;
+                try { if (ctrl) ctrl.abort(); } catch (e) {}
+                try { if (xhr) xhr.abort(); } catch (e) {}
+                reject(new Error('timeout'));
+            }, ms);
+
+            function ok(v){ if (done) return; done = true; clearTimeout(timer); resolve(v); }
+            function ng(e){ if (done) return; done = true; clearTimeout(timer); reject(e); }
+
+            if (typeof fetch === 'function') {
+                var opt = {};
+                if (typeof AbortController === 'function') {
+                    ctrl = new AbortController();
+                    opt.signal = ctrl.signal;
+                }
+                fetch(url, opt).then(function(res){
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text();
+                }).then(ok, ng);
+            } else {
+                xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onreadystatechange = function(){
+                    if (xhr.readyState !== 4) return;
+                    if (xhr.status >= 200 && xhr.status < 300) ok(xhr.responseText);
+                    else ng(new Error('HTTP ' + xhr.status));
+                };
+                xhr.onerror = function(){ ng(new Error('network')); };
+                xhr.send();
+            }
+        });
+    }
+
+    function fetchOne(pfn, sym) {
+        var url = 'https://query1.finance.yahoo.com/v8/finance/chart/'
+                + encodeURIComponent(sym) + '?interval=1d&range=2d';
+        return httpGet(pfn(url), 8000).then(function(txt){
+            var d = JSON.parse(txt);
+            var m = d && d.chart && d.chart.result && d.chart.result[0] && d.chart.result[0].meta;
+            if (!m) throw new Error('no meta');
+            return m;
+        });
+    }
+
+    function fetchSym(sym) {
+        var order = [];
+        if (winPx !== null) order.push(PROXIES[winPx]);
+        for (var i = 0; i < PROXIES.length; i++) {
+            if (i !== winPx) order.push(PROXIES[i]);
+        }
+        var idx = 0;
+        function next(){
+            if (idx >= order.length) return Promise.resolve(null);
+            var pfn = order[idx++];
+            return fetchOne(pfn, sym).then(function(m){
+                if (winPx === null) winPx = PROXIES.indexOf(pfn);
+                return m;
+            }, function(e){
+                lastErr = (e && e.message) ? e.message : String(e);
+                return next();
+            });
+        }
+        return next();
+    }
+
+    function buildHTML(items) {
+        var parts = [];
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            if (it.px === null || it.px === undefined) {
+                parts.push('<span class="ticker-item"><span class="tk-name">' + it.name
+                    + '</span><span class="tk-price c-nt">—</span></span>');
+                continue;
+            }
+            var chg = it.px - it.prv;
+            var pct = it.prv ? (chg / it.prv) * 100 : 0;
+            var up  = chg >= 0;
+            var cls = it.isVix ? (up ? 'c-vup' : 'c-vdn') : (up ? 'c-up' : 'c-dn');
+            parts.push('<span class="ticker-item"><span class="tk-name">' + it.name
+                + '</span><span class="tk-price">' + tkFmt(it.px, it.fmt, it.pre)
+                + '</span><span class="tk-chg ' + cls + '">' + (up ? '▲' : '▼') + ' '
+                + (up ? '+' : '') + pct.toFixed(2) + '%</span></span>');
+        }
+        var html = parts.join('');
+        return html + html;
+    }
+
+    function loadTicker() {
+        var jobs = [];
+        for (var i = 0; i < TICKER_INSTR.length; i++) {
+            jobs.push(fetchSym(TICKER_INSTR[i].sym).then(null, function(){ return null; }));
+        }
+        return Promise.all(jobs).then(function(res){
+            var items = [], anyOk = false;
+            for (var k = 0; k < TICKER_INSTR.length; k++) {
+                var inst = TICKER_INSTR[k], m = res[k], prv = null, px = null;
+                if (m) {
+                    px = (m.regularMarketPrice === undefined) ? null : m.regularMarketPrice;
+                    prv = (m.chartPreviousClose === undefined || m.chartPreviousClose === null)
+                        ? m.previousClose : m.chartPreviousClose;
+                }
+                if (px !== null && px !== undefined) anyOk = true;
+                items.push({ name: inst.name, pre: inst.pre, fmt: inst.fmt,
+                             isVix: inst.isVix, px: px, prv: prv });
+            }
+            var track = document.getElementById('tickerTrack');
+            if (!track) return;
+            if (!anyOk && DEBUG) {
+                track.innerHTML = '<span class="ticker-item"><span class="tk-name">ERR</span>'
+                    + '<span class="tk-price">' + lastErr + '</span></span>';
+                return;
+            }
+            track.innerHTML = buildHTML(items);
+        });
+    }
+
+    loadTicker();
+    setInterval(loadTicker, 60000);
+})();
+
+/* ── 전체화면 토글 ── */
+(function(){
+    var btn = document.getElementById('fsBtn');
+    var el  = document.documentElement;
+    if (!btn) return;
+
+    function isFs(){
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+    function enter(){
+        var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (fn) { try { fn.call(el); } catch (e) {} }
+    }
+    function exit(){
+        var fn = document.exitFullscreen || document.webkitExitFullscreen;
+        if (fn) { try { fn.call(document); } catch (e) {} }
+    }
+    function sync(){ btn.innerHTML = isFs() ? '✕' : '⛶'; }
+
+    btn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        if (isFs()) exit(); else enter();
+        setTimeout(sync, 300);
+    });
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+
+    var t = null;
+    function poke(){
+        btn.className = '';
+        clearTimeout(t);
+        t = setTimeout(function(){ btn.className = 'hide'; }, 4000);
+    }
+    document.addEventListener('touchstart', poke, true);
+    document.addEventListener('mousemove', poke, true);
+    poke();
+})();
+</script>
+</body>
+</html>
