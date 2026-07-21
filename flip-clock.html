@@ -69,6 +69,15 @@ body{background:#0a0a0a;color:#f0f0f0;
 .badge.on[data-c="afterUS"]{background:#3a2a1a;border-color:#d97706;color:#fbbf24}
 .badge.on[data-c="dayUS"]{background:#2a1a2a;border-color:#9333ea;color:#c084fc}
 
+/* ── 전체화면 버튼 ── */
+#fsBtn{position:fixed;right:12px;bottom:12px;z-index:99;
+  width:44px;height:44px;line-height:44px;text-align:center;
+  border-radius:22px;background:rgba(255,255,255,.08);
+  color:#8a9bb0;font-size:20px;cursor:pointer;
+  -webkit-transition:opacity .4s;transition:opacity .4s;opacity:.35}
+#fsBtn:active{background:rgba(255,255,255,.18)}
+#fsBtn.hide{opacity:0;pointer-events:none}
+
 @media(max-width:760px){
   .ticker-wrap{height:24px}
   .ticker-item{font-size:11px;padding:0 12px;gap:4px}
@@ -82,6 +91,7 @@ body{background:#0a0a0a;color:#f0f0f0;
   .time .sec{font-size:20px;margin-left:2px}
   .badge-col{gap:2px}
   .badge{padding:2px 6px;font-size:9px;border-radius:6px}
+  #fsBtn{width:38px;height:38px;line-height:38px;font-size:17px;right:8px;bottom:8px}
 }
 @media(max-width:480px){
   .region{font-size:11px!important}
@@ -134,23 +144,27 @@ body{background:#0a0a0a;color:#f0f0f0;
   </div>
 </div>
 
-<script>
-const KR_TZ = 'Asia/Seoul';
-const US_TZ = 'America/New_York';
+<div id="fsBtn" title="전체화면">⛶</div>
 
-const krTimeEl = document.getElementById('krTime');
-const usTimeEl = document.getElementById('usTime');
-const krDateEl = document.getElementById('krDate');
-const usDateEl = document.getElementById('usDate');
-const krBadges = document.querySelectorAll('#krBadges .badge');
-const usBadges = document.querySelectorAll('#usBadges .badge');
+<script>
+var KR_TZ = 'Asia/Seoul';
+var US_TZ = 'America/New_York';
+
+var krTimeEl = document.getElementById('krTime');
+var usTimeEl = document.getElementById('usTime');
+var krDateEl = document.getElementById('krDate');
+var usDateEl = document.getElementById('usDate');
+var krBadges = document.querySelectorAll('#krBadges .badge');
+var usBadges = document.querySelectorAll('#usBadges .badge');
 
 function getTimeParts(tz) {
-  const d = new Date();
-  const f = new Intl.DateTimeFormat('en-GB', {timeZone:tz, hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
-  const p = f.formatToParts(d);
-  const obj = {};
-  p.forEach(x => { if(x.type!=='literal') obj[x.type]=x.value; });
+  var d = new Date();
+  var f = new Intl.DateTimeFormat('en-GB', {timeZone:tz, hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+  var p = f.formatToParts(d);
+  var obj = {};
+  for (var i = 0; i < p.length; i++) {
+    if (p[i].type !== 'literal') obj[p[i].type] = p[i].value;
+  }
   return obj;
 }
 
@@ -161,135 +175,264 @@ function formatDate(tz) {
 }
 
 function updateBadges(badges, sod) {
-  badges.forEach(b => {
-    const s = parseInt(b.dataset.s);
-    const e = parseInt(b.dataset.e);
-    const wrap = b.dataset.wrap === '1';
-    const isOn = wrap ? (sod >= s || sod < e) : (sod >= s && sod < e);
-    if (isOn && b.classList.contains('off')) {
-      b.classList.remove('off'); b.classList.add('on');
-    } else if (!isOn && b.classList.contains('on')) {
-      b.classList.remove('on'); b.classList.add('off');
+  for (var i = 0; i < badges.length; i++) {
+    var b = badges[i];
+    var s = parseInt(b.getAttribute('data-s'), 10);
+    var e = parseInt(b.getAttribute('data-e'), 10);
+    var wrap = b.getAttribute('data-wrap') === '1';
+    var isOn = wrap ? (sod >= s || sod < e) : (sod >= s && sod < e);
+    if (isOn && b.className.indexOf('off') !== -1) {
+      b.className = 'badge on';
+    } else if (!isOn && b.className.indexOf('on') !== -1) {
+      b.className = 'badge off';
     }
-  });
+  }
 }
 
-let lastKrDate = '', lastUsDate = '';
+var lastKrDate = '', lastUsDate = '';
 
 function tick() {
-  const kr = getTimeParts(KR_TZ);
-  const us = getTimeParts(US_TZ);
+  var kr = getTimeParts(KR_TZ);
+  var us = getTimeParts(US_TZ);
 
-  krTimeEl.innerHTML = kr.hour+':'+kr.minute+'<span class="sec">'+kr.second+'</span>';
-  usTimeEl.innerHTML = us.hour+':'+us.minute+'<span class="sec">'+us.second+'</span>';
+  krTimeEl.innerHTML = kr.hour + ':' + kr.minute + '<span class="sec">' + kr.second + '</span>';
+  usTimeEl.innerHTML = us.hour + ':' + us.minute + '<span class="sec">' + us.second + '</span>';
 
-  const krSod = parseInt(kr.hour)*3600+parseInt(kr.minute)*60+parseInt(kr.second);
-  const usSod = parseInt(us.hour)*3600+parseInt(us.minute)*60+parseInt(us.second);
+  var krSod = parseInt(kr.hour,10)*3600 + parseInt(kr.minute,10)*60 + parseInt(kr.second,10);
+  var usSod = parseInt(us.hour,10)*3600 + parseInt(us.minute,10)*60 + parseInt(us.second,10);
 
   updateBadges(krBadges, krSod);
   updateBadges(usBadges, usSod);
 
-  if (kr.second==='00' || lastKrDate==='') {
-    const kd = formatDate(KR_TZ);
-    if(kd!==lastKrDate){krDateEl.textContent=kd;lastKrDate=kd;}
+  if (kr.second === '00' || lastKrDate === '') {
+    var kd = formatDate(KR_TZ);
+    if (kd !== lastKrDate) { krDateEl.textContent = kd; lastKrDate = kd; }
   }
-  if (us.second==='00' || lastUsDate==='') {
-    const ud = formatDate(US_TZ);
-    if(ud!==lastUsDate){usDateEl.textContent=ud;lastUsDate=ud;}
+  if (us.second === '00' || lastUsDate === '') {
+    var ud = formatDate(US_TZ);
+    if (ud !== lastUsDate) { usDateEl.textContent = ud; lastUsDate = ud; }
   }
 }
 
 tick();
 setInterval(tick, 1000);
 
-if ('wakeLock' in navigator) {
-  (async()=>{
-    try{let wl=await navigator.wakeLock.request('screen');
-      document.addEventListener('visibilitychange',async()=>{
-        if(document.visibilityState==='visible')
-          try{wl=await navigator.wakeLock.request('screen')}catch(e){}
-      });
-    }catch(e){}
+// ── 화면 꺼짐 방지 (지원하는 기기에서만) ──
+if (navigator.wakeLock && navigator.wakeLock.request) {
+  (function(){
+    var wl = null;
+    function req(){
+      try {
+        navigator.wakeLock.request('screen').then(function(s){ wl = s; }, function(){});
+      } catch(e) {}
+    }
+    req();
+    document.addEventListener('visibilitychange', function(){
+      if (document.visibilityState === 'visible') req();
+    });
   })();
 }
 
-if ('serviceWorker' in navigator)
-  navigator.serviceWorker.register('flip-clock-sw.js').catch(()=>{});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('flip-clock-sw.js')['catch'](function(){});
+}
 
-// ── 티커 테이프 ──
+// ── 티커 테이프 (구형 WebView 호환판) ──
 (function(){
-    const TICKER_INSTR = [
-        { name:'NASDAQ', sym:'^IXIC', isVix:false, fmt:'int', pre:'' },
-        { name:'S&P500', sym:'^GSPC', isVix:false, fmt:'int', pre:'' },
-        { name:'DOW',    sym:'^DJI',  isVix:false, fmt:'int', pre:'' },
-        { name:'VIX',    sym:'^VIX',  isVix:true,  fmt:'d2',  pre:'' },
-        { name:'KOSPI',  sym:'^KS11', isVix:false, fmt:'d2',  pre:'' },
-        { name:'KOSDAQ', sym:'^KQ11', isVix:false, fmt:'d2',  pre:'' },
+    var DEBUG = location.search.indexOf('debug') !== -1;
+    var lastErr = '';
+
+    var TICKER_INSTR = [
+        { name:'NASDAQ',  sym:'^IXIC', isVix:false, fmt:'int', pre:'' },
+        { name:'S&P500',  sym:'^GSPC', isVix:false, fmt:'int', pre:'' },
+        { name:'DOW',     sym:'^DJI',  isVix:false, fmt:'int', pre:'' },
+        { name:'VIX',     sym:'^VIX',  isVix:true,  fmt:'d2',  pre:'' },
+        { name:'KOSPI',   sym:'^KS11', isVix:false, fmt:'d2',  pre:'' },
+        { name:'KOSDAQ',  sym:'^KQ11', isVix:false, fmt:'d2',  pre:'' },
         { name:'금 현물', sym:'GC=F',  isVix:false, fmt:'d2',  pre:'$' },
-        { name:'환율',   sym:'KRW=X', isVix:false, fmt:'d2',  pre:'₩' },
-        { name:'WTI원유', sym:'CL=F',  isVix:true,  fmt:'d2',  pre:'$' },
+        { name:'환율',    sym:'KRW=X', isVix:false, fmt:'d2',  pre:'₩' },
+        { name:'WTI원유', sym:'CL=F',  isVix:true,  fmt:'d2',  pre:'$' }
     ];
-    const PROXIES = [
-        u => `https://lotto-proxy.blackcore-ff6.workers.dev/?url=${encodeURIComponent(u)}`,
-        u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+
+    var PROXIES = [
+        function(u){ return 'https://lotto-proxy.blackcore-ff6.workers.dev/?url=' + encodeURIComponent(u); },
+        function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); },
+        function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+        function(u){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); }
     ];
-    let winPx = null;
+    var winPx = null;
+
     function tkFmt(val, f, pre) {
-        if (val == null) return '—';
-        let s = f === 'int' ? Math.round(val).toLocaleString('en-US') : val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        if (val === null || val === undefined) return '—';
+        var s = (f === 'int')
+            ? Math.round(val).toLocaleString('en-US')
+            : val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return pre + s;
     }
-    async function fetchOne(pfn, sym) {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`;
-        const ac = new AbortController();
-        const tid = setTimeout(function(){ ac.abort(); }, 8000);
-        let res;
-        try {
-            res = await fetch(pfn(url), { signal: ac.signal });
-        } finally {
-            clearTimeout(tid);
-        }
-        if (!res.ok) throw new Error(res.status);
-        const d = await res.json();
-        const m = d?.chart?.result?.[0]?.meta;
-        if (!m) throw new Error('no meta');
-        return m;
+
+    // fetch / AbortSignal.timeout 유무와 무관하게 동작하는 GET
+    function httpGet(url, ms) {
+        return new Promise(function(resolve, reject){
+            var done = false, ctrl = null, xhr = null;
+            var timer = setTimeout(function(){
+                if (done) return;
+                done = true;
+                try { if (ctrl) ctrl.abort(); } catch(e){}
+                try { if (xhr) xhr.abort(); } catch(e){}
+                reject(new Error('timeout'));
+            }, ms);
+
+            function ok(v){ if (done) return; done = true; clearTimeout(timer); resolve(v); }
+            function ng(e){ if (done) return; done = true; clearTimeout(timer); reject(e); }
+
+            if (typeof fetch === 'function') {
+                var opt = {};
+                if (typeof AbortController === 'function') {
+                    ctrl = new AbortController();
+                    opt.signal = ctrl.signal;
+                }
+                fetch(url, opt).then(function(res){
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text();
+                }).then(ok, ng);
+            } else {
+                xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onreadystatechange = function(){
+                    if (xhr.readyState !== 4) return;
+                    if (xhr.status >= 200 && xhr.status < 300) ok(xhr.responseText);
+                    else ng(new Error('HTTP ' + xhr.status));
+                };
+                xhr.onerror = function(){ ng(new Error('network')); };
+                xhr.send();
+            }
+        });
     }
-    async function fetchSym(sym) {
-        const order = winPx !== null ? [PROXIES[winPx], ...PROXIES.filter((_,i) => i !== winPx)] : PROXIES;
-        for (let i = 0; i < order.length; i++) {
-            try {
-                const m = await fetchOne(order[i], sym);
-                if (winPx === null) winPx = PROXIES.indexOf(order[i]);
+
+    function fetchOne(pfn, sym) {
+        var url = 'https://query1.finance.yahoo.com/v8/finance/chart/'
+                + encodeURIComponent(sym) + '?interval=1d&range=2d';
+        return httpGet(pfn(url), 8000).then(function(txt){
+            var d = JSON.parse(txt);
+            var m = d && d.chart && d.chart.result && d.chart.result[0] && d.chart.result[0].meta;
+            if (!m) throw new Error('no meta');
+            return m;
+        });
+    }
+
+    function fetchSym(sym) {
+        var order = [];
+        if (winPx !== null) order.push(PROXIES[winPx]);
+        for (var i = 0; i < PROXIES.length; i++) {
+            if (i !== winPx) order.push(PROXIES[i]);
+        }
+        var idx = 0;
+        function next(){
+            if (idx >= order.length) return Promise.resolve(null);
+            var pfn = order[idx++];
+            return fetchOne(pfn, sym).then(function(m){
+                if (winPx === null) winPx = PROXIES.indexOf(pfn);
                 return m;
-            } catch(e) {}
+            }, function(e){
+                lastErr = (e && e.message) ? e.message : String(e);
+                return next();
+            });
         }
-        return null;
+        return next();
     }
+
     function buildHTML(items) {
-        const parts = items.map(it => {
-            const { name, pre, fmt: f, isVix, px, prv } = it;
-            if (px == null) return `<span class="ticker-item"><span class="tk-name">${name}</span><span class="tk-price tk-chg c-nt">—</span></span>`;
-            const chg = px - prv, pct = prv ? (chg/prv)*100 : 0, up = chg >= 0;
-            const sg = up ? '+' : '';
-            const cls = isVix ? (up ? 'c-vup' : 'c-vdn') : (up ? 'c-up' : 'c-dn');
-            return `<span class="ticker-item"><span class="tk-name">${name}</span><span class="tk-price">${tkFmt(px,f,pre)}</span><span class="tk-chg ${cls}">${up?'▲':'▼'} ${sg}${pct.toFixed(2)}%</span></span>`;
-        });
-        return parts.join('') + parts.join('');
+        var parts = [];
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            if (it.px === null || it.px === undefined) {
+                parts.push('<span class="ticker-item"><span class="tk-name">' + it.name
+                    + '</span><span class="tk-price tk-chg c-nt">—</span></span>');
+                continue;
+            }
+            var chg = it.px - it.prv;
+            var pct = it.prv ? (chg / it.prv) * 100 : 0;
+            var up  = chg >= 0;
+            var cls = it.isVix ? (up ? 'c-vup' : 'c-vdn') : (up ? 'c-up' : 'c-dn');
+            parts.push('<span class="ticker-item"><span class="tk-name">' + it.name
+                + '</span><span class="tk-price">' + tkFmt(it.px, it.fmt, it.pre)
+                + '</span><span class="tk-chg ' + cls + '">' + (up ? '▲' : '▼') + ' '
+                + (up ? '+' : '') + pct.toFixed(2) + '%</span></span>');
+        }
+        var html = parts.join('');
+        return html + html;
     }
-    async function loadTicker() {
-        const results = await Promise.allSettled(TICKER_INSTR.map(inst => fetchSym(inst.sym)));
-        const items = TICKER_INSTR.map((inst, i) => {
-            const m = results[i].status === 'fulfilled' ? results[i].value : null;
-            return { ...inst, px: m?.regularMarketPrice ?? null, prv: m?.chartPreviousClose ?? m?.previousClose ?? null };
+
+    function loadTicker() {
+        var jobs = [];
+        for (var i = 0; i < TICKER_INSTR.length; i++) {
+            jobs.push(fetchSym(TICKER_INSTR[i].sym).then(null, function(){ return null; }));
+        }
+        return Promise.all(jobs).then(function(res){
+            var items = [], anyOk = false;
+            for (var k = 0; k < TICKER_INSTR.length; k++) {
+                var inst = TICKER_INSTR[k], m = res[k], prv = null, px = null;
+                if (m) {
+                    px = (m.regularMarketPrice === undefined) ? null : m.regularMarketPrice;
+                    prv = (m.chartPreviousClose === undefined || m.chartPreviousClose === null)
+                        ? m.previousClose : m.chartPreviousClose;
+                }
+                if (px !== null && px !== undefined) anyOk = true;
+                items.push({ name:inst.name, pre:inst.pre, fmt:inst.fmt,
+                             isVix:inst.isVix, px:px, prv:prv });
+            }
+            var track = document.getElementById('tickerTrack');
+            if (!track) return;
+            if (!anyOk && DEBUG) {
+                track.innerHTML = '<span class="ticker-item"><span class="tk-name">ERR</span>'
+                    + '<span class="tk-price">' + lastErr + '</span></span>';
+                return;
+            }
+            track.innerHTML = buildHTML(items);
         });
-        const track = document.getElementById('tickerTrack');
-        if (track) track.innerHTML = buildHTML(items);
     }
+
     loadTicker();
     setInterval(loadTicker, 60000);
+})();
+
+// ── 전체화면 토글 ──
+(function(){
+    var btn = document.getElementById('fsBtn');
+    var el  = document.documentElement;
+    if (!btn) return;
+
+    function isFs(){
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+    function enter(){
+        var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (fn) { try { fn.call(el); } catch(e){} }
+    }
+    function exit(){
+        var fn = document.exitFullscreen || document.webkitExitFullscreen;
+        if (fn) { try { fn.call(document); } catch(e){} }
+    }
+    function sync(){ btn.innerHTML = isFs() ? '✕' : '⛶'; }
+
+    btn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        if (isFs()) exit(); else enter();
+        setTimeout(sync, 300);
+    });
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+
+    // 4초간 조작이 없으면 버튼을 숨기고, 화면을 건드리면 다시 표시
+    var t = null;
+    function poke(){
+        btn.className = '';
+        clearTimeout(t);
+        t = setTimeout(function(){ btn.className = 'hide'; }, 4000);
+    }
+    document.addEventListener('touchstart', poke, true);
+    document.addEventListener('mousemove', poke, true);
+    poke();
 })();
 </script>
 </body>
