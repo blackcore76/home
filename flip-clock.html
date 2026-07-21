@@ -243,7 +243,14 @@ if ('serviceWorker' in navigator)
     }
     async function fetchOne(pfn, sym) {
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`;
-        const res = await fetch(pfn(url), { signal: AbortSignal.timeout(8000) });
+        const ac = new AbortController();
+        const tid = setTimeout(function(){ ac.abort(); }, 8000);
+        let res;
+        try {
+            res = await fetch(pfn(url), { signal: ac.signal });
+        } finally {
+            clearTimeout(tid);
+        }
         if (!res.ok) throw new Error(res.status);
         const d = await res.json();
         const m = d?.chart?.result?.[0]?.meta;
