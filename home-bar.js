@@ -234,6 +234,7 @@
     }
     .bc-dock-item .bc-dock-icon { font-size: 14px; flex-shrink: 0; }
     @media (max-width: 640px) {
+      #bc-side-dock { bottom: calc(8vh + env(safe-area-inset-bottom, 0px)); }
       #bc-dock-handle { height: 84px; }
       #bc-side-dock.open #bc-dock-panel { width: 172px; }
     }
