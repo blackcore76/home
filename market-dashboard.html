@@ -190,8 +190,32 @@
   @media(max-width:600px){
     body{padding:12px 10px 20px}
     .grid{grid-template-columns:repeat(2,1fr);gap:8px}.cp{font-size:14px}
-    .alert-table th:nth-child(3),.alert-table td:nth-child(3){display:none}
-    .at-input{width:72px}
+
+    /* 알림 테이블 → 카드형 레이아웃으로 전환 (좁은 화면에서 열이 잘리는 문제 방지) */
+    .alert-table thead{display:none}
+    .alert-table,.alert-table tbody,.alert-table tr{display:block;width:100%}
+    .alert-table tr{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      grid-template-areas:"name cur" "upper upper" "lower lower";
+      gap:6px 8px;
+      padding:10px 8px;
+      margin-bottom:8px;
+      border:1px solid var(--border);
+      border-radius:7px;
+      background:rgba(255,255,255,.015);
+    }
+    .alert-table tr:hover{background:rgba(61,139,255,.03)}
+    .alert-table tr:last-child{margin-bottom:0}
+    .alert-table td{display:block;border:none;padding:0}
+    .alert-table td:nth-child(1){grid-area:name;align-self:center}
+    .alert-table td:nth-child(2){grid-area:cur;align-self:center;text-align:right}
+    .alert-table td:nth-child(3){grid-area:upper}
+    .alert-table td:nth-child(4){grid-area:lower}
+    .alert-table td:nth-child(3)::before{content:'▲ 상단 알림';display:block;font-size:8px;font-weight:700;color:var(--up);letter-spacing:.1em;margin-bottom:4px}
+    .alert-table td:nth-child(4)::before{content:'▼ 하단 알림';display:block;font-size:8px;font-weight:700;color:var(--down);letter-spacing:.1em;margin-bottom:4px}
+    .at-cond{justify-content:flex-start}
+    .at-input{width:120px}
   }
 </style>
 <script src="home-bar.js"></script>
@@ -321,7 +345,7 @@
 
   <div class="alert-save-row">
     <span class="alert-save-msg" id="alert-save-msg"></span>
-    <span class="alert-save-notice">⚠️ 능력 부족으로 FCM 푸시 알림은 정상 동작하지 않습니다 ⚠️</span>
+    <span class="alert-save-notice">🔔 스위치를 켜고 값을 입력한 뒤 저장하면 알림이 등록됩니다</span>
     <button class="alert-save-btn" onclick="saveAlertConditions()">💾 저장</button>
   </div>
 </div>
