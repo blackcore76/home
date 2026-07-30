@@ -592,7 +592,7 @@ function cardHTML(item, idx) {
   const bw = Math.min(Math.abs(pnlRate) * 100 * 2, 100);
   const bc = pnlUp ? 'var(--up)' : 'var(--down)';
 
-  return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}" style="animation-delay:${(idx??0)*.04}s" onclick="openChart('${item.symbol}')">
+  return `<div class="stock-card ${pnlUp ? 'pos-day' : 'neg-day'}" style="animation-delay:${(idx??0)*.04}s" onclick="openChart('${item.symbol}')">
     <div class="card-top">
       <div class="card-left">
         <div class="card-badges">
@@ -602,7 +602,7 @@ function cardHTML(item, idx) {
         <div class="card-name">${item.name}</div>
       </div>
       <div class="card-pnl">
-        <div class="pnl-num ${dayUp ? 'pos' : 'neg'}">${evalStr}</div>
+        <div class="pnl-num ${pnlUp ? 'pos' : 'neg'}">${evalStr}</div>
         <div class="pnl-pct ${dayUp ? 'pos' : 'neg'}">${dayStr} (${fPct(dayRate)})</div>
       </div>
     </div>
