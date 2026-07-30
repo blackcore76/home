@@ -221,7 +221,28 @@ header{
   .chip{min-width:80px;}
   .chart-modal{max-height:95vh;border-radius:12px;}
   .chart-body{min-height:280px;}
+  .fxr-grid{grid-template-columns:1fr 1fr;}
 }
+
+/* ── 원화 관점 · 환율손익 분석 카드 */
+.fx-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.fx-input-lbl{font-family:var(--mono);font-size:11px;color:var(--text2);}
+.fx-input-box{display:flex;align-items:center;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;gap:6px;}
+.fx-input-box input{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:15px;font-weight:600;width:88px;}
+.fx-input-box input::-webkit-outer-spin-button,.fx-input-box input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.fx-input-unit{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.fx-input-save{background:var(--accent);border:none;border-radius:8px;padding:7px 16px;font-family:var(--mono);font-size:12px;font-weight:600;color:#000;cursor:pointer;transition:opacity .15s;}
+.fx-input-save:hover{opacity:.85;}
+.fxr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.fxr-item{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px;}
+.fxr-item.wide{grid-column:1/-1;}
+.fxr-lbl{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em;}
+.fxr-val{font-family:var(--mono);font-size:18px;font-weight:600;}
+.fxr-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;}
+.fxr-verdict{font-size:13px;line-height:1.7;color:var(--text);background:var(--sf3);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-top:12px;}
+.fxr-verdict b.pos{color:var(--green);}.fxr-verdict b.neg{color:var(--red);}
+.fxr-hint{font-size:12px;color:var(--text3);line-height:1.8;}
+.fxr-hint b{color:var(--text2);}
 </style>
 </head>
 <body>
@@ -270,6 +291,24 @@ header{
     <div class="fx-item"><span class="fx-lbl">기준시각</span><span class="fx-time" id="last-upd">–</span></div>
   </div>
 
+  <!-- 원화 관점 · 환율손익 분석 -->
+  <div class="card" id="fxCard">
+    <div class="card-header">
+      <span class="icon">💱</span>
+      <h3>원화 관점 · 환율손익 분리</h3>
+      <span class="badge">해외(USD) 기준</span>
+    </div>
+    <div class="fx-input-row">
+      <label class="fx-input-lbl" for="avgFxInput">내 평균 환전환율</label>
+      <div class="fx-input-box">
+        <input id="avgFxInput" type="number" inputmode="decimal" placeholder="예: 1380" step="1" onkeydown="if(event.key==='Enter')saveAvgFx()">
+        <span class="fx-input-unit">원/$</span>
+      </div>
+      <button class="fx-input-save" onclick="saveAvgFx()">저장</button>
+    </div>
+    <div id="fxResult"></div>
+  </div>
+
   <!-- 에러 배너 -->
   <div class="err-banner" id="err-banner"></div>
 
@@ -302,14 +341,15 @@ header{
     <div class="offline-icon">🔌</div>
     <div class="offline-title">현재 로컬 서버가 작동중이지 않습니다</div>
     <div class="offline-msg">
-      맥미니 프록시 서버 또는 Cloudflare Tunnel이 실행되지 않아<br>
+      Mac mini 프록시(launchd) 또는 Tailscale Funnel이 응답하지 않아<br>
       토스증권 데이터를 불러올 수 없습니다.<br>
-      잠시 후 다시 접속해주세요.
+      Mac mini가 잠들었을 수 있어요 — 깨우면 자동 복구됩니다.
     </div>
     <div class="offline-hint">
-      1. 터미널 탭 A → <code>cd ~/BlackCore/toss-proxy-local && node server.js</code><br>
-      2. 터미널 탭 B → <code>cloudflared tunnel --url http://127.0.0.1:7788</code><br>
-      3. 새 터널 URL → stocktoss.html PROXY 업데이트 후 push
+      점검 (Mac mini에서):<br>
+      • 프록시 재시작 → <code>launchctl kickstart -k gui/$(id -u)/com.blackcore.tossproxy</code><br>
+      • Funnel 상태 → <code>tailscale funnel status</code><br>
+      • 서버 로그 → <code>~/BlackCore/toss-proxy-local/proxy.log</code>
     </div>
     <button class="offline-retry" onclick="location.reload()">↺ 다시 연결</button>
   </div>
@@ -342,9 +382,10 @@ header{
 
 <script>
 // ── 설정 ──────────────────────────────────────────────
-// 맥미니 로컬: 'http://127.0.0.1:7788'
-// Cloudflare Tunnel 연결 후: 'https://xxxx.trycloudflare.com'
-const PROXY = 'https://uri-mins-produced-half.trycloudflare.com';
+// Mac mini(launchd 서비스) + Tailscale Funnel 고정주소.
+// 토스 오픈API는 등록된 집 IP에서만 인증되므로(IP 제한) 반드시 Mac mini에서 구동해야 함.
+// 로컬 테스트 시: 'http://127.0.0.1:7788'
+const PROXY = 'https://blackcore-macmini--m4.tail03a806.ts.net';
 // ─────────────────────────────────────────────────────
 
 let allItems = [], curTab = 'all', curUsdToKrw = 0;
@@ -412,6 +453,89 @@ function renderSummary(holdings, usdToKrw) {
   if (usdToKrw > 0) {
     setEl('fx-val', usdToKrw.toLocaleString('ko-KR') + '원');
   }
+}
+
+// ── 원화 관점 · 환율손익 분리 ─────────────────────────
+// 토스 오픈API는 매수시점 환율/환전내역을 주지 않으므로, 평균 환전환율은 사용자가 입력.
+// 항등식: 원화 총손익 = 종목손익(원화환산) + 환율손익
+//   종목손익(원화) = 달러손익 × 현재환율
+//   환율손익       = 달러원금 × (현재환율 − 평균환전환율)
+const LS_AVGFX = 'stocktoss_avg_fx';
+let lastHoldings = null;
+
+function saveAvgFx() {
+  const el = document.getElementById('avgFxInput');
+  const v = Number(el && el.value);
+  if (v > 0) localStorage.setItem(LS_AVGFX, String(v));
+  if (el) el.blur();
+  if (lastHoldings) renderFxAnalysis(lastHoldings, curUsdToKrw);
+}
+
+function verdictText(stockKrw, fxKrw, totalKrw) {
+  const abs = Math.abs(stockKrw) + Math.abs(fxKrw);
+  const fxShare = abs > 0 ? Math.round(Math.abs(fxKrw) / abs * 100) : 0;
+  if (totalKrw >= 0)
+    return `👍 종목·환율 합쳐 원화로도 <b class="pos">+${fKRW(totalKrw)}</b> — 아직 플러스예요.`;
+  if (fxKrw < 0 && stockKrw >= 0)
+    return `핵심: <b>종목 자체는 원화로도 손해가 아니에요.</b> 원화 손실 <b class="neg">${fKRW(totalKrw)}</b>는 사실상 <b>전부 환율</b> 탓이에요. 달러가 오르지 않아도 <b>환율만 평단까지 돌아오면</b> 원금 회복이에요.`;
+  if (fxKrw < 0)
+    return `원화 손실 <b class="neg">${fKRW(totalKrw)}</b> 중 <b>환율이 약 ${fxShare}%</b>를 차지해요. 달러 기준 종목 손익보다 환율 영향이 더 큽니다.`;
+  return `원화 손익 <b class="${totalKrw >= 0 ? 'pos' : 'neg'}">${fKRW(totalKrw)}</b> = 종목 ${fKRW(stockKrw)} + 환율 ${fKRW(fxKrw)}.`;
+}
+
+function renderFxAnalysis(holdings, todayFx) {
+  lastHoldings = holdings;
+  const box = document.getElementById('fxResult');
+  if (!box) return;
+
+  const input = document.getElementById('avgFxInput');
+  const saved = Number(localStorage.getItem(LS_AVGFX));
+  if (input && saved > 0 && document.activeElement !== input) input.value = saved;
+
+  const usdCost = Number(holdings.totalPurchaseAmount?.usd ?? 0);
+  const usdNow  = Number(holdings.marketValue?.amount?.usd ?? 0);
+  const usdPnl  = Number(holdings.profitLoss?.amount?.usd ?? 0);
+  const usdRate = usdCost > 0 ? usdPnl / usdCost : 0;
+
+  if (!(usdCost > 0)) {
+    box.innerHTML = '<div class="fxr-hint">해외(USD) 보유가 없어 환율 분석은 표시하지 않아요.</div>';
+    return;
+  }
+
+  const dollarLine = `해외 달러손익 <b class="${usdPnl >= 0 ? 'pos' : 'neg'}">${(usdPnl >= 0 ? '+' : '') + fUSD(usdPnl)} (${fPct(usdRate)})</b> · 현재환율 <b>${todayFx ? todayFx.toLocaleString('ko-KR') + '원' : '–'}</b>`;
+
+  if (!(saved > 0) || !(todayFx > 0)) {
+    box.innerHTML = `<div class="fxr-hint">${dollarLine}<br><br>위에 <b>평균 환전환율</b>을 입력하면 원화 손익을 <b>종목 등락</b>과 <b>환율 변동</b>으로 쪼개 드려요.<br><span style="color:var(--text3)">모르면 토스앱 환전내역에서 확인하거나, (총 환전한 원화 ÷ 총 달러)로 계산하면 대략 맞아요.</span></div>`;
+    return;
+  }
+
+  const stockKrw  = usdPnl * todayFx;                        // 종목손익(원화환산)
+  const fxKrw     = usdCost * (todayFx - saved);             // 환율손익
+  const totalKrw  = stockKrw + fxKrw;                        // 해외 원화 총손익
+  const investKrw = usdCost * saved;                         // 원화 투입 추정
+  const beFx      = usdNow > 0 ? (usdCost * saved) / usdNow : 0; // 손익분기 환율
+  const cls = n => (n >= 0 ? 'pos' : 'neg');
+  const sg  = n => (n >= 0 ? '+' : '');
+
+  box.innerHTML = `
+    <div class="fxr-grid">
+      <div class="fxr-item">
+        <div class="fxr-lbl">종목손익 (원화환산)</div>
+        <div class="fxr-val ${cls(stockKrw)}">${sg(stockKrw) + fKRW(stockKrw)}</div>
+        <div class="fxr-sub">달러 등락만 반영 (${sg(usdPnl) + fUSD(usdPnl)})</div>
+      </div>
+      <div class="fxr-item">
+        <div class="fxr-lbl">환율손익</div>
+        <div class="fxr-val ${cls(fxKrw)}">${sg(fxKrw) + fKRW(fxKrw)}</div>
+        <div class="fxr-sub">평단 ${saved.toLocaleString('ko-KR')} → 현재 ${todayFx.toLocaleString('ko-KR')}원</div>
+      </div>
+      <div class="fxr-item wide">
+        <div class="fxr-lbl">해외 원화 총손익 (종목 + 환율)</div>
+        <div class="fxr-val ${cls(totalKrw)}">${sg(totalKrw) + fKRW(totalKrw)}</div>
+        <div class="fxr-sub">원화 투입 약 ${fKRW(investKrw)} · 손익분기 환율 ${beFx ? Math.round(beFx).toLocaleString('ko-KR') + '원' : '–'}</div>
+      </div>
+    </div>
+    <div class="fxr-verdict">${verdictText(stockKrw, fxKrw, totalKrw)}</div>`;
 }
 
 // ── 종목 카드 렌더
@@ -540,6 +664,7 @@ async function load() {
     document.getElementById('offlinePage').classList.remove('show');
 
     renderSummary(holdings, usdToKrw);
+    renderFxAnalysis(holdings, usdToKrw);
     renderList();
 
     const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
