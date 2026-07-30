@@ -255,6 +255,7 @@ header{
       <span class="sync-txt loading" id="syncTxt">연결 중...</span>
     </div>
     <div class="user-badge"><span>👤</span><span>blackcore</span></div>
+    <button class="hbtn" id="btn-token" onclick="promptForToken()" title="접근 토큰">🔑</button>
     <button class="hbtn" id="btn-refresh" onclick="load()" title="새로고침">↺</button>
   </div>
 </header>
@@ -636,6 +637,18 @@ function hideErr() {
   document.getElementById('err-banner').classList.remove('show');
 }
 
+// ── 접근 토큰 (프록시 인증) ───────────────────────────
+const LS_TOKEN = 'stocktoss_proxy_token';
+function proxyToken() { return localStorage.getItem(LS_TOKEN) || ''; }
+function authHeaders() { const t = proxyToken(); return t ? { 'x-proxy-token': t } : {}; }
+function promptForToken() {
+  const t = window.prompt('프록시 접근 토큰을 입력하세요 (최초 1회, 브라우저에 저장됨):', proxyToken());
+  if (t !== null) {
+    localStorage.setItem(LS_TOKEN, t.trim());
+    location.reload();
+  }
+}
+
 // ── 데이터 로드
 async function load() {
   const btn = document.getElementById('btn-refresh');
@@ -644,7 +657,7 @@ async function load() {
   hideErr();
 
   try {
-    const holdingsRes = await fetch(`${PROXY}/holdings`, { signal: AbortSignal.timeout(15000) });
+    const holdingsRes = await fetch(`${PROXY}/holdings`, { headers: authHeaders(), signal: AbortSignal.timeout(15000) });
     if (!holdingsRes.ok) throw new Error(`HTTP ${holdingsRes.status}`);
     const data = await holdingsRes.json();
 
@@ -674,7 +687,10 @@ async function load() {
   } catch (e) {
     setStatus('error');
     const isOffline = e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed');
-    if (isOffline) {
+    if (e.message.includes('401')) {
+      showErr('접근 토큰이 필요하거나 일치하지 않습니다. 🔑 버튼으로 입력하세요.');
+      if (!proxyToken()) promptForToken();
+    } else if (isOffline) {
       document.getElementById('mainContent').style.display = 'none';
       document.getElementById('offlinePage').classList.add('show');
     } else if (e.message.includes('403') || e.message.includes('502')) {
@@ -744,7 +760,7 @@ async function loadCandles(symbol, count) {
   if (chartInstance) { chartInstance.remove(); chartInstance = null; }
 
   try {
-    const res = await fetch(`${PROXY}/candles?symbol=${encodeURIComponent(symbol)}&interval=1d&count=${count}`, { signal: AbortSignal.timeout(15000) });
+    const res = await fetch(`${PROXY}/candles?symbol=${encodeURIComponent(symbol)}&interval=1d&count=${count}`, { headers: authHeaders(), signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const raw = data.result?.candles ?? data.candles ?? [];
