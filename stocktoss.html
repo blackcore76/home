@@ -27,6 +27,8 @@
   --accent:#00d4ff;
   --green: #00e676;
   --red:   #ff5252;
+  --up:    #ff5252;  /* 상승·플러스 = 빨강 (한국식) */
+  --down:  #448aff;  /* 하락·마이너스 = 파랑 */
   --gold:  #ffca28;
   --mono:  'JetBrains Mono', monospace;
   --sans:  'Noto Sans KR', sans-serif;
@@ -99,8 +101,8 @@ header{
 .tk-sym{color:var(--accent);font-weight:600;font-size:11px;}
 .tk-val{color:var(--text);font-weight:500;}
 .tk-chg{font-size:10px;font-weight:500;}
-.tk-chg.up{color:var(--green);}
-.tk-chg.dn{color:var(--red);}
+.tk-chg.up{color:var(--up);}
+.tk-chg.dn{color:var(--down);}
 .tk-chg.nt{color:var(--text3);}
 
 /* ── 컨테이너 */
@@ -119,8 +121,8 @@ header{
 .chip{flex:1;min-width:100px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;}
 .chip-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.08em;margin-bottom:6px;}
 .chip-val{font-family:var(--mono);font-size:14px;font-weight:600;}
-.chip-val.pos{color:var(--green);}
-.chip-val.neg{color:var(--red);}
+.chip-val.pos{color:var(--up);}
+.chip-val.neg{color:var(--down);}
 
 /* ── 환율 바 */
 .fxbar{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
@@ -143,8 +145,8 @@ header{
 /* ── 종목 카드 */
 .stock-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;transition:all .2s;animation:fadeIn .3s ease both;position:relative;overflow:hidden;}
 .stock-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
-.stock-card.pos-day::before{background:linear-gradient(to bottom,var(--green),transparent);}
-.stock-card.neg-day::before{background:linear-gradient(to bottom,var(--red),transparent);}
+.stock-card.pos-day::before{background:linear-gradient(to bottom,var(--up),transparent);}
+.stock-card.neg-day::before{background:linear-gradient(to bottom,var(--down),transparent);}
 .stock-card{cursor:pointer;}
 .stock-card:hover{border-color:var(--bd2);background:var(--sf2);}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -154,13 +156,13 @@ header{
 .b-ticker{font-family:var(--mono);font-size:11px;font-weight:600;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 8px;color:var(--accent);}
 .b-mkt{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--sf3);border:1px solid var(--bd);}
 .b-mkt.kr{color:var(--gold);}
-.b-mkt.us{color:var(--green);}
+.b-mkt.us{color:var(--accent);}
 .card-name{font-size:15px;font-weight:600;margin-bottom:2px;}
 .card-pnl{text-align:right;flex-shrink:0;}
 .pnl-num{font-family:var(--mono);font-size:15px;font-weight:600;}
 .pnl-pct{font-family:var(--mono);font-size:12px;}
-.pos{color:var(--green);}
-.neg{color:var(--red);}
+.pos{color:var(--up);}
+.neg{color:var(--down);}
 .bar-wrap{margin-top:10px;margin-bottom:12px;}
 .bar-track{height:3px;background:var(--bd2);border-radius:2px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:2px;transition:width .3s;}
@@ -197,9 +199,9 @@ header{
 .offline-retry:hover{opacity:.8;}
 
 /* ── 차트 모달 */
-.chart-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px;}
+.chart-overlay{position:fixed;top:118px;left:0;right:0;bottom:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px;}
 .chart-overlay.show{display:flex;}
-.chart-modal{background:var(--sf);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;}
+.chart-modal{background:var(--sf);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:900px;max-height:calc(100vh - 150px);overflow:hidden;display:flex;flex-direction:column;}
 .chart-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd);}
 .chart-head-left{display:flex;align-items:center;gap:10px;}
 .chart-sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 8px;}
@@ -219,7 +221,7 @@ header{
   .hero-val{font-size:22px;}
   .chips{gap:6px;}
   .chip{min-width:80px;}
-  .chart-modal{max-height:95vh;border-radius:12px;}
+  .chart-modal{max-height:calc(100vh - 130px);border-radius:12px;}
   .chart-body{min-height:280px;}
   .fxr-grid{grid-template-columns:1fr 1fr;}
 }
@@ -240,7 +242,7 @@ header{
 .fxr-val{font-family:var(--mono);font-size:18px;font-weight:600;}
 .fxr-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;}
 .fxr-verdict{font-size:13px;line-height:1.7;color:var(--text);background:var(--sf3);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-top:12px;}
-.fxr-verdict b.pos{color:var(--green);}.fxr-verdict b.neg{color:var(--red);}
+.fxr-verdict b.pos{color:var(--up);}.fxr-verdict b.neg{color:var(--down);}
 .fxr-hint{font-size:12px;color:var(--text3);line-height:1.8;}
 .fxr-hint b{color:var(--text2);}
 </style>
@@ -588,7 +590,7 @@ function cardHTML(item, idx) {
   const qtyStr  = qty % 1 === 0 ? qty.toLocaleString() + '주' : qty.toFixed(4) + '주';
 
   const bw = Math.min(Math.abs(pnlRate) * 100 * 2, 100);
-  const bc = pnlUp ? 'var(--green)' : 'var(--red)';
+  const bc = pnlUp ? 'var(--up)' : 'var(--down)';
 
   return `<div class="stock-card ${dayUp ? 'pos-day' : 'neg-day'}" style="animation-delay:${(idx??0)*.04}s" onclick="openChart('${item.symbol}')">
     <div class="card-top">

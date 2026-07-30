@@ -42,6 +42,8 @@
   --accent2: #0099cc;
   --green:   #00e676;
   --red:     #ff5252;
+  --up:      #ff5252;  /* 상승·플러스 = 빨강 (한국식) */
+  --down:    #448aff;  /* 하락·마이너스 = 파랑 */
   --yellow:  #ffca28;
   --mono:    'JetBrains Mono', monospace;
   --sans:    'Noto Sans KR', sans-serif;
@@ -183,8 +185,8 @@ header {
 }
 .chip-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .08em; margin-bottom: 6px; }
 .chip-val { font-family: var(--mono); font-size: 15px; font-weight: 600; }
-.chip-val.pos { color: var(--green); }
-.chip-val.neg { color: var(--red); }
+.chip-val.pos { color: var(--up); }
+.chip-val.neg { color: var(--down); }
 
 /* 환율 바 */
 .fxbar {
@@ -318,7 +320,7 @@ header {
   border: 1px solid var(--bd);
 }
 .b-mkt.kr { color: var(--yellow); }
-.b-mkt.us { color: var(--green); }
+.b-mkt.us { color: var(--accent); }
 .b-author {
   font-family: var(--mono);
   font-size: 9px;
@@ -337,8 +339,8 @@ header {
 .card-pnl { text-align: right; flex-shrink: 0; }
 .pnl-num { font-family: var(--mono); font-size: 15px; font-weight: 600; }
 .pnl-pct { font-family: var(--mono); font-size: 12px; }
-.pos { color: var(--green); }
-.neg { color: var(--red); }
+.pos { color: var(--up); }
+.neg { color: var(--down); }
 
 .bar-wrap { margin-top: 10px; margin-bottom: 12px; }
 .bar-track { height: 3px; background: var(--bd2); border-radius: 2px; overflow: hidden; }
@@ -425,7 +427,7 @@ header {
 /* 모달 (화면 중앙 고정) */
 .overlay {
   position: fixed;
-  inset: 0;
+  top: 118px; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,.8);
   backdrop-filter: blur(4px);
   z-index: 200;
@@ -446,7 +448,7 @@ header {
   border: 1px solid var(--bd2);
   border-radius: 16px;
   width: min(100%, 520px);
-  max-height: 90vh;
+  max-height: calc(100vh - 150px);
   overflow-y: auto;
   box-shadow: 0 24px 80px rgba(0,0,0,.6);
   transform: translateY(20px);
@@ -1133,7 +1135,7 @@ function renderListWithPagination() {
   
   el.innerHTML = pageItems.map((h,i) => {
     const p = calcPnl(h), cls = p ? (p.d>=0?'pos':'neg') : '', sgn = p ? (p.d>=0?'+':'') : '';
-    const bw = p ? Math.min(Math.abs(p.pct),50)*2 : 0, bc = p ? (p.d>=0?'var(--green)':'var(--red)') : 'var(--bd2)';
+    const bw = p ? Math.min(Math.abs(p.pct),50)*2 : 0, bc = p ? (p.d>=0?'var(--up)':'var(--down)') : 'var(--bd2)';
     const bl = esc((h.brokers||[h.broker]).join(' · '));
     return `<div class="stock-card" onclick="openDet('${h.id}')" style="animation-delay:${i*.04}s">
       <div class="card-top">
