@@ -642,11 +642,13 @@ const LS_TOKEN = 'stocktoss_proxy_token';
 function proxyToken() { return localStorage.getItem(LS_TOKEN) || ''; }
 function authHeaders() { const t = proxyToken(); return t ? { 'x-proxy-token': t } : {}; }
 function promptForToken() {
-  const t = window.prompt('프록시 접근 토큰을 입력하세요 (최초 1회, 브라우저에 저장됨):', proxyToken());
-  if (t !== null) {
-    localStorage.setItem(LS_TOKEN, t.trim());
-    location.reload();
-  }
+  // 기존 토큰은 프롬프트에 노출하지 않음(빈 칸). 취소/빈 입력 시 기존 토큰 유지.
+  const t = window.prompt('프록시 접근 토큰을 입력하세요 (기존 토큰 유지하려면 취소):');
+  if (t === null) return;
+  const v = t.trim();
+  if (!v) return;
+  localStorage.setItem(LS_TOKEN, v);
+  location.reload();
 }
 
 // ── 데이터 로드
