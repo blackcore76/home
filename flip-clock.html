@@ -174,13 +174,19 @@ function formatDate(tz) {
   });
 }
 
-function updateBadges(badges, sod) {
+function isWeekend(tz) {
+  var dow = parseInt(new Intl.DateTimeFormat('en-US', {timeZone:tz, weekday:'narrow'}).formatToParts(new Date())[0].value, 10);
+  var dayStr = new Intl.DateTimeFormat('en-US', {timeZone:tz, weekday:'short'}).format(new Date());
+  return dayStr === 'Sat' || dayStr === 'Sun';
+}
+
+function updateBadges(badges, sod, weekend) {
   for (var i = 0; i < badges.length; i++) {
     var b = badges[i];
     var s = parseInt(b.getAttribute('data-s'), 10);
     var e = parseInt(b.getAttribute('data-e'), 10);
     var wrap = b.getAttribute('data-wrap') === '1';
-    var isOn = wrap ? (sod >= s || sod < e) : (sod >= s && sod < e);
+    var isOn = weekend ? false : (wrap ? (sod >= s || sod < e) : (sod >= s && sod < e));
     if (isOn && b.className.indexOf('off') !== -1) {
       b.className = 'badge on';
     } else if (!isOn && b.className.indexOf('on') !== -1) {
@@ -201,8 +207,8 @@ function tick() {
   var krSod = parseInt(kr.hour,10)*3600 + parseInt(kr.minute,10)*60 + parseInt(kr.second,10);
   var usSod = parseInt(us.hour,10)*3600 + parseInt(us.minute,10)*60 + parseInt(us.second,10);
 
-  updateBadges(krBadges, krSod);
-  updateBadges(usBadges, usSod);
+  updateBadges(krBadges, krSod, isWeekend(KR_TZ));
+  updateBadges(usBadges, usSod, isWeekend(US_TZ));
 
   if (kr.second === '00' || lastKrDate === '') {
     var kd = formatDate(KR_TZ);
