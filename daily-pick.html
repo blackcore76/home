@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080c14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -441,7 +441,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="resetToFirstPageAndRender()">
-  <input class="filter-input" type="text" id="filterName" oninput="resetToFirstPageAndRender()" placeholder="종목 검색...">
+  <input class="filter-input" type="text" id="filterName" placeholder="종목 검색...">
   <div class="count-chip" id="statChips">총 <span>0</span>건</div>
 </div>
 
@@ -706,6 +706,15 @@ function getFiltered() {
   const nv = document.getElementById('filterName').value.trim().toLowerCase();
   return picks.filter(p => (!dv || p.date===dv) && (!nv || p.name.toLowerCase().includes(nv)));
 }
+
+// 한글 IME 조합 보호
+(function(){
+  let c=false;
+  const f=document.getElementById('filterName');
+  f.addEventListener('compositionstart',()=>c=true);
+  f.addEventListener('compositionend',()=>{c=false;resetToFirstPageAndRender();});
+  f.addEventListener('input',()=>{if(!c)resetToFirstPageAndRender();});
+})();
 
 function resetToFirstPageAndRender() {
   currentPage = 1;

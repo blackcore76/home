@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#080c14">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1181,7 +1181,7 @@ function pickKrSym(code, name) { $symIn.value=code.trim(); $symIn.dataset.krName
 function pickSym(sym) { $symIn.value=sym; $symIn.dataset.krName=''; closeDrop(); }
 
 document.getElementById('runBtn').addEventListener('click', () => run());
-$symIn.addEventListener('keypress', e => { if(e.key==='Enter') { closeDrop(); run(); } });
+$symIn.addEventListener('keypress', e => { if(e.isComposing || e.keyCode===229) return; if(e.key==='Enter') { closeDrop(); run(); } });
 
 // AI 스캐너에서 넘어온 심볼 자동 입력
 (function() {

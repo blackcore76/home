@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
       <select id="filter-month" onchange="renderRecords()">
         <option value="">전체 기간</option>
       </select>
-      <input type="text" id="filter-search" placeholder="🔍 메모 검색..." style="max-width:160px" oninput="renderRecords()">
+      <input type="text" id="filter-search" placeholder="🔍 메모 검색..." style="max-width:160px">
       <span class="rec-count" id="rec-count"></span>
       <button class="rec-del-all" onclick="confirmDeleteAll()">전체 삭제</button>
     </div>
@@ -977,6 +977,15 @@ function updateMonthFilter(){
   sel.innerHTML='<option value="">전체 기간</option>'+
     months.map(m=>`<option value="${m}" ${m===cur?"selected":""}>${m}</option>`).join("");
 }
+
+// 한글 IME 조합 보호
+(function(){
+  let c=false;
+  const s=document.getElementById('filter-search');
+  s.addEventListener('compositionstart',()=>c=true);
+  s.addEventListener('compositionend',()=>{c=false;renderRecords();});
+  s.addEventListener('input',()=>{if(!c)renderRecords();});
+})();
 
 function renderRecords(){
   const month=document.getElementById("filter-month").value;

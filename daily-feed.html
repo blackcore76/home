@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080c14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -463,7 +463,7 @@ textarea::placeholder { color: var(--text3); }
 
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="resetToFirstPageAndRender()" placeholder="날짜 필터">
-  <input class="filter-input" type="text" id="filterText" oninput="resetToFirstPageAndRender()" placeholder="내용 검색...">
+  <input class="filter-input" type="text" id="filterText" placeholder="내용 검색...">
   <div class="count-chip" id="countChip">총 <span>0</span>건</div>
 </div>
 
@@ -857,6 +857,13 @@ function getFiltered() {
   );
 }
 
+// 한글 IME 조합 중 DOM 조작 방지
+let _composing = false;
+const _filterText = document.getElementById('filterText');
+_filterText.addEventListener('compositionstart', () => _composing = true);
+_filterText.addEventListener('compositionend', () => { _composing = false; resetToFirstPageAndRender(); });
+_filterText.addEventListener('input', () => { if (!_composing) resetToFirstPageAndRender(); });
+
 // 필터 변경 시 1페이지로 리셋하고 렌더링
 function resetToFirstPageAndRender() {
   currentPage = 1;
@@ -1005,6 +1012,7 @@ function toast(msg) {
 }
 
 document.getElementById('inText').addEventListener('keydown', e => {
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     checkLoginAndSubmit();

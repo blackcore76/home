@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080c14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -461,7 +461,7 @@ textarea::placeholder { color: var(--text3); }
   <select class="filter-input" id="filterCategory" onchange="applyFiltersAndRender()">
     <option value="">📁 모든 카테고리</option>
   </select>
-  <input class="filter-input" type="text" id="filterText" oninput="applyFiltersAndRender()" placeholder="URL / 메모 검색...">
+  <input class="filter-input" type="text" id="filterText" placeholder="URL / 메모 검색...">
   <div class="count-chip" id="countChip">총 <span>0</span>개</div>
 </div>
 
@@ -623,6 +623,13 @@ function addNewCategory() {
   cancelNewCategory();
   toast(`✅ "${newCat}" 카테고리가 추가되었습니다`);
 }
+
+// 한글 IME 조합 중 DOM 조작 방지
+let _composing = false;
+const _filterTextEl = document.getElementById('filterText');
+_filterTextEl.addEventListener('compositionstart', () => _composing = true);
+_filterTextEl.addEventListener('compositionend', () => { _composing = false; applyFiltersAndRender(); });
+_filterTextEl.addEventListener('input', () => { if (!_composing) applyFiltersAndRender(); });
 
 // 필터 적용
 function applyFiltersAndRender() {
@@ -916,6 +923,7 @@ function toast(msg) {
 
 // 엔터키로 저장 (URL 입력창에서)
 urlInput.addEventListener('keydown', e => {
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Enter') {
     e.preventDefault();
     checkLoginAndSubmit();

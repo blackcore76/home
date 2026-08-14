@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080c14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -364,7 +364,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
 <div class="tab-panel active" id="tabPanelAnalysis">
 <div class="filter-bar">
   <input class="filter-input" type="date" id="filterDate" oninput="resetPage()" style="width:140px;">
-  <input class="filter-input" type="text" id="filterText" oninput="resetPage()" placeholder="종목명·티커·메모..." style="width:160px;">
+  <input class="filter-input" type="text" id="filterText" placeholder="종목명·티커·메모..." style="width:160px;">
   <select class="filter-input" id="filterIndustry" onchange="resetPage()" style="width:100px;">
     <option value="">산업군 전체</option>
     <option value="기술산업">기술산업</option>
@@ -413,7 +413,7 @@ textarea.actual-input::placeholder{color:var(--text3);}
       <span class="hist-count" id="savedNewsCount">0건</span>
     </div>
     <div class="saved-search-bar">
-      <input class="saved-search-input" id="savedSearchInput" type="text" placeholder="종목명·티커·뉴스 제목 검색…" oninput="renderSavedNews()">
+      <input class="saved-search-input" id="savedSearchInput" type="text" placeholder="종목명·티커·뉴스 제목 검색…">
     </div>
     <div id="savedNewsFeed">
       <div class="news-empty"><div class="news-empty-icon">📂</div><p>저장된 브리핑이 없습니다</p></div>
@@ -1037,6 +1037,22 @@ function getFiltered() {
     (!jv || r.judge===jv)
   );
 }
+
+// 한글 IME 조합 보호
+(function(){
+  let c=false;
+  const ft=document.getElementById('filterText');
+  ft.addEventListener('compositionstart',()=>c=true);
+  ft.addEventListener('compositionend',()=>{c=false;resetPage();});
+  ft.addEventListener('input',()=>{if(!c)resetPage();});
+  const si=document.getElementById('savedSearchInput');
+  if(si){
+    let c2=false;
+    si.addEventListener('compositionstart',()=>c2=true);
+    si.addEventListener('compositionend',()=>{c2=false;renderSavedNews();});
+    si.addEventListener('input',()=>{if(!c2)renderSavedNews();});
+  }
+})();
 
 function resetPage() { currentPage=1; render(); }
 
