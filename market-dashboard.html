@@ -166,13 +166,13 @@
   .at-input:disabled{opacity:.3;cursor:not-allowed}
   .at-pct{font-size:9px;color:var(--muted);width:12px;flex-shrink:0}
 
-  /* 상단=녹/하단=적 */
-  .at-upper .at-toggle.on{background:rgba(0,230,118,.2);border-color:var(--up)}
-  .at-upper .at-toggle.on::after{background:var(--up)}
-  .at-upper .at-input:focus{border-color:var(--up)}
-  .at-lower .at-toggle.on{background:rgba(255,59,92,.2);border-color:var(--down)}
-  .at-lower .at-toggle.on::after{background:var(--down)}
-  .at-lower .at-input:focus{border-color:var(--down)}
+  /* 상단=적/하단=청 (한국 주식 컨벤션) */
+  .at-upper .at-toggle.on{background:rgba(255,59,92,.2);border-color:var(--down)}
+  .at-upper .at-toggle.on::after{background:var(--down)}
+  .at-upper .at-input:focus{border-color:var(--down)}
+  .at-lower .at-toggle.on{background:rgba(68,138,255,.2);border-color:var(--kr-down)}
+  .at-lower .at-toggle.on::after{background:var(--kr-down)}
+  .at-lower .at-input:focus{border-color:var(--kr-down)}
 
   /* 저장 버튼 */
   .alert-save-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
@@ -212,8 +212,8 @@
     .alert-table td:nth-child(2){grid-area:cur;align-self:center;text-align:right}
     .alert-table td:nth-child(3){grid-area:upper}
     .alert-table td:nth-child(4){grid-area:lower}
-    .alert-table td:nth-child(3)::before{content:'▲ 상단 알림';display:block;font-size:8px;font-weight:700;color:var(--up);letter-spacing:.1em;margin-bottom:4px}
-    .alert-table td:nth-child(4)::before{content:'▼ 하단 알림';display:block;font-size:8px;font-weight:700;color:var(--down);letter-spacing:.1em;margin-bottom:4px}
+    .alert-table td:nth-child(3)::before{content:'▲ 상단 알림';display:block;font-size:8px;font-weight:700;color:var(--down);letter-spacing:.1em;margin-bottom:4px}
+    .alert-table td:nth-child(4)::before{content:'▼ 하단 알림';display:block;font-size:8px;font-weight:700;color:var(--kr-down);letter-spacing:.1em;margin-bottom:4px}
     .at-cond{justify-content:flex-start}
     .at-input{width:120px}
   }
@@ -242,7 +242,7 @@
 
 <!-- 색상 안내 -->
 <div style="font-size:9px;color:var(--muted2);text-align:center;letter-spacing:.06em;margin:10px 0 4px;opacity:.7;">
-  📊 전체 미니차트 &nbsp;|&nbsp; 상승 <span style="color:var(--down)">●</span> 빨간색 &nbsp;·&nbsp; 하락 <span style="color:var(--kr-down)">●</span> 파란색 &nbsp;&nbsp;/&nbsp;&nbsp; VIX·WTI원유 상승 <span style="color:var(--kr-down)">●</span> 파란색 &nbsp;·&nbsp; 하락 <span style="color:var(--down)">●</span> 빨간색
+  📊 전체 미니차트 &nbsp;|&nbsp; 상승 <span style="color:var(--down)">●</span> 빨간색 &nbsp;·&nbsp; 하락 <span style="color:var(--kr-down)">●</span> 파란색
 </div>
 
 <!-- 공포·탐욕 인덱스 카드 -->
@@ -334,8 +334,8 @@
       <tr>
         <th>종목</th>
         <th>현재가</th>
-        <th style="color:#00e676">▲ 상단 알림</th>
-        <th style="color:#ff3b5c">▼ 하단 알림</th>
+        <th style="color:#ff3b5c">▲ 상단 알림</th>
+        <th style="color:#448aff">▼ 하단 알림</th>
       </tr>
     </thead>
     <tbody id="alert-tbody">
@@ -871,9 +871,7 @@ function spark(closes,isUp,market){
   const pts=closes.filter(p=>p!=null&&!isNaN(p));
   if(pts.length<3)return'';
   const W=200,H=34,mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||.001;
-let color;
-if(market==='vix'||market==='wti') color=isUp?'var(--kr-down)':'var(--down)';
-  else color=isUp?'var(--down)':'var(--kr-down)';
+  const color=isUp?'var(--down)':'var(--kr-down)';
   const coords=pts.map((p,i)=>`${((i/(pts.length-1))*W).toFixed(1)},${(H-2-((p-mn)/rng)*(H-6)).toFixed(1)}`);
   const gid=`g${sc++}`;
   const ap=`M${coords[0]} L${coords.join(' L')} L${W},${H} L0,${H} Z`;
@@ -895,16 +893,14 @@ async function updateCard(inst){
   const chg=px-prv,pct=prv?(chg/prv)*100:0,up=chg>=0;
   const cls=r.indicators?.quote?.[0]?.close??[];
   pEl.textContent=fmt(px,inst.fmt,inst.pre);
-  const colorClass=(inst.market==='vix'||inst.id==='wti')?(up?'kr-down':'down'):(up?'kr-up':'kr-down');
+  const colorClass=up?'kr-up':'kr-down';
   pEl.className=`cp ${colorClass}`;
   const sg=up?'+':'';
   cEl.textContent=`${sg}${chg.toFixed(2)} (${sg}${pct.toFixed(2)}%)`;
   cEl.className=`cc ${colorClass}`;
   sEl.innerHTML=spark(cls,up,inst.market)||'<div class="skel" style="opacity:.3"></div>';
   card.classList.remove('flu','fld','flku','flkd');void card.offsetWidth;
-  if(inst.market==='kr')card.classList.add(up?'flku':'flkd');
-  else if(inst.market==='vix')card.classList.add(up?'fld':'flu');
-  else card.classList.add(up?'flu':'fld');
+  card.classList.add(up?'flku':'flkd');
   const alertKeys = ['nasdaq','sp500','kospi','kosdaq','gold','usdkrw'];
   if(alertKeys.includes(inst.id)){
     latestPrices[inst.id] = px;
