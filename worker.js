@@ -56,13 +56,10 @@ async function handleRequest(req, event) {
       ttl = TTL.news;
     } else if (path === '/naver/debug') {
       const tab = qs.get('tab') || 'main';
-      const url = NEWS_URLS[tab] || NEWS_URLS.main;
-      const r = await fetch(url, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
-      var html = await r.text();
-      var idx = html.indexOf('news_read.naver');
-      if (idx < 0) idx = html.indexOf('article_id=');
-      var snippet = idx >= 0 ? html.slice(Math.max(0, idx - 200), idx + 2000) : html.slice(0, 3000);
-      return new Response(JSON.stringify({ status: r.status, url: url, firstLinkAt: idx, snippet: snippet }), { headers: CORS });
+      const url = newsApiUrl(tab, 5);
+      const r = await fetch(url, { headers: NEWS_HDR });
+      var body = await r.text();
+      return new Response(JSON.stringify({ status: r.status, url: url, snippet: body.slice(0, 3000) }), { headers: CORS });
     } else {
       return errRes('unknown route', 404);
     }
@@ -217,47 +214,91 @@ async function naverIndex() {
   };
 }
 
-var NEWS_URLS = {
-  main:     'https://finance.naver.com/news/mainnews.naver',
-  realtime: 'https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258&type=0',
-  popular:  'https://finance.naver.com/news/news_list.naver?mode=RANK',
-  focus:    'https://finance.naver.com/news/news_list.naver?mode=LSS3D&section_id=101&section_id2=258&section_id3=401',
+// 2026: 네이버가 금융뉴스를 finance.naver.com(EUC-KR HTML) → stock.naver.com(JSON API)로 이전.
+// 옛 news_list.naver / mainnews.naver 는 전부 302 리다이렉트되어 스크래핑 불가.
+// 새 same-origin API: https://stock.naver.com/api/domestic/news/list?category=..&page=..&pageSize=..&date=YYYYMMDD
+//   - 국내 3탭은 domestic/news/list, 해외뉴스는 foreign/news/worldNews (응답 형태가 다름)
+var NEWS_HDR = {
+  'Referer': 'https://stock.naver.com/',
+  'User-Agent': NV_HDR['User-Agent'],
+  'Accept': 'application/json, */*;q=0.9',
+  'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8',
 };
 
-async function naverNews(tab, count) {
-  var baseUrl = NEWS_URLS[tab] || NEWS_URLS.main;
-  var items = [];
+// 프런트 탭 키 → 네이버 category (focus 탭은 네이버에서 폐지 → 해외뉴스로 교체)
+var NEWS_CAT = {
+  realtime: 'flashnews',
+  main:     'mainnews',
+  popular:  'ranknews',
+};
 
-  if (baseUrl.indexOf('news_list.naver') >= 0) {
-    // 페이지네이션 지원 탭: 3페이지 병렬 요청
-    var buffers = await Promise.all([1, 2, 3].map(function(p) {
-      return fetch(baseUrl + '&page=' + p, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) })
-        .then(function(r) { return r.ok ? r.arrayBuffer() : null; })
-        .catch(function() { return null; });
-    }));
-    var seen = {};
-    for (var i = 0; i < buffers.length; i++) {
-      if (!buffers[i]) continue;
-      var html = new TextDecoder('euc-kr').decode(buffers[i]);
-      var tickerEnd = html.indexOf('</dl>', html.indexOf('sub_tit_ticker'));
-      if (tickerEnd > 0) html = html.slice(tickerEnd + 5);
-      var pageItems = parseNaverNewsAny(html, count);
-      pageItems.forEach(function(item) {
-        if (!seen[item.url]) { seen[item.url] = true; items.push(item); }
-      });
-    }
-    items = items.slice(0, count);
+function newsApiUrl(tab, count) {
+  if (tab === 'focus') {
+    return 'https://stock.naver.com/api/foreign/news/worldNews?page=1&pageSize=' + count;
+  }
+  var cat = NEWS_CAT[tab] || 'mainnews';
+  return 'https://stock.naver.com/api/domestic/news/list?category=' + cat +
+         '&page=1&pageSize=' + count + '&date=' + kstYmd();
+}
+
+async function naverNews(tab, count) {
+  count = count > 0 ? count : 25;
+  var res = await fetch(newsApiUrl(tab, count), { headers: NEWS_HDR });
+  if (!res.ok) throw new Error('news ' + res.status);
+  var data = await res.json();
+  var today = kstYmd();
+  var items;
+
+  if (tab === 'focus') {
+    // 해외뉴스: 최상위가 배열, 필드는 oid/aid/tit/ohnm/dt, 상세는 /news/worldnews/{aid}
+    var arr = Array.isArray(data) ? data : (data.articles || []);
+    items = arr.map(function(a) {
+      return {
+        url: 'https://stock.naver.com/news/worldnews/' + a.aid,
+        title: decodeEntities(String(a.tit || '').trim()),
+        time: fmtNewsTime(a.dt, today),
+        source: a.ohnm || '',
+      };
+    });
   } else {
-    // 단일 페이지 탭 (주요뉴스 등 편집 큐레이션)
-    var res = await fetch(baseUrl, { headers: Object.assign({}, NV_HDR, { 'Accept': 'text/html,*/*' }) });
-    if (!res.ok) throw new Error('news ' + res.status);
-    var html = new TextDecoder('euc-kr').decode(await res.arrayBuffer());
-    var tickerEnd = html.indexOf('</dl>', html.indexOf('sub_tit_ticker'));
-    if (tickerEnd > 0) html = html.slice(tickerEnd + 5);
-    items = parseNaverNewsAny(html, count);
+    // 국내뉴스: {articles:[{officeId, articleId, title, officeHname, datetime}]}
+    var list = data.articles || [];
+    items = list.map(function(a) {
+      return {
+        url: 'https://n.news.naver.com/article/' + a.officeId + '/' + a.articleId,
+        title: decodeEntities(String(a.title || '').trim()),
+        time: fmtNewsTime(a.datetime, today),
+        source: a.officeHname || '',
+      };
+    });
   }
 
-  return { tab: tab, items: items };
+  var seen = {}, out = [];
+  for (var i = 0; i < items.length && out.length < count; i++) {
+    var it = items[i];
+    if (!it.title || it.title.length < 6 || seen[it.url]) continue;
+    seen[it.url] = true;
+    out.push(it);
+  }
+  return { tab: tab, items: out };
+}
+
+// Worker는 UTC로 도므로 KST(UTC+9) 기준 YYYYMMDD 생성
+function kstYmd() {
+  var d = new Date(Date.now() + 9 * 3600 * 1000);
+  var p = function(n) { return (n < 10 ? '0' : '') + n; };
+  return '' + d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate());
+}
+
+// "2026-09-11 15:30:18"(국내) 또는 "20260911152705"(해외) → 오늘이면 HH:MM, 아니면 MM.DD
+function fmtNewsTime(s, todayYmd) {
+  s = String(s || '');
+  var Y, Mo, D, h, mi;
+  var m = s.match(/(\d{4})-(\d{2})-(\d{2})\D+(\d{2}):(\d{2})/);
+  if (m) { Y = m[1]; Mo = m[2]; D = m[3]; h = m[4]; mi = m[5]; }
+  else if (/^\d{14}$/.test(s)) { Y = s.slice(0,4); Mo = s.slice(4,6); D = s.slice(6,8); h = s.slice(8,10); mi = s.slice(10,12); }
+  else return '';
+  return (Y + Mo + D) === todayYmd ? (h + ':' + mi) : (Mo + '.' + D);
 }
 
 var HTML_ENTITIES = {
@@ -276,84 +317,6 @@ function decodeEntities(s) {
     .replace(/&#(\d+);/g, function(_, n) { return String.fromCharCode(Number(n)); })
     .replace(/&#x([0-9a-fA-F]+);/g, function(_, h) { return String.fromCharCode(parseInt(h, 16)); })
     .replace(/ /g, ' ');
-}
-
-// Universal parser: works for all Naver Finance news pages
-// Extracts full title from title= attribute (link text is always truncated on Naver)
-function parseNaverNewsAny(html, max) {
-  var items = [];
-  var seen = {};
-
-  var dates = [];
-  var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
-  var m;
-  while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
-
-  var sources = [];
-  var srcRe = /<(?:span|em)[^>]*class="[^"]*(?:source|press_name|press)[^"]*"[^>]*>([^<]+)<\/(?:span|em)>/gi;
-  while ((m = srcRe.exec(html)) !== null) sources.push(m[1].trim());
-
-  var di = 0;
-
-  // Match opening <a> tag whose href contains news_read.naver or article_id=
-  var tagRe = /<a\b([^>]*(?:news_read\.naver|article_id=)[^>]*)>/gi;
-  while ((m = tagRe.exec(html)) !== null && items.length < max) {
-    var attrs = m[1];
-    var hrefM = /href="([^"]+)"/.exec(attrs);
-    var titleM = /title="([^"]+)"/.exec(attrs);
-    if (!hrefM || !titleM) continue;
-    var href = hrefM[1].trim();
-    var title = decodeEntities(titleM[1]);
-    if (!title || title.length < 8 || seen[href] || seen[title]) continue;
-    seen[href] = true;
-    seen[title] = true;
-    items.push({
-      url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href,
-      title: title,
-      time: dates[di] || '',
-      source: sources[di] || '',
-    });
-    di++;
-  }
-  return items;
-}
-
-function parseNaverNewsList(html, max) {
-  var dates = [];
-  var m;
-  var dateRe = /<span[^>]*class="[^"]*wdate[^"]*"[^>]*>([^<]+)<\/span>/gi;
-  while ((m = dateRe.exec(html)) !== null) dates.push(m[1].trim());
-
-  var items = [];
-  var seen = {};
-  var di = 0;
-
-  // 1차: <dt> 안의 <a> (news_list 표준 구조)
-  var dtRe = /<dt[^>]*>([\s\S]*?)<\/dt>/gi;
-  while ((m = dtRe.exec(html)) !== null && items.length < max) {
-    var inner = m[1];
-    var aM = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i.exec(inner);
-    if (!aM) continue;
-    var href = aM[1].trim();
-    var title = decodeEntities(aM[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
-    if (!title || title.length < 6 || href.indexOf('javascript') === 0 || seen[href]) continue;
-    seen[href] = true;
-    items.push({ url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href, title: title, time: dates[di++] || '' });
-  }
-
-  // 2차 폴백: href에 article_id 포함된 모든 <a>
-  if (items.length === 0) {
-    var linkRe = /<a[^>]+href="([^"]*article_id=[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-    while ((m = linkRe.exec(html)) !== null && items.length < max) {
-      var href = m[1].trim();
-      var title = decodeEntities(m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
-      if (!title || title.length < 6 || seen[href]) continue;
-      seen[href] = true;
-      items.push({ url: href.indexOf('http') === 0 ? href : 'https://finance.naver.com' + href, title: title, time: dates[di++] || '' });
-    }
-  }
-
-  return items;
 }
 
 function nv(v) {
