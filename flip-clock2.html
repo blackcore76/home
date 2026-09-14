@@ -156,6 +156,22 @@ var usDateEl = document.getElementById('usDate');
 var krBadges = document.querySelectorAll('#krBadges .badge');
 var usBadges = document.querySelectorAll('#usBadges .badge');
 
+/* 시:분 텍스트 노드 + 초 span 을 한 번만 만들어 재사용.
+   (매초 innerHTML 재파싱은 구형 WebView에서 노드 생성/파기가 쌓여
+    장시간 구동 시 메모리·GC 부담 → 멈춤 유발) */
+function setupTimeEl(el) {
+  el.textContent = '';
+  var hm  = document.createTextNode('--:--');
+  var sec = document.createElement('span');
+  sec.className = 'sec';
+  sec.appendChild(document.createTextNode('--'));
+  el.appendChild(hm);
+  el.appendChild(sec);
+  return { hm: hm, sec: sec.firstChild };
+}
+var krNode = setupTimeEl(krTimeEl);
+var usNode = setupTimeEl(usTimeEl);
+
 function getTimeParts(tz) {
   var d = new Date();
   var f = new Intl.DateTimeFormat('en-GB', {
@@ -195,8 +211,13 @@ function tick() {
   var kr = getTimeParts(KR_TZ);
   var us = getTimeParts(US_TZ);
 
-  krTimeEl.innerHTML = kr.hour + ':' + kr.minute + '<span class="sec">' + kr.second + '</span>';
-  usTimeEl.innerHTML = us.hour + ':' + us.minute + '<span class="sec">' + us.second + '</span>';
+  // 바뀐 값만 갱신 (innerHTML 미사용 → 노드 재생성 없음)
+  var krHM = kr.hour + ':' + kr.minute;
+  if (krNode.hm.nodeValue !== krHM)     krNode.hm.nodeValue = krHM;
+  if (krNode.sec.nodeValue !== kr.second) krNode.sec.nodeValue = kr.second;
+  var usHM = us.hour + ':' + us.minute;
+  if (usNode.hm.nodeValue !== usHM)     usNode.hm.nodeValue = usHM;
+  if (usNode.sec.nodeValue !== us.second) usNode.sec.nodeValue = us.second;
 
   var krSod = parseInt(kr.hour, 10) * 3600 + parseInt(kr.minute, 10) * 60 + parseInt(kr.second, 10);
   var usSod = parseInt(us.hour, 10) * 3600 + parseInt(us.minute, 10) * 60 + parseInt(us.second, 10);
@@ -216,6 +237,13 @@ function tick() {
 
 tick();
 setInterval(tick, 1000);
+
+/* ── 장시간(24시간 탁상시계) 구동 대비 자가복구 ──
+   구형 WebView는 며칠 켜두면 누수/멈춤이 생길 수 있어 30분마다 새로고침.
+   화면이 보일 때만 리로드해 사용 중 방해를 줄임. */
+setInterval(function(){
+  if (document.visibilityState !== 'hidden') location.reload();
+}, 30 * 60 * 1000);
 
 /* ── 화면 꺼짐 방지 (지원 기기에서만) ── */
 if (navigator.wakeLock && navigator.wakeLock.request) {
@@ -356,7 +384,13 @@ if (navigator.wakeLock && navigator.wakeLock.request) {
         return html + html;
     }
 
+    var loading = false;
     function loadTicker() {
+        /* 이전 주기가 안 끝났거나 화면이 숨겨졌으면 건너뛰기
+           (구형 기기에서 요청이 겹쳐 쌓이면 메모리·소켓이 불어나 멈춤 유발) */
+        if (loading) return Promise.resolve();
+        if (document.visibilityState === 'hidden') return Promise.resolve();
+        loading = true;
         var jobs = [];
         for (var i = 0; i < TICKER_INSTR.length; i++) {
             jobs.push(fetchSym(TICKER_INSTR[i].sym).then(null, function(){ return null; }));
@@ -382,7 +416,7 @@ if (navigator.wakeLock && navigator.wakeLock.request) {
                 return;
             }
             track.innerHTML = buildHTML(items);
-        });
+        }).then(function(){ loading = false; }, function(){ loading = false; });
     }
 
     loadTicker();
