@@ -74,13 +74,15 @@ body{color:#fff;
 
 /* ────── 전체화면 버튼 ────── */
 #fsBtn{position:fixed;right:1.6vh;bottom:1.6vh;z-index:99;
-  width:7vh;height:7vh;min-width:38px;min-height:38px;
-  border-radius:50%;background:rgba(255,255,255,.09);
-  color:#9aa7b4;font-size:3.4vh;
+  width:7vh;height:7vh;min-width:44px;min-height:44px;
+  border-radius:50%;background:rgba(255,255,255,.22);
+  border:1px solid rgba(255,255,255,.4);
+  color:#f2f6fb;font-size:3.4vh;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;-webkit-transition:opacity .4s;transition:opacity .4s;opacity:.3}
-#fsBtn:active{background:rgba(255,255,255,.2)}
-#fsBtn.hide{opacity:0;pointer-events:none}
+  cursor:pointer;-webkit-transition:opacity .4s;transition:opacity .4s;opacity:.85}
+#fsBtn:active{background:rgba(255,255,255,.4)}
+/* 자동 숨김 때도 완전히 사라지지 않고 흐릿하게 남겨 항상 찾아 누를 수 있게 */
+#fsBtn.hide{opacity:.35}
 
 /* ────── 세로로 들었을 때 안내 ────── */
 #rot{display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:120;background:#000;
