@@ -257,9 +257,11 @@ main{
   font-size:26px;
   margin-bottom:16px;
   display:block;
-  transition:transform .3s;
+  color:var(--stone);
+  line-height:0;
+  transition:transform .3s,color .3s;
 }
-.tool-card:hover .tool-icon{transform:translateY(-3px)}
+.tool-card:hover .tool-icon{transform:translateY(-3px);color:var(--gold)}
 
 .tool-name{
   font-family:'Playfair Display',Georgia,serif;
@@ -748,5 +750,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<script src="bc-icons.js"></script>
 </body>
 </html>
