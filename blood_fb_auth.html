@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="혈압기록부">
-<meta name="theme-color" content="#12263F">
+<meta name="theme-color" content="#0d0f12">
 <title>혈압 기록부</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -364,6 +364,104 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background
   .stages-grid{grid-template-columns:repeat(2,1fr)}
   .stats-row{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ── 메인 톤(ink · stone · gold) 적용 — SYS/DIA/PULSE 색과 혈압 단계 색의 의미는 유지 ── */
+:root:root{
+  --navy:#c9a84c;--navy2:#a09488;--navy3:#c9a84c;
+  --red:#E5484D;--red-lt:rgba(229,72,77,.12);
+  --blue:#5B9BE6;--blue-lt:rgba(91,155,230,.12);
+  --green:#4CC38A;--green-lt:rgba(76,195,138,.12);
+  --bg:#0d0f12;--card:#13171e;--sf2:#181d25;--sf3:#1f252e;
+  --text:#d8d0c8;--sub:#a09488;--hint:#83796f;
+  --border:rgba(200,191,176,.10);
+  --normal:rgba(76,195,138,.14);--normal-t:#6FD3A1;
+  --elevated:rgba(229,179,58,.14);--elevated-t:#E5C268;
+  --stage1:rgba(240,140,60,.15);--stage1-t:#F0A060;
+  --stage2:rgba(229,72,77,.16);--stage2-t:#F07075;
+  --crisis:rgba(229,72,77,.30);--crisis-t:#FF9A9D;
+  --low:rgba(91,155,230,.15);--low-t:#8DBBF0;
+  --shadow:none;
+}
+body{background:var(--bg)}
+::selection{background:rgba(201,168,76,.3)}
+:focus-visible{outline:2px solid #c9a84c;outline-offset:2px}
+/* 헤더 */
+.hdr{background:rgba(13,15,18,.96);box-shadow:none;border-bottom:1px solid var(--border)}
+.hdr-title{font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:600;color:#f0ebe3;letter-spacing:0}
+.hdr-title span{font-family:'Noto Sans KR',system-ui,sans-serif;color:var(--hint)}
+.hdr-btn{background:var(--sf2);border:1px solid var(--border);color:var(--text);font-weight:500}
+.hdr-btn:hover{background:var(--sf3)}
+.hdr-btn:active{background:var(--sf3)}
+.user-avatar{border:1px solid rgba(200,191,176,.3)}
+.user-menu{background:var(--card);border:1px solid rgba(200,191,176,.14);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.user-menu-name{color:#f0ebe3;font-weight:600}
+.logout-btn{background:var(--red-lt);font-weight:500}
+/* 탭 */
+.tabs{border-top:1px solid var(--border)}
+.tab{color:var(--hint);border-bottom-width:2px;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--sub)}
+.tab.on{color:#f0ebe3;border-bottom-color:#c9a84c;font-weight:600}
+.tab-badge{background:var(--sf3);color:var(--text);font-weight:500}
+/* 카드 */
+.card,.kpi{border:1px solid var(--border)}
+.card-hd{color:var(--text);font-weight:600}
+.field label,.vital-box label,.edit-field label,.rec-tbl th,.kpi-lbl{text-transform:none;letter-spacing:0;font-weight:600;font-size:12px}
+.field input,.field textarea,.field select,.edit-field input,.edit-field textarea,
+.rec-toolbar select,.rec-toolbar input,.stepper{background:var(--sf2);border:1px solid rgba(200,191,176,.14);color:var(--text);color-scheme:dark}
+.field input:focus,.field textarea:focus,.edit-field input:focus,.edit-field textarea:focus{background:var(--sf2);border-color:#c9a84c}
+.stepper:focus-within{border-color:#c9a84c}
+.step-btn{color:var(--sub)}
+.step-btn:active{background:var(--sf3)}
+.step-input,.kpi-val,.s-cnt,.ms-val,.r-sys,.r-dia,.r-pulse{font-variant-numeric:tabular-nums}
+.step-input,.r-sys,.r-dia,.r-pulse,.edit-field input.sys-input,.edit-field input.dia-input,.edit-field input.pulse-input{font-weight:600}
+::placeholder{color:var(--hint)}
+/* 판정 박스 */
+.judge-lbl,.edit-judge-box .judge-lbl{color:var(--sub)}
+.judge-val{font-weight:600}
+/* 저장 버튼: 오프화이트 + 잉크 글씨 */
+.save-btn{background:#f0ebe3;color:#0d0f12;font-weight:600;letter-spacing:0;transition:background-color .15s}
+.save-btn:hover{background:#e2dbd1}
+.save-btn:active{background:#d8d0c8;transform:none}
+.save-btn.alt{background:var(--sf2);color:var(--text);border:1px solid rgba(200,191,176,.14)}
+.save-btn.alt:hover{background:var(--sf3)}
+/* 기록 표 */
+.rec-tbl th{background:var(--sf2);border-bottom:1px solid var(--border);color:var(--sub)}
+.rec-tbl tr:hover td{background:var(--sf2)}
+.r-date{color:var(--text)}
+.r-badge{font-weight:600}
+.rec-del-all,.del-btn,.edit-btn{border:1px solid var(--border)}
+.del-btn:active{background:rgba(229,72,77,.2)}
+.edit-btn:active{background:rgba(91,155,230,.2)}
+/* 통계 */
+.kpi-val{font-weight:600}
+.kpi.count .kpi-val{color:#f0ebe3}
+.kpi.pp .kpi-val{color:#B49CE0}
+.kpi.week .kpi-val{color:#c9a84c}
+.stage-item .s-name{font-weight:600}
+.stage-item .s-cnt{font-weight:600}
+.mini-stat{background:var(--sf2);border:1px solid var(--border)}
+.mini-stat .ms-val{color:#f0ebe3;font-weight:600}
+/* 차트 */
+.range-btn{background:var(--sf2);border:1px solid rgba(200,191,176,.14);color:var(--sub);font-weight:500;transition:background-color .15s,color .15s}
+.range-btn.on{background:#f0ebe3;color:#0d0f12;border-color:#f0ebe3}
+.legend-item{font-weight:500;color:var(--sub)}
+#tooltip{background:rgba(19,23,30,.97);border:1px solid rgba(200,191,176,.14);color:var(--text);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+/* 모달·토스트 */
+.modal,.edit-modal{background:var(--card);border:1px solid rgba(200,191,176,.14)}
+.modal h3,.edit-modal h3{color:#f0ebe3;font-weight:600}
+.modal .btns .cancel,.edit-modal .btns .cancel{background:var(--sf3)!important;color:var(--text)!important}
+.modal .btns .confirm,.edit-modal .btns .confirm{background:#f0ebe3!important;color:#0d0f12!important}
+.modal-bg{background:rgba(0,0,0,.65)}
+#toast{background:#1f252e;border:1px solid rgba(200,191,176,.14);color:#f0ebe3;transition:transform .3s ease}
+/* 설치 안내 */
+.install-card{background:var(--card);border:1px solid var(--border);color:var(--text)}
+.install-card h3{color:#f0ebe3;font-weight:600}
+.install-num{background:var(--sf3);color:#c9a84c;font-weight:600}
+.install-step strong{color:#c9a84c}
+/* 로딩 */
+#loading-overlay{background:rgba(13,15,18,.88)}
+.spinner{border-color:rgba(200,191,176,.15);border-top-color:#c9a84c}
+.loading-txt{font-weight:500;letter-spacing:0;color:var(--text)}
 </style>
 <script src="home-bar.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
@@ -389,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-title">🩺 혈압 기록부 <span id="hdr-date"></span><span id="sync-status" style="font-size:11px;margin-left:6px" title="동기화 상태"></span></div>
+    <div class="hdr-title">혈압 기록부 <span id="hdr-date"></span><span id="sync-status" style="font-size:11px;margin-left:6px" title="동기화 상태"></span></div>
     <div class="hdr-actions">
       <button class="hdr-btn" onclick="showExportMenu()">💾 내보내기</button>
       <img id="user-avatar" class="user-avatar" src="" alt="프로필" onclick="toggleUserMenu()" style="display:none">
@@ -406,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
     <div class="tab" onclick="goTab(1)">📋 기록 <span class="tab-badge" id="tb-cnt"></span></div>
     <div class="tab" onclick="goTab(2)">📊 통계</div>
     <div class="tab" onclick="goTab(3)">📈 차트</div>
-    <div class="tab" onclick="goTab(4)">ℹ️ 도움말</div>
+    <div class="tab" onclick="goTab(4)">💡 도움말</div>
   </div>
 </div>
 
@@ -464,9 +562,9 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
       </div>
     </div>
     <!-- Judgment -->
-    <div class="judge-box" id="judge-box" style="background:#F3F4F6">
+    <div class="judge-box" id="judge-box" style="background:#181d25">
       <div class="judge-lbl">혈압 판정</div>
-      <div class="judge-val" id="judge-val" style="color:#9CA3AF">값을 입력하세요</div>
+      <div class="judge-val" id="judge-val" style="color:#83796f">값을 입력하세요</div>
       <div class="judge-sub" id="judge-sub"></div>
     </div>
   </div>
@@ -544,9 +642,9 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
       <button class="range-btn" onclick="setRange(0,this)">전체</button>
     </div>
     <div class="chart-legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>SYS 수축기</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>DIA 이완기</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#43A047;border:2px dashed #43A047;background:transparent"></div>PULSE 맥박</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E5484D"></div>SYS 수축기</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#5B9BE6"></div>DIA 이완기</div>
+      <div class="legend-item"><div class="legend-dot" style="border:2px dashed #4CC38A;background:transparent"></div>PULSE 맥박</div>
     </div>
     <canvas id="chartCanvas"></canvas>
     <div class="empty" id="chart-empty" style="display:none">
@@ -583,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:320px">
       <thead>
-        <tr style="background:#EEF3F8">
+        <tr style="background:#181d25">
           <th style="padding:10px;text-align:left;font-size:11px;color:var(--sub)">분류</th>
           <th style="padding:10px;text-align:center;font-size:11px;color:var(--sub)">수축기 SYS</th>
           <th style="padding:10px;text-align:center;font-size:11px;color:var(--sub)">이완기 DIA</th>
@@ -598,9 +696,9 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
   <div class="card">
     <div class="card-hd">💾 데이터 관리</div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="save-btn" style="background:#1B5E20" onclick="exportCSV()">📥 CSV 내보내기 (Excel 호환)</button>
-      <button class="save-btn" style="background:#0D47A1" onclick="exportJSON()">📦 JSON 백업 내보내기</button>
-      <button class="save-btn" style="background:#4A148C" onclick="document.getElementById('importFile').click()">📂 JSON 백업 불러오기</button>
+      <button class="save-btn alt" onclick="exportCSV()">📥 CSV 내보내기 (Excel 호환)</button>
+      <button class="save-btn alt" onclick="exportJSON()">📦 JSON 백업 내보내기</button>
+      <button class="save-btn alt" onclick="document.getElementById('importFile').click()">📂 JSON 백업 불러오기</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
     </div>
   </div>
@@ -667,9 +765,9 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
         <input type="number" id="edit-pulse" class="pulse-input" min="30" max="200">
       </div>
     </div>
-    <div class="edit-judge-box" id="edit-judge-box" style="background:#F3F4F6;margin-bottom:12px">
+    <div class="edit-judge-box" id="edit-judge-box" style="background:#181d25;margin-bottom:12px">
       <div class="judge-lbl">혈압 판정</div>
-      <div class="judge-val" id="edit-judge-val" style="color:#9CA3AF">—</div>
+      <div class="judge-val" id="edit-judge-val" style="color:#83796f">—</div>
     </div>
     <div class="edit-field" style="margin-bottom:16px">
       <label>📝 메모</label>
@@ -688,8 +786,8 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
     <h3>💾 데이터 내보내기</h3>
     <p>내보낼 형식을 선택하세요</p>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="save-btn" style="background:#1B5E20" onclick="exportCSV();closeExport()">📥 CSV (Excel에서 열기)</button>
-      <button class="save-btn" style="background:#0D47A1" onclick="exportJSON();closeExport()">📦 JSON 백업</button>
+      <button class="save-btn alt" onclick="exportCSV();closeExport()">📥 CSV (Excel에서 열기)</button>
+      <button class="save-btn alt" onclick="exportJSON();closeExport()">📦 JSON 백업</button>
     </div>
     <div class="btns" style="margin-top:16px">
       <button class="cancel" onclick="closeExport()">닫기</button>
@@ -726,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(adjustContentTop,
 // ── PWA MANIFEST ──
 const MANIFEST = {
   name:"혈압 기록부",short_name:"혈압기록",description:"매일 혈압 측정 및 기록 관리",
-  start_url:".",display:"standalone",background_color:"#12263F",theme_color:"#12263F",
+  start_url:".",display:"standalone",background_color:"#0d0f12",theme_color:"#0d0f12",
   orientation:"any",
   icons:[{
     src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2312263F'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E%F0%9F%A9%BA%3C/text%3E%3C/svg%3E",
@@ -771,9 +869,9 @@ function showLoginScreen(on){
 }
 function setSyncStatus(state){
   const el=document.getElementById("sync-status");
-  if(state==="ok")  el.innerHTML='<span class="sync-dot sync-ok"></span><span style="color:rgba(255,255,255,.6);font-size:10px">동기화됨</span>';
-  if(state==="ing") el.innerHTML='<span class="sync-dot sync-ing"></span><span style="color:rgba(255,255,255,.6);font-size:10px">저장 중</span>';
-  if(state==="err") el.innerHTML='<span class="sync-dot sync-err"></span><span style="color:rgba(255,255,255,.6);font-size:10px">오류</span>';
+  if(state==="ok")  el.innerHTML='<span class="sync-dot sync-ok"></span><span style="color:#83796f;font-size:11px">동기화됨</span>';
+  if(state==="ing") el.innerHTML='<span class="sync-dot sync-ing"></span><span style="color:#83796f;font-size:11px">저장 중</span>';
+  if(state==="err") el.innerHTML='<span class="sync-dot sync-err"></span><span style="color:#83796f;font-size:11px">오류</span>';
 }
 
 // ── AUTH ──
@@ -922,8 +1020,8 @@ function onVitalChange(){
   const val=document.getElementById("judge-val");
   const sub=document.getElementById("judge-sub");
   if(!s||!d){
-    box.style.background="#F3F4F6";
-    val.style.color="#9CA3AF";
+    box.style.background="#181d25";
+    val.style.color="#83796f";
     val.textContent="값을 입력하세요";
     sub.textContent="";
     return;
@@ -1044,8 +1142,8 @@ function onEditVitalChange(){
   const box=document.getElementById("edit-judge-box");
   const val=document.getElementById("edit-judge-val");
   if(!s||!d){
-    box.style.background="#F3F4F6";
-    val.style.color="#9CA3AF";
+    box.style.background="#181d25";
+    val.style.color="#83796f";
     val.textContent="—";
     return;
   }
@@ -1196,8 +1294,8 @@ function renderChart(){
 
   // BG zones
   const zones=[
-    [180,YMAX,"#EF9A9A33"],[140,180,"#FFCDD233"],[130,140,"#FFE0B233"],
-    [120,130,"#FFF3CD33"],[90,120,"#C8F0C833"],[YMIN,90,"#BBDEFB33"]
+    [180,YMAX,"rgba(229,72,77,.14)"],[140,180,"rgba(229,72,77,.08)"],[130,140,"rgba(240,140,60,.07)"],
+    [120,130,"rgba(229,179,58,.06)"],[90,120,"rgba(76,195,138,.06)"],[YMIN,90,"rgba(91,155,230,.07)"]
   ];
   zones.forEach(([lo,hi,clr])=>{
     ctx.fillStyle=clr;
@@ -1208,16 +1306,16 @@ function renderChart(){
   [60,80,90,120,130,140,180].forEach(v=>{
     if(v<YMIN||v>YMAX)return;
     const y=toY(v);
-    ctx.strokeStyle="rgba(0,0,0,.08)";ctx.lineWidth=1;
+    ctx.strokeStyle="rgba(200,191,176,.10)";ctx.lineWidth=1;
     ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(PAD.l+CW,y);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle="#888";ctx.font=`10px system-ui`;ctx.textAlign="right";
+    ctx.fillStyle="#83796f";ctx.font=`10px system-ui`;ctx.textAlign="right";
     ctx.fillText(v,PAD.l-5,y+3.5);
   });
 
   // X-axis labels
   const step=Math.max(1,Math.floor(data.length/10));
-  ctx.fillStyle="#888";ctx.font=`10px system-ui`;ctx.textAlign="center";
+  ctx.fillStyle="#83796f";ctx.font=`10px system-ui`;ctx.textAlign="center";
   data.forEach((r,i)=>{
     if(i%step===0||i===data.length-1){
       const d=new Date(r.date+"T00:00:00");
@@ -1241,16 +1339,16 @@ function renderChart(){
       const x=toX(i),y=toY(Math.min(Math.max(r[key],YMIN),YMAX));
       ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
       ctx.fillStyle=color;ctx.fill();
-      ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();
+      ctx.strokeStyle="#13171e";ctx.lineWidth=1.5;ctx.stroke();
     });
   }
 
-  drawLine("pulse","#43A047",true);
-  drawLine("dia","#1E88E5");
-  drawLine("sys","#E53935");
+  drawLine("pulse","#4CC38A",true);
+  drawLine("dia","#5B9BE6");
+  drawLine("sys","#E5484D");
 
   // Axes
-  ctx.strokeStyle="rgba(0,0,0,.15)";ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.strokeStyle="rgba(200,191,176,.18)";ctx.lineWidth=1;ctx.setLineDash([]);
   ctx.beginPath();ctx.moveTo(PAD.l,PAD.t);ctx.lineTo(PAD.l,PAD.t+CH);
   ctx.lineTo(PAD.l+CW,PAD.t+CH);ctx.stroke();
 
@@ -1274,9 +1372,9 @@ function renderChart(){
     const jj=getJudge(r.sys,r.dia);
     tt.style.display="block";
     tt.innerHTML=`<div class="tt-date">${r.date} ${r.time||""}</div>
-      <div class="tt-row"><span style="color:#EF9A9A">●</span> SYS: <b>${r.sys}</b> mmHg</div>
-      <div class="tt-row"><span style="color:#64B5F6">●</span> DIA: <b>${r.dia}</b> mmHg</div>
-      <div class="tt-row"><span style="color:#81C784">●</span> PULSE: <b>${r.pulse}</b> bpm</div>
+      <div class="tt-row"><span style="color:#E5484D">●</span> SYS: <b>${r.sys}</b> mmHg</div>
+      <div class="tt-row"><span style="color:#5B9BE6">●</span> DIA: <b>${r.dia}</b> mmHg</div>
+      <div class="tt-row"><span style="color:#4CC38A">●</span> PULSE: <b>${r.pulse}</b> bpm</div>
       <div class="tt-row">${jj.emoji} ${jj.name}</div>`;
     const tx=Math.min(clientX+10,window.innerWidth-160);
     const ty=Math.max(e.clientY-80,10);
