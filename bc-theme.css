@@ -1,0 +1,28 @@
+/* bc-theme.css — 메인(index.html) 톤을 모든 도구 페이지에 맞추는 공통 테마
+   · 잉크 바탕 · 돌색 글씨 · 골드 강조 · Playfair 제목 (메인과 동일)
+   · 상승/하락 숫자색(--green --red --up --down --kr-down)은 건드리지 않음
+   · 각 페이지 <style> 뒤에서 :root:root 로 변수만 덮어씀 → 페이지 구조는 그대로 */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&display=swap');
+
+:root:root{
+  --bg:#0d0f12;
+  --sf:#13171e;  --sf2:#181d25; --sf3:#1f252e;
+  --card:#13171e; --cardh:#181d25;
+  --bd:rgba(200,191,176,.08);  --bd2:rgba(200,191,176,.14);
+  --border:rgba(200,191,176,.08); --bord2:rgba(200,191,176,.14);
+  --text:#d8d0c8; --text2:#a09488; --text3:#83796f;
+  --muted:#83796f; --muted2:#a09488;
+  --accent:#c9a84c; --accent2:#8f6e2a; --ac:#c9a84c;
+}
+:root:root body{background-color:var(--bg)}
+
+/* 페이지 헤더: 메인과 같은 잉크 반투명 + 돌색 헤어라인 */
+:root:root header{background:rgba(13,15,18,.94);border-bottom:1px solid rgba(200,191,176,.08);box-shadow:none}
+/* 로고: 메인 카드 제목과 같은 Playfair, 크림색 */
+:root:root .logo{font-family:'Playfair Display',Georgia,serif;font-weight:600;color:#f0ebe3;letter-spacing:0}
+/* 로고 점: 골드 단색, 빛 번짐·깜빡임 없음 */
+:root:root .logo-dot{background:#c9a84c;box-shadow:none;animation:none}
+
+/* 키보드 포커스: 메인과 같은 골드 1px */
+:root:root a:focus-visible,:root:root button:focus-visible,:root:root input:focus-visible,:root:root select:focus-visible,:root:root textarea:focus-visible{outline:1px solid #c9a84c;outline-offset:2px}
+:root:root ::selection{background:rgba(201,168,76,.28);color:#f0ebe3}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080c14">
+<meta name="theme-color" content="#0d0f12">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,7 +30,7 @@
 <script src="home-bar.js"></script>
 <style>
 :root {
-  --bg:     #080c14;
+  --bg:     #0d0f12;
   --sf:     #0e1422;
   --sf2:    #131b2d;
   --sf3:    #181f30;
@@ -39,7 +39,7 @@
   --text:   #c8d6e8;
   --text2:  #7a91a8;
   --text3:  #4a5f74;
-  --accent: #00d4ff;
+  --accent: #c9a84c;
   --green:  #00e676;
   --red:    #ff5252;
   --up:     #ff5252;  /* 상승·플러스 = 빨강 (한국식) */
@@ -53,24 +53,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 header{
   position:sticky;top:36px;z-index:50;
-  background:rgba(8,12,20,.92);backdrop-filter:blur(16px);
+  background:rgba(13,15,18,.92);backdrop-filter:blur(16px);
   border-bottom:1px solid var(--bd);padding:0 16px;height:52px;
   display:flex;align-items:center;justify-content:space-between;
 }
 .logo{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;}
-.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 3s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
-.sync-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
+.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:none;animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:none}50%{opacity:.4;box-shadow:none}}
+.sync-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
 .sync-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 .sync-dot.live{background:var(--green);box-shadow:0 0 5px var(--green);animation:bl 3s infinite;}
 .sync-dot.loading{background:var(--yellow);box-shadow:0 0 5px var(--yellow);animation:bl .6s infinite;}
 .sync-dot.offline{background:var(--red);}
-.sync-dot.saving{background:var(--accent);box-shadow:0 0 5px var(--accent);animation:bl .4s infinite;}
+.sync-dot.saving{background:var(--accent);box-shadow:none;animation:bl .4s infinite;}
 @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
 .sync-txt.live{color:var(--green);}.sync-txt.loading{color:var(--yellow);}.sync-txt.offline{color:var(--red);}.sync-txt.saving{color:var(--accent);}
-.user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;cursor:pointer;}
+.user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;cursor:pointer;}
 .user-badge:hover{border-color:var(--accent);color:var(--accent);}
-.btn-add{background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 14px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
+.btn-add{background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 14px;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
 .btn-add:hover{background:#33ddff;}
 
 /* ── 요약 스트립 ── */
@@ -79,9 +79,9 @@ header{
   background:var(--bd);margin:12px 16px 0;border-radius:12px;overflow:hidden;border:1px solid var(--bd);
 }
 .sum-cell{background:var(--sf);padding:14px 16px;}
-.sum-label{font-family:var(--mono);font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
-.sum-val{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1.1;}
-.sum-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:3px;}
+.sum-label{font-family:var(--mono);font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.sum-val{font-family:var(--mono);font-size:17px;font-weight:600;line-height:1.1;}
+.sum-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:3px;}
 /* 한국식: green 클래스(양수)=빨강, red 클래스(음수)=파랑 */
 .sum-val.green{color:var(--up);}.sum-val.red{color:var(--down);}.sum-val.yellow{color:var(--yellow);}.sum-val.accent{color:var(--accent);}
 
@@ -92,7 +92,7 @@ header{
 select.filter-input option{background:var(--sf2);}
 .count-chip{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:3px 10px;}
 .count-chip span{color:var(--accent);font-weight:600;}
-.btn-refresh{margin-left:auto;background:var(--sf2);border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:6px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;}
+.btn-refresh{margin-left:auto;background:var(--sf2);border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:6px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;}
 .btn-refresh:hover{border-color:var(--accent);color:var(--accent);}
 .btn-refresh.spinning svg{animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -102,35 +102,35 @@ select.filter-input option{background:var(--sf2);}
 .feed-item{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s;animation:fadeIn .3s ease both;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .feed-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
-.feed-item.us::before{background:linear-gradient(to bottom,#00d4ff,transparent);}
+.feed-item.us::before{background:linear-gradient(to bottom,#c9a84c,transparent);}
 .feed-item.kr::before{background:linear-gradient(to bottom,#ff5252,transparent);}
 .feed-item:hover{border-color:var(--bd2);}
 
 .item-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
-.item-name{font-size:16px;font-weight:700;color:var(--text);}
-.item-ticker{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:4px;padding:2px 7px;}
-.mkt-tag{font-family:var(--mono);font-size:9px;border-radius:4px;padding:2px 7px;font-weight:700;}
-.mkt-us{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.item-name{font-size:16px;font-weight:600;color:var(--text);}
+.item-ticker{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);border-radius:4px;padding:2px 7px;}
+.mkt-tag{font-family:var(--mono);font-size:11px;border-radius:4px;padding:2px 7px;font-weight:600;}
+.mkt-us{background:rgba(201,168,76,.1);color:var(--accent);border:1px solid rgba(201,168,76,.2);}
 .mkt-kr{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2);}
-.item-author{font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:2px 6px;}
+.item-author{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:2px 6px;}
 .item-actions{margin-left:auto;display:flex;gap:6px;}
-.btn-icon{background:transparent;border:1px solid var(--bd);color:var(--text3);border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
-.btn-icon.edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.btn-icon{background:transparent;border:1px solid var(--bd);color:var(--text3);border-radius:6px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;}
+.btn-icon.edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(201,168,76,.08);}
 .btn-icon.del:hover{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.08);}
 
 /* ── 가격 그리드 ── */
 .price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px 12px;margin-bottom:10px;background:var(--sf3);border-radius:10px;padding:10px 12px;border:1px solid var(--bd2);}
 .pc{display:flex;flex-direction:column;gap:2px;}
-.pc-label{font-size:9px;font-family:var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--text3);}
+.pc-label{font-size:11px;font-family:var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--text3);}
 .pc-val{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);}
 .pc-val.green{color:var(--up);}.pc-val.red{color:var(--down);}.pc-val.yellow{color:var(--yellow);}.pc-val.accent{color:var(--accent);}
 
 /* ── 손익 바 ── */
 .pnl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
-.pnl-pill{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:6px;font-weight:700;}
+.pnl-pill{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:6px;font-weight:600;}
 .pnl-pill.green{background:rgba(255,82,82,.12);color:var(--up);border:1px solid rgba(255,82,82,.25);}
 .pnl-pill.red{background:rgba(68,138,255,.1);color:var(--down);border:1px solid rgba(68,138,255,.2);}
-.pnl-pill.flat{background:rgba(255,202,40,.08);color:var(--yellow);border:1px solid rgba(255,202,40,.15);font-weight:400;font-size:10px;}
+.pnl-pill.flat{background:rgba(255,202,40,.08);color:var(--yellow);border:1px solid rgba(255,202,40,.15);font-weight:400;font-size:11px;}
 
 /* ── 로딩 점 ── */
 .price-loading{font-family:var(--mono);font-size:11px;color:var(--text3);padding:6px 0;display:flex;align-items:center;gap:6px;}
@@ -150,7 +150,7 @@ select.filter-input option{background:var(--sf2);}
 .modal{background:var(--sf);border:1px solid var(--bd2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6);transform:translateY(20px);transition:transform .2s;}
 .overlay.open .modal{transform:translateY(0);}
 .modal-header{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--sf);z-index:10;}
-.modal-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--accent);}
+.modal-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--accent);}
 .modal-title .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;}
 .btn-close{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:24px;padding:0 6px;}
 .btn-close:hover{color:var(--red);}
@@ -158,25 +158,25 @@ select.filter-input option{background:var(--sf2);}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-group{display:flex;flex-direction:column;gap:4px;}
 .form-group.full{grid-column:1/-1;}
-label{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);}
+label{font-size:11px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);}
 input,textarea,select{background:var(--sf3);border:1px solid var(--bd2);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;font-family:var(--sans);outline:none;width:100%;color-scheme:dark;}
 input:focus,textarea:focus,select:focus{border-color:var(--accent);}
 select option{background:var(--sf2);}
-.helper{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px;line-height:1.6;}
+.helper{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:3px;line-height:1.6;}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;}
 .btn-cancel{background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--sans);}
 .btn-cancel:hover{border-color:var(--text2);color:var(--text);}
-.btn-save{background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:700;cursor:pointer;font-family:var(--sans);}
+.btn-save{background:var(--accent);border:none;color:#000;border-radius:6px;padding:8px 22px;font-weight:600;cursor:pointer;font-family:var(--sans);}
 .btn-save:hover{background:#33ddff;}
 
 /* ── 로그인 모달 ── */
 .login-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
 .login-overlay.open{opacity:1;pointer-events:all;}
 .login-modal{background:var(--sf);border:1px solid var(--bd2);border-radius:20px;padding:32px 24px;text-align:center;max-width:320px;width:90%;}
-.login-modal .btn-login{background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+.login-modal .btn-login{background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;width:100%;}
 .login-modal .btn-cancel-sm{margin-top:12px;background:transparent;border:1px solid var(--bd2);color:var(--text2);border-radius:10px;padding:10px 20px;width:100%;cursor:pointer;}
 
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--sf2);border:1px solid var(--bd2);border-radius:40px;padding:8px 20px;font-size:12px;opacity:0;transition:all .2s;z-index:9999;white-space:nowrap;pointer-events:none;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--sf2);border:1px solid var(--bd2);border-radius:40px;padding:8px 20px;font-size:12px;opacity:0;transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .2s;z-index:9999;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 @media(max-width:600px){
@@ -227,6 +227,7 @@ select option{background:var(--sf2);}
         .tk-chg.c-vdn  { color: #ff3b5c; }
         .tk-chg.c-nt   { color: #4a607a; }
     </style>
+<link rel="stylesheet" href="bc-theme.css?v=1">
 </head>
 <body>
 
@@ -327,12 +328,12 @@ select option{background:var(--sf2);}
         </div>
         <div class="form-group"><label>매입일 *</label><input type="date" id="fBuyDate"></div>
         <div class="form-group">
-          <label>매입가 * <span id="fPriceUnit" style="color:var(--accent);font-size:10px;">(USD)</span></label>
+          <label>매입가 * <span id="fPriceUnit" style="color:var(--accent);font-size:11px;">(USD)</span></label>
           <input type="number" id="fBuyPrice" placeholder="178.50" step="0.01" min="0" oninput="checkMerge()">
         </div>
         <div class="form-group"><label>수량(주) *</label><input type="number" id="fShares" placeholder="10" step="1" min="1" oninput="checkMerge()"></div>
         <div class="form-group" id="buyRateWrap">
-          <label>매입 당시 환율 <span style="color:var(--accent);font-size:10px;">(원/USD)</span></label>
+          <label>매입 당시 환율 <span style="color:var(--accent);font-size:11px;">(원/USD)</span></label>
           <input type="number" id="fBuyRate" placeholder="1350" step="1" min="1">
           <div class="helper">시세 갱신 후 자동입력 · 직접 수정 가능</div>
         </div>
@@ -634,7 +635,7 @@ function render() {
           <button class="btn-icon del"  onclick="deleteRecord('${r.id}')">🗑️</button>
         </div>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:10px;">
         📅 매입일 ${r.buyDate}</div>
       ${priceBlock}
       ${pnlBlock}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080c14">
+<meta name="theme-color" content="#0d0f12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="북마크">
@@ -30,7 +30,7 @@
 <script src="home-bar.js"></script>
 <style>
 :root {
-  --bg:      #080c14;
+  --bg:      #0d0f12;
   --sf:      #0e1422;
   --sf2:     #131b2d;
   --sf3:     #181f30;
@@ -39,8 +39,8 @@
   --text:    #c8d6e8;
   --text2:   #7a91a8;
   --text3:   #4a5f74;
-  --accent:  #00d4ff;
-  --accent2: #0099cc;
+  --accent:  #c9a84c;
+  --accent2: #8f6e2a;
   --green:   #00e676;
   --red:     #ff5252;
   --yellow:  #ffca28;
@@ -59,7 +59,7 @@ body {
 /* HEADER */
 header {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(8,12,20,.92);
+  background: rgba(13,15,18,.92);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--bd);
   padding: 0 16px;
@@ -67,9 +67,9 @@ header {
   display: flex; align-items: center; justify-content: space-between;
 }
 .logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
-.sync-badge { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--text3); background: var(--sf); border: 1px solid var(--bd); border-radius: 20px; padding: 3px 10px; }
+.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow:none; animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:none} 50%{opacity:.4;box-shadow:none} }
+.sync-badge { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size:11px; color: var(--text3); background: var(--sf); border: 1px solid var(--bd); border-radius: 20px; padding: 3px 10px; }
 .sdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .sdot.live { background: var(--green); box-shadow: 0 0 5px var(--green); animation: bl 3s infinite; }
 .sdot.load { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); animation: bl .6s infinite; }
@@ -77,7 +77,7 @@ header {
 @keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
 .user-badge {
   display: flex; align-items: center; gap: 6px;
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size:11px;
   color: var(--text2); background: var(--sf2);
   border: 1px solid var(--bd); border-radius: 20px;
   padding: 3px 10px;
@@ -134,7 +134,7 @@ header {
   background: var(--sf3); border: 1px solid var(--bd); color: var(--text2);
   border-radius: 8px; padding: 8px 14px;
   font-size: 12px; cursor: pointer;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .btn-add-cat:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -147,11 +147,11 @@ textarea::placeholder { color: var(--text3); }
 .input-footer {
   display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
 }
-.char-count { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.char-count { font-family: var(--mono); font-size:11px; color: var(--text3); }
 .btn-submit {
   background: var(--accent); color: #000; border: none; border-radius: 8px;
-  padding: 8px 20px; font-family: var(--sans); font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+  padding: 8px 20px; font-family: var(--sans); font-size: 13px; font-weight:600;
+  cursor: pointer; transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s; display: flex; align-items: center; gap: 6px;
 }
 .btn-submit:hover { background: #33ddff; }
 .btn-submit:disabled { opacity: .4; pointer-events: none; }
@@ -201,28 +201,28 @@ textarea::placeholder { color: var(--text3); }
   display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
 }
 .item-category {
-  font-family: var(--mono); font-size: 10px;
-  background: rgba(0,212,255,.15);
-  border: 1px solid rgba(0,212,255,.3);
+  font-family: var(--mono); font-size:11px;
+  background: rgba(201,168,76,.15);
+  border: 1px solid rgba(201,168,76,.3);
   color: var(--accent);
   border-radius: 12px;
   padding: 3px 10px;
 }
 .item-url {
-  font-family: var(--mono); font-size: 10px; color: var(--text2);
+  font-family: var(--mono); font-size:11px; color: var(--text2);
   background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
   padding: 2px 8px;
   text-decoration: none;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .item-url:hover { color: var(--accent); border-color: var(--accent); }
 .item-author {
-  font-family: var(--mono); font-size: 9px; color: var(--text3);
+  font-family: var(--mono); font-size:11px; color: var(--text3);
   background: var(--sf3); border: 1px solid var(--bd); border-radius: 5px;
   padding: 2px 6px;
 }
 .item-time {
-  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  font-family: var(--mono); font-size:11px; color: var(--text3);
   margin-left: auto;
 }
 .item-actions { display: flex; gap: 5px; }
@@ -230,9 +230,9 @@ textarea::placeholder { color: var(--text3); }
   background: transparent; border: 1px solid var(--bd); color: var(--text3);
   border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; transition: all .15s;
+  font-size: 12px; transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
-.btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+.btn-icon.edit:hover { border-color: var(--accent); color: var(--accent); background: rgba(201,168,76,.08); }
 .btn-icon.del:hover  { border-color: var(--red); color: var(--red); background: rgba(255,82,82,.08); }
 .btn-icon.visit:hover { border-color: var(--green); color: var(--green); }
 
@@ -261,7 +261,7 @@ textarea::placeholder { color: var(--text3); }
 .btn-edit-cancel:hover { color: var(--text); border-color: var(--text2); }
 .btn-edit-save {
   background: var(--accent); border: none; color: #000;
-  border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 700;
+  border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight:600;
   cursor: pointer;
 }
 
@@ -283,7 +283,7 @@ textarea::placeholder { color: var(--text3); }
   font-family: var(--mono);
   font-size: 12px;
   cursor: pointer;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
   min-width: 36px;
 }
 .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
@@ -317,7 +317,7 @@ textarea::placeholder { color: var(--text3); }
   background: var(--sf2); border: 1px solid var(--bd2); color: var(--text);
   border-radius: 10px; padding: 10px 18px; font-size: 13px;
   box-shadow: 0 8px 32px rgba(0,0,0,.5); z-index: 9999;
-  opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
+  opacity: 0; transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .25s; pointer-events: none; white-space: nowrap;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -352,7 +352,7 @@ textarea::placeholder { color: var(--text3); }
 .login-modal .btn-login {
   background: var(--accent); color: #000; border: none;
   border-radius: 10px; padding: 12px 24px;
-  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-size: 14px; font-weight:600; cursor: pointer;
   width: 100%;
 }
 .login-modal .btn-login:hover { background: #33ddff; }
@@ -407,6 +407,7 @@ textarea::placeholder { color: var(--text3); }
         .tk-chg.c-vdn  { color: #ff3b5c; }
         .tk-chg.c-nt   { color: #4a607a; }
     </style>
+<link rel="stylesheet" href="bc-theme.css?v=1">
 </head>
 <body>
 

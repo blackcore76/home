@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080c14">
+<meta name="theme-color" content="#0d0f12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StockToss">
@@ -15,7 +15,7 @@
 <script src="home-bar.js"></script>
 <style>
 :root {
-  --bg:    #080c14;
+  --bg:    #0d0f12;
   --sf:    #0e1422;
   --sf2:   #131b2d;
   --sf3:   #181f30;
@@ -24,7 +24,7 @@
   --text:  #c8d6e8;
   --text2: #7a91a8;
   --text3: #4a5f74;
-  --accent:#00d4ff;
+  --accent:#c9a84c;
   --green: #00e676;
   --red:   #ff5252;
   --up:    #ff5252;  /* 상승·플러스 = 빨강 (한국식) */
@@ -39,7 +39,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 /* ── 헤더 */
 header{
   position:sticky;top:36px;z-index:50;
-  background:rgba(8,12,20,.92);
+  background:rgba(13,15,18,.92);
   backdrop-filter:blur(16px);
   border-bottom:1px solid var(--bd);
   padding:0 16px;
@@ -47,12 +47,12 @@ header{
   display:flex;align-items:center;justify-content:space-between;
 }
 .logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;}
-.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 3s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 3px var(--accent)}}
+.logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:none;animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:none}50%{opacity:.4;box-shadow:none}}
 .hbtn-group{display:flex;gap:8px;align-items:center;}
 .sync-badge{
   display:flex;align-items:center;gap:5px;
-  font-family:var(--mono);font-size:10px;color:var(--text3);
+  font-family:var(--mono);font-size:11px;color:var(--text3);
   background:var(--sf);border:1px solid var(--bd);
   border-radius:20px;padding:3px 10px;
 }
@@ -66,7 +66,7 @@ header{
 .sync-txt.error  {color:var(--red);}
 .user-badge{
   display:flex;align-items:center;gap:6px;
-  font-family:var(--mono);font-size:10px;
+  font-family:var(--mono);font-size:11px;
   color:var(--text2);background:var(--sf2);
   border:1px solid var(--bd);border-radius:20px;padding:3px 10px;
 }
@@ -74,7 +74,7 @@ header{
   background:var(--sf);border:1px solid var(--bd);
   border-radius:6px;width:32px;height:32px;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:14px;color:var(--text2);transition:all .15s;
+  cursor:pointer;font-size:14px;color:var(--text2);transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .hbtn:hover{border-color:var(--accent);color:var(--accent);}
 .hbtn:disabled{opacity:.4;pointer-events:none;}
@@ -100,7 +100,7 @@ header{
 }
 .tk-sym{color:var(--accent);font-weight:600;font-size:11px;}
 .tk-val{color:var(--text);font-weight:500;}
-.tk-chg{font-size:10px;font-weight:500;}
+.tk-chg{font-size:11px;font-weight:500;}
 .tk-chg.up{color:var(--up);}
 .tk-chg.dn{color:var(--down);}
 .tk-chg.nt{color:var(--text3);}
@@ -114,12 +114,12 @@ header{
 .card-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bd);}
 .card-header .icon{font-size:20px;}
 .card-header h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);}
-.card-header .badge{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3);}
+.card-header .badge{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3);}
 .hero-val{font-family:var(--mono);font-size:28px;font-weight:600;letter-spacing:-1px;margin-bottom:8px;}
 .hero-sub{font-size:12px;color:var(--text3);}
 .chips{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
 .chip{flex:1;min-width:100px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;}
-.chip-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.08em;margin-bottom:6px;}
+.chip-lbl{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;margin-bottom:6px;}
 .chip-val{font-family:var(--mono);font-size:14px;font-weight:600;}
 .chip-val.pos{color:var(--up);}
 .chip-val.neg{color:var(--down);}
@@ -127,14 +127,14 @@ header{
 /* ── 환율 바 */
 .fxbar{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
 .fx-item{display:flex;align-items:baseline;gap:8px;}
-.fx-lbl{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.fx-lbl{font-family:var(--mono);font-size:11px;color:var(--text3);}
 .fx-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
-.fx-time{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.fx-time{font-family:var(--mono);font-size:11px;color:var(--text3);}
 
 /* ── 탭 */
 .tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
-.tab{flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;}
+.tab{flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;}
 .tab.on{background:var(--accent);border-color:var(--accent);color:#000;}
 .tab:not(.on):hover{border-color:var(--accent);color:var(--accent);}
 
@@ -143,7 +143,7 @@ header{
 .list-count{font-family:var(--mono);font-size:11px;color:var(--text3);}
 
 /* ── 종목 카드 */
-.stock-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;transition:all .2s;animation:fadeIn .3s ease both;position:relative;overflow:hidden;}
+.stock-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .2s;animation:fadeIn .3s ease both;position:relative;overflow:hidden;}
 .stock-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
 .stock-card.pos-day::before{background:linear-gradient(to bottom,var(--up),transparent);}
 .stock-card.neg-day::before{background:linear-gradient(to bottom,var(--down),transparent);}
@@ -153,8 +153,8 @@ header{
 
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
 .card-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
-.b-ticker{font-family:var(--mono);font-size:11px;font-weight:600;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 8px;color:var(--accent);}
-.b-mkt{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--sf3);border:1px solid var(--bd);}
+.b-ticker{font-family:var(--mono);font-size:11px;font-weight:600;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:4px;padding:2px 8px;color:var(--accent);}
+.b-mkt{font-size:11px;padding:2px 6px;border-radius:4px;background:var(--sf3);border:1px solid var(--bd);}
 .b-mkt.kr{color:var(--gold);}
 .b-mkt.us{color:var(--accent);}
 .card-name{font-size:15px;font-weight:600;margin-bottom:2px;}
@@ -167,7 +167,7 @@ header{
 .bar-track{height:3px;background:var(--bd2);border-radius:2px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:2px;transition:width .3s;}
 .card-bot{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:12px;padding-top:12px;border-top:1px solid var(--bd);}
-.s-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:3px;}
+.s-lbl{font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:3px;}
 .s-val{font-family:var(--mono);font-size:12px;font-weight:500;}
 
 /* ── 빈 상태 */
@@ -179,7 +179,7 @@ header{
 .err-banner.show{display:block;}
 
 /* ── 섹션 구분선 */
-.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:8px;margin:14px 0 8px;}
+.sec-label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:8px;margin:14px 0 8px;}
 .sec-label::after{content:'';flex:1;height:1px;background:var(--bd);}
 
 /* ── 스켈레톤 */
@@ -204,13 +204,13 @@ header{
 .chart-modal{background:var(--sf);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:900px;max-height:calc(100vh - 150px);overflow:hidden;display:flex;flex-direction:column;}
 .chart-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd);}
 .chart-head-left{display:flex;align-items:center;gap:10px;}
-.chart-sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 8px;}
+.chart-sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:4px;padding:2px 8px;}
 .chart-name{font-size:15px;font-weight:600;}
 .chart-price{font-family:var(--mono);font-size:13px;color:var(--text2);}
-.chart-close{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text2);transition:all .15s;}
+.chart-close{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text2);transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;}
 .chart-close:hover{border-color:var(--red);color:var(--red);}
 .chart-tabs{display:flex;gap:6px;padding:12px 20px 0;flex-wrap:wrap;}
-.chart-tab{font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:14px;border:1px solid var(--bd);background:var(--sf2);color:var(--text3);cursor:pointer;transition:all .15s;}
+.chart-tab{font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:14px;border:1px solid var(--bd);background:var(--sf2);color:var(--text3);cursor:pointer;transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;}
 .chart-tab.on{background:var(--accent);border-color:var(--accent);color:#000;}
 .chart-tab:not(.on):hover{border-color:var(--accent);color:var(--accent);}
 .chart-body{flex:1;min-height:350px;padding:12px 16px 16px;}
@@ -238,7 +238,7 @@ header{
 .fxr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
 .fxr-item{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px;}
 .fxr-item.wide{grid-column:1/-1;}
-.fxr-lbl{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em;}
+.fxr-lbl{font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em;}
 .fxr-val{font-family:var(--mono);font-size:18px;font-weight:600;}
 .fxr-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;}
 .fxr-verdict{font-size:13px;line-height:1.7;color:var(--text);background:var(--sf3);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-top:12px;}
@@ -246,6 +246,7 @@ header{
 .fxr-hint{font-size:12px;color:var(--text3);line-height:1.8;}
 .fxr-hint b{color:var(--text2);}
 </style>
+<link rel="stylesheet" href="bc-theme.css?v=1">
 </head>
 <body>
 
@@ -611,7 +612,7 @@ function cardHTML(item, idx) {
       <div><div class="s-lbl">수량</div><div class="s-val">${qtyStr}</div></div>
       <div><div class="s-lbl">평균단가</div><div class="s-val">${avgStr}</div></div>
       <div><div class="s-lbl">현재가</div><div class="s-val">${lastStr}</div></div>
-      <div><div class="s-lbl">총 손익</div><div class="s-val ${pnlUp ? 'pos' : 'neg'}">${pnlStr}</div><div class="s-val ${pnlUp ? 'pos' : 'neg'}" style="font-size:10px;">${fPct(pnlRate)}</div></div>
+      <div><div class="s-lbl">총 손익</div><div class="s-val ${pnlUp ? 'pos' : 'neg'}">${pnlStr}</div><div class="s-val ${pnlUp ? 'pos' : 'neg'}" style="font-size:11px;">${fPct(pnlRate)}</div></div>
     </div>
   </div>`;
 }

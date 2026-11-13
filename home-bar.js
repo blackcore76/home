@@ -12,10 +12,10 @@
       top: 0; left: 0; right: 0;
       z-index: 99999;
       height: 36px;
-      background: rgba(10, 13, 20, 0.88);
+      background: rgba(13, 15, 18, 0.92);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(99, 155, 255, 0.13);
+      border-bottom: 1px solid rgba(200, 191, 176, 0.08);
       display: flex;
       align-items: center;
       padding: 0 14px;
@@ -27,29 +27,28 @@
       -webkit-user-select: none;
     }
     #bc-home-bar a {
-      color: #a8b8d0;
+      color: #a09488;
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 7px;
-      transition: color 0.2s;
+      transition: color 0.15s;
       white-space: nowrap;
     }
-    #bc-home-bar a:hover { color: #3d8bff; }
+    #bc-home-bar a:hover { color: #c9a84c; }
     #bc-home-bar .bc-logo-dot {
       width: 6px; height: 6px;
-      background: #3d8bff;
+      background: #c9a84c;
       border-radius: 50%;
-      box-shadow: 0 0 7px #3d8bff;
       flex-shrink: 0;
     }
-    #bc-home-bar .bc-home-label { color: #3d8bff; font-weight: 700; }
+    #bc-home-bar .bc-home-label { color: #f0ebe3; font-family: 'Playfair Display', Georgia, serif; font-weight: 600; font-size: 13px; letter-spacing: 0; }
     #bc-home-bar .bc-sep {
-      color: rgba(99, 155, 255, 0.25);
+      color: rgba(200, 191, 176, 0.25);
       font-size: 13px;
     }
     #bc-home-bar .bc-cur {
-      color: #4a607a;
+      color: #83796f;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -69,35 +68,35 @@
       gap: 6px;
       font-size: 10px;
       letter-spacing: 0.05em;
-      background: rgba(255, 159, 64, 0.06);
-      border: 1px solid rgba(255, 159, 64, 0.28);
+      background: transparent;
+      border: 1px solid rgba(200, 191, 176, 0.14);
       border-radius: 5px;
       padding: 2px 8px;
       white-space: nowrap;
       font-family: 'JetBrains Mono', monospace;
-      transition: all 0.2s;
+      transition: border-color 0.15s;
     }
     #bc-home-bar .bc-time-box:hover {
-      background: rgba(255, 159, 64, 0.12);
-      border-color: rgba(255, 159, 64, 0.5);
+      border-color: rgba(200, 191, 176, 0.28);
     }
     #bc-home-bar .bc-time-label {
-      color: #ff9f40;
-      font-weight: 700;
+      color: #c9a84c;
+      font-weight: 500;
     }
     #bc-home-bar .bc-time-sep {
-      color: rgba(255, 159, 64, 0.4);
+      color: rgba(200, 191, 176, 0.3);
     }
     #bc-home-bar .bc-time-value {
-      color: #ffb870;
+      color: #d8d0c8;
+      font-variant-numeric: tabular-nums;
     }
     /* HOME 링크 버튼 */
     #bc-home-bar .bc-home-btn {
-      color: #4a607a !important;
+      color: #a09488 !important;
       font-size: 10px;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.06em;
       background: transparent;
-      border: 1px solid rgba(99,155,255,0.15);
+      border: 1px solid rgba(200,191,176,0.14);
       border-radius: 5px;
       padding: 2px 8px;
       cursor: pointer;
@@ -105,26 +104,26 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      transition: all 0.2s;
+      transition: color 0.15s, border-color 0.15s;
     }
     #bc-home-bar .bc-home-btn:hover {
-      color: #3d8bff !important;
-      border-color: rgba(61,139,255,0.4);
-      background: rgba(61,139,255,0.08);
+      color: #c9a84c !important;
+      border-color: rgba(201,168,76,0.4);
+      background: transparent;
     }
     /* 로그아웃 버튼 — 홈바 안으로 통합 */
     #auth-logout-btn {
       position: static !important;
-      background: rgba(255,255,255,0.06) !important;
-      color: #6a8099 !important;
-      border: 1px solid rgba(255,255,255,0.1) !important;
+      background: transparent !important;
+      color: #a09488 !important;
+      border: 1px solid rgba(200,191,176,0.14) !important;
       padding: 2px 8px !important;
       border-radius: 5px !important;
       font-size: 10px !important;
       cursor: pointer;
       font-family: 'JetBrains Mono', monospace;
       letter-spacing: 0.05em;
-      transition: all 0.2s;
+      transition: color 0.15s, border-color 0.15s;
       white-space: nowrap;
     }
     #auth-logout-btn:hover {

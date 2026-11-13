@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080c14">
+<meta name="theme-color" content="#0d0f12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StockLens">
@@ -29,7 +29,7 @@
 <script src="home-bar.js"></script>
 <style>
 :root {
-  --bg:      #080c14;
+  --bg:      #0d0f12;
   --sf:      #0e1422;
   --sf2:     #131b2d;
   --sf3:     #181f30;
@@ -38,8 +38,8 @@
   --text:    #c8d6e8;
   --text2:   #7a91a8;
   --text3:   #4a5f74;
-  --accent:  #00d4ff;
-  --accent2: #0099cc;
+  --accent:  #c9a84c;
+  --accent2: #8f6e2a;
   --green:   #00e676;
   --red:     #ff5252;
   --up:      #ff5252;  /* 상승·플러스 = 빨강 (한국식) */
@@ -60,7 +60,7 @@ body {
 /* 헤더 */
 header {
   position: sticky; top: 36px; z-index: 50;
-  background: rgba(8,12,20,.92);
+  background: rgba(13,15,18,.92);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--bd);
   padding: 0 16px;
@@ -70,14 +70,14 @@ header {
   justify-content: space-between;
 }
 .logo { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse 3s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)} 50%{opacity:.4;box-shadow:0 0 3px var(--accent)} }
+.logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow:none; animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:none} 50%{opacity:.4;box-shadow:none} }
 .hbtn-group { display: flex; gap: 8px; align-items: center; }
 
 /* 동기화 배지 */
 .sync-badge {
   display: flex; align-items: center; gap: 5px;
-  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  font-family: var(--mono); font-size:11px; color: var(--text3);
   background: var(--sf); border: 1px solid var(--bd);
   border-radius: 20px; padding: 3px 10px;
 }
@@ -88,7 +88,7 @@ header {
 .sync-dot.live     { background: var(--green); box-shadow: 0 0 5px var(--green); animation: bl 3s infinite; }
 .sync-dot.loading  { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); animation: bl .6s infinite; }
 .sync-dot.offline  { background: var(--red); }
-.sync-dot.saving   { background: var(--accent); box-shadow: 0 0 5px var(--accent); animation: bl .4s infinite; }
+.sync-dot.saving   { background: var(--accent); box-shadow:none; animation: bl .4s infinite; }
 @keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
 .sync-txt.live    { color: var(--green); }
 .sync-txt.loading { color: var(--yellow); }
@@ -98,7 +98,7 @@ header {
 /* 사용자 배지 */
 .user-badge {
   display: flex; align-items: center; gap: 6px;
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size:11px;
   color: var(--text2); background: var(--sf2);
   border: 1px solid var(--bd); border-radius: 20px;
   padding: 3px 10px;
@@ -111,7 +111,7 @@ header {
   border-radius: 6px; width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 14px; color: var(--text2);
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .hbtn:hover { border-color: var(--accent); color: var(--accent); }
 .hbtn:disabled { opacity: .4; pointer-events: none; }
@@ -162,7 +162,7 @@ header {
 .card-header .badge {
   margin-left: auto;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size:11px;
   color: var(--text3);
 }
 
@@ -183,7 +183,7 @@ header {
   border-radius: 10px;
   padding: 10px 12px;
 }
-.chip-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .08em; margin-bottom: 6px; }
+.chip-lbl { font-family: var(--mono); font-size:11px; color: var(--text3); letter-spacing: .08em; margin-bottom: 6px; }
 .chip-val { font-family: var(--mono); font-size: 15px; font-weight: 600; }
 .chip-val.pos { color: var(--up); }
 .chip-val.neg { color: var(--down); }
@@ -202,15 +202,15 @@ header {
   margin-bottom: 16px;
 }
 .fx-item { display: flex; align-items: baseline; gap: 8px; }
-.fx-lbl { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.fx-lbl { font-family: var(--mono); font-size:11px; color: var(--text3); }
 .fx-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--accent); }
-.fx-time { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.fx-time { font-family: var(--mono); font-size:11px; color: var(--text3); }
 .fx-btn {
   background: var(--sf3); border: 1px solid var(--bd2);
   border-radius: 6px; padding: 6px 12px;
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size:11px;
   color: var(--text2); cursor: pointer;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .fx-btn:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -233,7 +233,7 @@ header {
   font-weight: 500;
   color: var(--text3);
   cursor: pointer;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .tab.on {
   background: var(--accent);
@@ -254,7 +254,7 @@ header {
   background: none;
   border: none;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size:11px;
   color: var(--text3);
   cursor: pointer;
   transition: color .15s;
@@ -269,7 +269,7 @@ header {
   padding: 16px;
   margin-bottom: 10px;
   cursor: pointer;
-  transition: all .2s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .2s;
   animation: fadeIn .3s ease both;
   position: relative;
   overflow: hidden;
@@ -306,14 +306,14 @@ header {
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
-  background: rgba(0,212,255,.1);
-  border: 1px solid rgba(0,212,255,.2);
+  background: rgba(201,168,76,.1);
+  border: 1px solid rgba(201,168,76,.2);
   border-radius: 4px;
   padding: 2px 8px;
   color: var(--accent);
 }
 .b-mkt {
-  font-size: 10px;
+  font-size:11px;
   padding: 2px 6px;
   border-radius: 4px;
   background: var(--sf3);
@@ -323,7 +323,7 @@ header {
 .b-mkt.us { color: var(--accent); }
 .b-author {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size:11px;
   color: var(--text3);
   background: var(--sf3);
   border: 1px solid var(--bd);
@@ -353,7 +353,7 @@ header {
   padding-top: 12px;
   border-top: 1px solid var(--bd);
 }
-.s-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-bottom: 3px; }
+.s-lbl { font-family: var(--mono); font-size:11px; color: var(--text3); margin-bottom: 3px; }
 .s-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
 
 /* 페이지네이션 */
@@ -374,14 +374,14 @@ header {
   font-family: var(--mono);
   font-size: 12px;
   cursor: pointer;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
   min-width: 36px;
   text-align: center;
 }
 .page-btn:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(0,212,255,.05);
+  background: rgba(201,168,76,.05);
 }
 .page-btn.active {
   background: var(--accent);
@@ -408,17 +408,17 @@ header {
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  background: var(--accent);
   border: none;
   color: #000;
   font-size: 28px;
-  font-weight: 700;
+  font-weight:600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0,212,255,.4);
-  transition: all .2s;
+  box-shadow: 0 4px 20px rgba(201,168,76,.4);
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .2s;
   z-index: 60;
 }
 .fab:hover { transform: scale(1.05) translateY(-2px); }
@@ -484,7 +484,7 @@ header {
 .fg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
 .fl {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size:11px;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--text3);
@@ -502,7 +502,7 @@ header {
 }
 .fi:focus, .fs:focus { border-color: var(--accent); }
 .fs option { background: var(--sf2); }
-.fhint { font-size: 10px; color: var(--text3); margin-top: 4px; }
+.fhint { font-size:11px; color: var(--text3); margin-top: 4px; }
 .brow { display: flex; gap: 10px; margin-top: 20px; }
 .btn {
   flex: 1;
@@ -512,7 +512,7 @@ header {
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: all .15s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .15s;
 }
 .btn-gold { background: var(--accent); color: #000; }
 .btn-gold:hover { background: #33ddff; }
@@ -593,7 +593,7 @@ header {
 .det-sec { margin-bottom: 20px; }
 .det-t {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size:11px;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--accent);
@@ -644,7 +644,7 @@ header {
   padding: 8px 20px;
   font-size: 12px;
   opacity: 0;
-  transition: all .2s;
+  transition:background-color .15s,color .15s,border-color .15s,opacity .15s,transform .15s .2s;
   z-index: 999;
   white-space: nowrap;
   pointer-events: none;
@@ -676,7 +676,7 @@ header {
 .login-modal .btn-login {
   background: var(--accent); color: #000; border: none;
   border-radius: 10px; padding: 12px 24px;
-  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-size: 14px; font-weight:600; cursor: pointer;
   width: 100%;
 }
 .login-modal .btn-cancel {
@@ -765,6 +765,7 @@ header {
         .tk-chg.c-vdn  { color: #ff3b5c; }
         .tk-chg.c-nt   { color: #4a607a; }
     </style>
+<link rel="stylesheet" href="bc-theme.css?v=1">
 </head>
 <body>
 
@@ -1365,13 +1366,13 @@ function buildDet(id) {
           <span class="b-mkt" style="background:var(--sf2);">${bl}</span>
           <span class="b-author">👤 ${formatEmail(h.userEmail)}</span>
         </div>
-        <div style="font-size:18px;font-weight:700;">${esc(h.name)}</div>
+        <div style="font-size:18px;font-weight:600;">${esc(h.name)}</div>
         ${h.memo ? `<div style="font-size:12px;color:var(--text3);margin-top:3px;">📝 ${esc(h.memo)}</div>` : ''}
       </div>
       ${p ? `<div style="text-align:right;"><div class="pnl-num ${cls}" style="font-size:18px;">${sgn+fKRW(p.d)}</div><div class="pnl-pct ${cls}">${sgn+p.pct.toFixed(2)}%</div></div>` : ''}
     </div></div>
     <div class="modal-body">
-    ${h.curPrice ? `<div class="det-hero"><div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">현재가</div><div class="det-price">${fP(h, h.curPrice)}</div>${h.market==='US' ? `<div style="font-size:10px;color:var(--text3);">≈ ${fKRW(h.curPrice*(fx||h.buyFX||1))}</div>` : ''}</div><div style="text-align:right;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">평가금액</div><div style="font-family:var(--mono);font-size:16px;">${fKRW(curKRW(h))}</div>${h.lastUpd ? `<div style="font-size:9px;color:var(--text3);">${new Date(h.lastUpd).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>` : ''}</div></div>` : ''}
+    ${h.curPrice ? `<div class="det-hero"><div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">현재가</div><div class="det-price">${fP(h, h.curPrice)}</div>${h.market==='US' ? `<div style="font-size:11px;color:var(--text3);">≈ ${fKRW(h.curPrice*(fx||h.buyFX||1))}</div>` : ''}</div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">평가금액</div><div style="font-family:var(--mono);font-size:16px;">${fKRW(curKRW(h))}</div>${h.lastUpd ? `<div style="font-size:11px;color:var(--text3);">${new Date(h.lastUpd).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>` : ''}</div></div>` : ''}
     <button class="fetch-btn" id="fbtn-${h.id}" onclick="doFetchPrice('${h.id}')"><span id="ficon-${h.id}">📡</span><span id="flbl-${h.id}">현재가 조회</span></button>
     <div class="manual-row"><input class="fi" type="number" id="mprice-${h.id}" placeholder="${h.market==='US' ? 'USD 직접 입력' : 'KRW 직접 입력'}" step="any"><button class="apply-btn" onclick="applyManual('${h.id}')">적용</button></div>
     <div class="adj-box"><div class="det-t">✏️ 수량 · 평균가 조정</div>
@@ -1391,8 +1392,8 @@ function buildDet(id) {
     ${p ? `<div class="det-sec"><div class="det-t">수익 분석</div>
     <div class="det-row"><span class="det-lbl">매수금액</span><span class="det-val">${fKRW(p.bk)}</span></div>
     <div class="det-row"><span class="det-lbl">현재평가</span><span class="det-val">${fKRW(p.ck)}</span></div>
-    <div class="det-row"><span class="det-lbl">손익</span><span class="det-val ${cls}" style="font-weight:700;">${sgn+fKRW(p.d)}</span></div>
-    <div class="det-row"><span class="det-lbl">수익률</span><span class="det-val ${cls}" style="font-weight:700;">${sgn+p.pct.toFixed(2)}%</span></div>
+    <div class="det-row"><span class="det-lbl">손익</span><span class="det-val ${cls}" style="font-weight:600;">${sgn+fKRW(p.d)}</span></div>
+    <div class="det-row"><span class="det-lbl">수익률</span><span class="det-val ${cls}" style="font-weight:600;">${sgn+p.pct.toFixed(2)}%</span></div>
     ${h.market==='US' ? `<div class="det-row"><span class="det-lbl">환율</span><span class="det-val">매수 ${h.buyFX ? parseFloat(h.buyFX).toFixed(0) : '—'} → 현재 ${fx ? fx.toFixed(0) : '미설정'}</span></div>` : ''}</div>` : ''}
     <div class="brow3">
       <button class="btn btn-red" onclick="checkLoginAndDelete('${h.id}')" ${!isOwner ? 'disabled style="opacity:0.5;"' : ''}>삭제</button>
