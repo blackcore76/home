@@ -42,22 +42,6 @@ body{
 }
 
 /* ══════════════════════════════════
-   GRAIN OVERLAY — feTurbulence 제거 (CPU 과부하·탭 스피너 원인)
-   대신 repeating-linear-gradient 로 경량 노이즈 대체
-══════════════════════════════════ */
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background-image:
-    repeating-linear-gradient(0deg,   transparent, transparent 2px, rgba(255,255,255,.012) 2px, rgba(255,255,255,.012) 4px),
-    repeating-linear-gradient(90deg,  transparent, transparent 3px, rgba(255,255,255,.008) 3px, rgba(255,255,255,.008) 6px);
-  pointer-events:none;
-  z-index:1000;
-  will-change:transform;
-}
-
-/* ══════════════════════════════════
    HERO
 ══════════════════════════════════ */
 .hero{
@@ -77,10 +61,7 @@ body::before{
   background-size:cover;
   background-position:center 30%;
   filter:brightness(.42) saturate(.85);
-  transform:scale(1.03);
-  transition:transform 10s ease-out;
 }
-.hero-bg.loaded{transform:scale(1)}
 /* 하단 페이드 */
 .hero::after{
   content:'';
@@ -107,13 +88,12 @@ body::before{
   max-width:900px;
 }
 .hero-label{
-  font-size:10px;
-  letter-spacing:.3em;
+  font-size:12px;
+  letter-spacing:.16em;
   color:var(--stone3);
   text-transform:uppercase;
   margin-bottom:20px;
-  opacity:0;
-  animation:fadeUp .8s .3s ease-out forwards;
+  animation:fadeUp .6s .1s cubic-bezier(.2,0,0,1) both;
 }
 .hero-title{
   font-family:'Playfair Display',Georgia,serif;
@@ -122,8 +102,7 @@ body::before{
   line-height:1.0;
   color:var(--cream);
   letter-spacing:-.02em;
-  opacity:0;
-  animation:fadeUp .9s .5s ease-out forwards;
+  animation:fadeUp .6s .18s cubic-bezier(.2,0,0,1) both;
 }
 .hero-title em{
   font-style:italic;
@@ -132,13 +111,12 @@ body::before{
 }
 .hero-sub{
   margin-top:20px;
-  font-size:12px;
-  letter-spacing:.08em;
+  font-size:14px;
+  letter-spacing:.02em;
   color:var(--stone3);
   max-width:420px;
   line-height:1.9;
-  opacity:0;
-  animation:fadeUp .9s .7s ease-out forwards;
+  animation:fadeUp .6s .26s cubic-bezier(.2,0,0,1) both;
 }
 .hero-line{
   position:absolute;
@@ -147,12 +125,10 @@ body::before{
   display:flex;
   align-items:center;
   gap:12px;
-  font-size:9px;
-  letter-spacing:.2em;
+  font-size:11px;
+  letter-spacing:.12em;
   color:var(--stone3);
   text-transform:uppercase;
-  opacity:0;
-  animation:fadeIn 1s 1.2s ease-out forwards;
 }
 .hero-line::before{
   content:'';
@@ -172,16 +148,12 @@ body::before{
   flex-direction:column;
   align-items:center;
   gap:6px;
-  opacity:0;
-  animation:fadeIn 1s 1.5s ease-out forwards;
 }
-.scroll-hint span{font-size:8px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.scroll-hint span{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
 .scroll-arrow{
   width:1px;height:32px;
   background:linear-gradient(to bottom,var(--stone3),transparent);
-  animation:scrollPulse 2s ease-in-out infinite;
 }
-@keyframes scrollPulse{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.2)}}
 
 /* ══════════════════════════════════
    MAIN CONTENT
@@ -197,8 +169,8 @@ main{
   display:flex;
   align-items:center;
   gap:16px;
-  font-size:9px;
-  letter-spacing:.3em;
+  font-size:11px;
+  letter-spacing:.16em;
   color:var(--stone3);
   text-transform:uppercase;
   margin-bottom:40px;
@@ -206,7 +178,7 @@ main{
 .sec-label::after{
   content:'';
   flex:1;height:1px;
-  background:linear-gradient(to right,rgba(200,191,176,.15),transparent);
+  background:rgba(200,191,176,.1);
 }
 
 /* ══════════════════════════════════
@@ -230,24 +202,17 @@ main{
   display:block;
   position:relative;
   overflow:hidden;
-  transition:background .3s;
+  transition:background-color .15s cubic-bezier(.2,0,0,1);
   cursor:pointer;
 }
-.tool-card::before{
-  content:'';
-  position:absolute;
-  inset:0;
-  background:linear-gradient(135deg,rgba(61,111,168,.0) 0%,transparent 60%);
-  transition:opacity .4s;
-  opacity:0;
-}
 .tool-card:hover{background:var(--ink3)}
-.tool-card:hover::before{opacity:1}
+.tool-card:focus-visible{outline:1px solid var(--gold);outline-offset:-1px;background:var(--ink3)}
 
 /* 번호 */
 .tool-num{
-  font-size:9px;
-  letter-spacing:.2em;
+  font-size:11px;
+  letter-spacing:.08em;
+  font-variant-numeric:tabular-nums;
   color:var(--muted);
   margin-bottom:20px;
   display:block;
@@ -259,9 +224,9 @@ main{
   display:block;
   color:var(--stone);
   line-height:0;
-  transition:transform .3s,color .3s;
+  transition:color .15s cubic-bezier(.2,0,0,1);
 }
-.tool-card:hover .tool-icon{transform:translateY(-3px);color:var(--gold)}
+.tool-card:hover .tool-icon,.tool-card:focus-visible .tool-icon{color:var(--gold)}
 
 .tool-name{
   font-family:'Playfair Display',Georgia,serif;
@@ -273,8 +238,8 @@ main{
   line-height:1.2;
 }
 .tool-desc{
-  font-size:10px;
-  letter-spacing:.04em;
+  font-size:12px;
+  letter-spacing:0;
   color:var(--stone3);
   line-height:1.8;
   margin-bottom:20px;
@@ -285,13 +250,12 @@ main{
   gap:6px;
 }
 .tag{
-  font-size:8px;
-  letter-spacing:.12em;
-  padding:3px 8px;
+  font-size:11px;
+  letter-spacing:.02em;
+  padding:2px 8px;
   border:1px solid rgba(200,191,176,.12);
   color:var(--muted);
-  text-transform:uppercase;
-  border-radius:1px;
+  border-radius:2px;
 }
 
 /* 우상단 화살표 */
@@ -302,9 +266,9 @@ main{
   color:var(--muted);
   opacity:0;
   transform:translate(-4px,4px);
-  transition:opacity .3s,transform .3s;
+  transition:opacity .15s cubic-bezier(.2,0,0,1),transform .15s cubic-bezier(.2,0,0,1);
 }
-.tool-card:hover .tool-arrow{opacity:1;transform:translate(0,0)}
+.tool-card:hover .tool-arrow,.tool-card:focus-visible .tool-arrow{opacity:1;transform:translate(0,0)}
 
 /* ══════════════════════════════════
    DIVIDER QUOTE
@@ -327,7 +291,7 @@ main{
   margin:0 auto 16px;
 }
 .quote-src{
-  font-size:9px;
+  font-size:11px;
   letter-spacing:.2em;
   color:var(--muted);
   text-transform:uppercase;
@@ -350,8 +314,8 @@ main{
   padding:28px 24px;
 }
 .info-cell-label{
-  font-size:8px;
-  letter-spacing:.25em;
+  font-size:11px;
+  letter-spacing:.12em;
   color:var(--muted);
   text-transform:uppercase;
   margin-bottom:12px;
@@ -361,9 +325,10 @@ main{
   font-size:22px;
   color:var(--stone);
   font-weight:600;
+  font-variant-numeric:tabular-nums;
 }
 .info-cell-sub{
-  font-size:9px;
+  font-size:12px;
   color:var(--muted);
   margin-top:4px;
   line-height:1.7;
@@ -378,8 +343,8 @@ footer{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  font-size:9px;
-  letter-spacing:.12em;
+  font-size:11px;
+  letter-spacing:.06em;
   color:var(--muted);
 }
 .footer-brand{
@@ -393,11 +358,10 @@ footer{
   object-fit:contain;
   transform:rotate(-7deg);
   opacity:.85;
-  transition:transform .4s ease, opacity .3s;
-  filter:drop-shadow(0 2px 8px rgba(0,0,0,.6));
+  transition:transform .25s cubic-bezier(.2,0,0,1),opacity .15s;
 }
 .footer-stamp:hover{
-  transform:rotate(0deg) scale(1.08);
+  transform:rotate(0deg);
   opacity:1;
 }
 .footer-brand-text{
@@ -411,7 +375,7 @@ footer{
    ANIMATIONS
 ══════════════════════════════════ */
 @keyframes fadeUp{
-  from{opacity:0;transform:translateY(20px)}
+  from{opacity:0;transform:translateY(12px)}
   to{opacity:1;transform:translateY(0)}
 }
 @keyframes fadeIn{
@@ -422,10 +386,15 @@ footer{
 /* scroll reveal */
 .reveal{
   opacity:0;
-  transform:translateY(24px);
-  transition:opacity .8s ease-out,transform .8s ease-out;
+  transform:translateY(12px);
+  transition:opacity .5s cubic-bezier(.2,0,0,1),transform .5s cubic-bezier(.2,0,0,1);
 }
 .reveal.in{opacity:1;transform:translateY(0)}
+
+@media (prefers-reduced-motion:reduce){
+  .hero-label,.hero-title,.hero-sub{animation:none;opacity:1}
+  .reveal{opacity:1;transform:none;transition:none}
+}
 
 /* ══════════════════════════════════
    RESPONSIVE
@@ -599,7 +568,7 @@ footer{
       <span class="tool-num">10</span>
       <span class="tool-icon">🎰</span>
       <div class="tool-name">로또6/45<br>연금복권</div>
-      <div class="tool-desc">주식이 안된다면 로또· <br>연금복권이라도 맞아보자!!</div>
+      <div class="tool-desc">주식이 안된다면 로또· <br>연금복권이라도 맞아보자</div>
       <div class="tool-tags">
         <span class="tag">로또</span>
         <span class="tag">연금복권</span>
@@ -641,7 +610,7 @@ footer{
       <span class="tool-num">13</span>
       <span class="tool-icon">❤️</span>
       <div class="tool-name">혈압<br>기록부</div>
-      <div class="tool-desc">혈압·맥박 이력관리<br>건강해야 오래 살지!!</div>
+      <div class="tool-desc">혈압·맥박 이력관리<br>건강해야 오래 살지</div>
       <div class="tool-tags">
         <span class="tag">건강</span>
         <span class="tag">통계</span>
@@ -682,7 +651,7 @@ footer{
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Tools Built</div>
-      <div class="info-cell-val">11</div>
+      <div class="info-cell-val">14</div>
       <div class="info-cell-sub">PWA 기반 단일 HTML <br>Claude · Firebase</div>
     </div>
     <div class="info-cell">
@@ -735,7 +704,6 @@ document.getElementById('yr').textContent = new Date().getFullYear();
 })();
 
 // 히어로 이미지 scale 전환
-setTimeout(()=>document.querySelector('.hero-bg').classList.add('loaded'), 100);
 
 // Scroll reveal
 const observer = new IntersectionObserver(entries => {
