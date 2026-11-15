@@ -32,14 +32,14 @@ body{background:#0a0a0a;color:#f0f0f0;
 .ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 20px;
   font-family:'Noto Sans KR',sans-serif;font-size:13px;
   border-right:1px solid rgba(255,255,255,.06)}
-.tk-name{color:#7a91a8;font-weight:500;letter-spacing:.04em}
-.tk-price{color:#c8d6e8;font-weight:600}
+.tk-name{color:#fff;font-weight:500;letter-spacing:.04em}
+.tk-price{color:#fff;font-weight:600}
 .tk-chg{font-size:11px;font-weight:500}
 .tk-chg.c-up{color:#ff3b5c}
 .tk-chg.c-dn{color:#448aff}
 .tk-chg.c-vup{color:#448aff}
 .tk-chg.c-vdn{color:#ff3b5c}
-.tk-chg.c-nt{color:#4a607a}
+.tk-chg.c-nt{color:#fff}
 
 .wrap{display:flex;width:100%;max-width:1080px;gap:0;padding:0 8px}
 
@@ -48,13 +48,13 @@ body{background:#0a0a0a;color:#f0f0f0;
 .clock:first-child{border-right:1px solid #1a1a1a}
 
 .header{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
-.region{font-size:24px;color:#bbb;letter-spacing:.15em}
-.date{font-size:24px;color:#999;letter-spacing:.06em}
+.region{font-size:24px;color:#fff;letter-spacing:.15em}
+.date{font-size:24px;color:#fff;letter-spacing:.06em}
 
 .time-row{display:flex;align-items:center;gap:16px}
 .time{font-size:84px;font-weight:600;color:#fff;letter-spacing:.02em;
   line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.time .sec{font-size:36px;color:#666;margin-left:4px}
+.time .sec{font-size:36px;color:#fff;margin-left:4px}
 
 .badge-col{display:flex;flex-direction:column;gap:3px}
 .badge{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;
@@ -76,7 +76,7 @@ body{background:#0a0a0a;color:#f0f0f0;
 #fsBtn{position:fixed;right:12px;bottom:12px;z-index:99;
   width:44px;height:44px;line-height:44px;text-align:center;
   border-radius:22px;background:rgba(255,255,255,.08);
-  color:#8a9bb0;font-size:20px;cursor:pointer;
+  color:#fff;font-size:20px;cursor:pointer;
   -webkit-transition:opacity .4s;transition:opacity .4s;opacity:.35}
 #fsBtn:active{background:rgba(255,255,255,.18)}
 #fsBtn.hide{opacity:0;pointer-events:none}
@@ -108,16 +108,16 @@ body{background:#0a0a0a;color:#f0f0f0;
 /* ── Claude 사용량 (맥미니 상태줄 → Funnel /claude-usage) ── */
 .usage{display:flex;width:100%;max-width:1080px;padding:0 24px}
 .u-cell{flex:1;padding:14px 20px;border:1px solid #1a1a1a;border-radius:14px;background:#0f0f0f;margin:0 6px}
-.u-lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:#777;font-weight:500;letter-spacing:.02em}
-.u-lab b{font-weight:500;color:#555;font-size:12px}
-.u-val{font-size:30px;color:#eee;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums}
-.u-val small{font-size:14px;color:#777;font-weight:500;margin-left:6px}
+.u-lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:#fff;font-weight:500;letter-spacing:.02em}
+.u-lab b{font-weight:500;color:#fff;font-size:12px}
+.u-val{font-size:30px;color:#fff;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums}
+.u-val small{font-size:14px;color:#fff;font-weight:500;margin-left:6px}
 .u-bar{height:4px;background:#1c1c1c;border-radius:2px;margin-top:10px;overflow:hidden}
 .u-bar i{display:block;height:100%;width:0;background:#d8d8d8;border-radius:2px;-webkit-transition:width .6s;transition:width .6s}
 .u-cell.warn .u-bar i{background:#fbbf24} .u-cell.warn .u-val{color:#fbbf24}
 .u-cell.low .u-bar i{background:#ff3b5c} .u-cell.low .u-val{color:#ff3b5c}
-.u-sub{font-size:12px;color:#5a5a5a;margin-top:8px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.usage.stale .u-val{color:#666}
+.u-sub{font-size:12px;color:#fff;margin-top:8px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.usage.stale .u-val{color:#fff}
 @media(max-width:760px){
   .usage{padding:0 4px}
   .u-cell{padding:8px 10px;margin:0 3px;border-radius:10px}
