@@ -100,6 +100,28 @@ body{background:#0a0a0a;color:#f0f0f0;
   .time .sec{font-size:16px}
   .badge{padding:1px 5px;font-size:8px}
 }
+
+/* ── Claude 사용량 (맥미니 상태줄 → Funnel /claude-usage) ── */
+.usage{display:flex;width:100%;max-width:1080px;margin-top:28px;padding:0 24px}
+.u-cell{flex:1;padding:14px 20px;border:1px solid #1a1a1a;border-radius:14px;background:#0f0f0f;margin:0 6px}
+.u-lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:#777;font-weight:500;letter-spacing:.02em}
+.u-lab b{font-weight:500;color:#555;font-size:12px}
+.u-val{font-size:30px;color:#eee;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums}
+.u-val small{font-size:14px;color:#777;font-weight:500;margin-left:6px}
+.u-bar{height:4px;background:#1c1c1c;border-radius:2px;margin-top:10px;overflow:hidden}
+.u-bar i{display:block;height:100%;width:0;background:#d8d8d8;border-radius:2px;-webkit-transition:width .6s;transition:width .6s}
+.u-cell.warn .u-bar i{background:#fbbf24} .u-cell.warn .u-val{color:#fbbf24}
+.u-cell.low .u-bar i{background:#ff3b5c} .u-cell.low .u-val{color:#ff3b5c}
+.u-sub{font-size:12px;color:#5a5a5a;margin-top:8px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.usage.stale .u-val{color:#666}
+@media(max-width:760px){
+  .usage{margin-top:16px;padding:0 4px}
+  .u-cell{padding:8px 10px;margin:0 3px;border-radius:10px}
+  .u-lab{font-size:10px} .u-lab b{font-size:9px}
+  .u-val{font-size:18px} .u-val small{font-size:10px;margin-left:3px}
+  .u-bar{margin-top:6px;height:3px}
+  .u-sub{font-size:9px;margin-top:4px}
+}
 </style>
 </head>
 <body>
@@ -141,6 +163,27 @@ body{background:#0a0a0a;color:#f0f0f0;
         <span class="badge off" data-c="afterUS" data-s="57600" data-e="72000">애프터마켓</span>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="usage stale" id="usage">
+  <div class="u-cell" id="uSes">
+    <div class="u-lab">현재 세션 <b>5시간</b></div>
+    <div class="u-val" id="uSesV">--<small>남음</small></div>
+    <div class="u-bar"><i id="uSesB"></i></div>
+    <div class="u-sub" id="uSesS">기다리는 중</div>
+  </div>
+  <div class="u-cell" id="uWk">
+    <div class="u-lab">이번 주 <b>7일</b></div>
+    <div class="u-val" id="uWkV">--<small>남음</small></div>
+    <div class="u-bar"><i id="uWkB"></i></div>
+    <div class="u-sub" id="uWkS">&nbsp;</div>
+  </div>
+  <div class="u-cell" id="uRst">
+    <div class="u-lab">세션 초기화까지 <b>Claude Pro</b></div>
+    <div class="u-val" id="uRstV">--:--</div>
+    <div class="u-bar"><i id="uRstB"></i></div>
+    <div class="u-sub" id="uRstS">&nbsp;</div>
   </div>
 </div>
 
@@ -439,6 +482,59 @@ if ('serviceWorker' in navigator) {
     document.addEventListener('touchstart', poke, true);
     document.addEventListener('mousemove', poke, true);
     poke();
+})();
+
+// ── Claude 사용량: 맥미니가 Claude Code 상태줄에서 받은 퍼센트·초기화 시각만 읽는다(토큰 없음) ──
+(function(){
+  var URL = 'https://blackcore-macmini--m4.tail03a806.ts.net/claude-usage/usage.json';
+  var data = null;
+  function $(id){ return document.getElementById(id); }
+  function pad(n){ return (n<10?'0':'')+n; }
+  function hm(sec){ var d=new Date(sec*1000); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+  function left(sec){ // 남은 시간 "2시간 31분" / "3일 4시간"
+    if (sec <= 0) return '곧';
+    var d=Math.floor(sec/86400), h=Math.floor(sec%86400/3600), m=Math.floor(sec%3600/60);
+    return d ? d+'일 '+h+'시간' : (h ? h+'시간 '+m+'분' : m+'분');
+  }
+  var WD=['일','월','화','수','목','금','토'];
+  function fill(key, w, now, label){
+    var cell=$(key), v=$(key+'V'), b=$(key+'B'), sEl=$(key+'S');
+    if (!w){ v.innerHTML='--<small>남음</small>'; b.style.width='0'; sEl.textContent='정보 없음'; cell.className='u-cell'; return null; }
+    var used = (w.resets_at && now >= w.resets_at) ? 0 : w.used;   // 초기화 시각이 지나면 새로 시작
+    var rem = Math.max(0, Math.min(100, Math.round(100 - used)));
+    v.innerHTML = rem + '%<small>남음</small>';
+    b.style.width = rem + '%';
+    cell.className = 'u-cell' + (rem < 10 ? ' low' : rem < 25 ? ' warn' : '');
+    if (w.resets_at && now < w.resets_at){
+      var d=new Date(w.resets_at*1000);
+      sEl.textContent = label==='wk'
+        ? (d.getMonth()+1)+'/'+d.getDate()+'('+WD[d.getDay()]+') '+hm(w.resets_at)+' 초기화 · '+left(w.resets_at-now)+' 후'
+        : hm(w.resets_at)+' 초기화 · '+left(w.resets_at-now)+' 후';
+    } else sEl.textContent = '새로 시작됨';
+    return rem;
+  }
+  function render(){
+    var now = Math.floor(Date.now()/1000);
+    var box=$('usage');
+    if (!data){ return; }
+    var age = now - (data.updated_at||0);
+    box.className = 'usage' + (age > 6*3600 ? ' stale' : '');
+    fill('uSes', data.five_hour, now, 'ses');
+    fill('uWk', data.seven_day, now, 'wk');
+    var f = data.five_hour, rv=$('uRstV'), rb=$('uRstB'), rs=$('uRstS');
+    if (f && f.resets_at && now < f.resets_at){
+      var r=f.resets_at-now;
+      rv.textContent = Math.floor(r/3600)+':'+pad(Math.floor(r%3600/60))+':'+pad(r%60);
+      rb.style.width = Math.max(0,Math.min(100,(1 - r/18000)*100)) + '%';
+    } else { rv.textContent = '--:--'; rb.style.width='0'; }
+    rs.textContent = data.updated_at ? (age < 60 ? '방금 갱신' : left(age)+' 전 갱신') : '아직 기록 없음';
+  }
+  function load(){
+    fetch(URL, {cache:'no-store'}).then(function(r){ return r.json(); })
+      .then(function(j){ data=j; render(); })
+      .catch(function(){ var s=$('uRstS'); if (s) s.textContent='맥미니 연결 안 됨'; });
+  }
+  load(); setInterval(load, 60000); setInterval(render, 1000);
 })();
 </script>
 </body>
