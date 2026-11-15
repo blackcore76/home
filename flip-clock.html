@@ -117,7 +117,9 @@ body{background:#0a0a0a;color:#f0f0f0;
 .u-cell.warn .u-bar i{background:#fbbf24} .u-cell.warn .u-val{color:#fbbf24}
 .u-cell.low .u-bar i{background:#ff3b5c} .u-cell.low .u-val{color:#ff3b5c}
 .u-sub{font-size:12px;color:#fff;margin-top:8px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.usage.stale .u-val{color:#fff}
+/* 15분 넘게 갱신이 없으면: 세션·주간 값은 흐리게 + "HH:MM 기준", 갱신 문구는 호박색 */
+.usage.stale #uSes .u-val,.usage.stale #uWk .u-val,.usage.stale #uSes .u-bar,.usage.stale #uWk .u-bar{opacity:.4}
+.usage.stale #uRstS{color:#fbbf24}
 @media(max-width:760px){
   .usage{padding:0 4px}
   .u-cell{padding:8px 10px;margin:0 3px;border-radius:10px}
@@ -514,12 +516,12 @@ if ('serviceWorker' in navigator) {
     return d ? d+'일 '+h+'시간' : (h ? h+'시간 '+m+'분' : m+'분');
   }
   var WD=['일','월','화','수','목','금','토'];
-  function fill(key, w, now, label){
+  function fill(key, w, now, label, stale){
     var cell=$(key), v=$(key+'V'), b=$(key+'B'), sEl=$(key+'S');
     if (!w){ v.innerHTML='--<small>남음</small>'; b.style.width='0'; sEl.textContent='정보 없음'; cell.className='u-cell'; return null; }
     var used = (w.resets_at && now >= w.resets_at) ? 0 : w.used;   // 초기화 시각이 지나면 새로 시작
     var rem = Math.max(0, Math.min(100, Math.round(100 - used)));
-    v.innerHTML = rem + '%<small>남음</small>';
+    v.innerHTML = rem + '%<small>' + (stale ? hm(stale)+' 기준' : '남음') + '</small>';
     b.style.width = rem + '%';
     cell.className = 'u-cell' + (rem < 10 ? ' low' : rem < 25 ? ' warn' : '');
     if (w.resets_at && now < w.resets_at){
@@ -535,16 +537,17 @@ if ('serviceWorker' in navigator) {
     var box=$('usage');
     if (!data){ return; }
     var age = now - (data.updated_at||0);
-    box.className = 'usage' + (age > 6*3600 ? ' stale' : '');
-    fill('uSes', data.five_hour, now, 'ses');
-    fill('uWk', data.seven_day, now, 'wk');
+    var stale = age > 15*60 ? data.updated_at : 0;   // 15분 넘으면 오래된 값
+    box.className = 'usage' + (stale ? ' stale' : '');
+    fill('uSes', data.five_hour, now, 'ses', stale);
+    fill('uWk', data.seven_day, now, 'wk', stale);
     var f = data.five_hour, rv=$('uRstV'), rb=$('uRstB'), rs=$('uRstS');
     if (f && f.resets_at && now < f.resets_at){
       var r=f.resets_at-now;
       rv.textContent = Math.floor(r/3600)+':'+pad(Math.floor(r%3600/60))+':'+pad(r%60);
       rb.style.width = Math.max(0,Math.min(100,(1 - r/18000)*100)) + '%';
     } else { rv.textContent = '--:--'; rb.style.width='0'; }
-    rs.textContent = data.updated_at ? (age < 60 ? '방금 갱신' : left(age)+' 전 갱신') : '아직 기록 없음';
+    rs.textContent = !data.updated_at ? '아직 기록 없음' : age < 60 ? '방금 갱신' : stale ? hm(data.updated_at)+' 값 · '+left(age)+' 지남' : left(age)+' 전 갱신';
   }
   function load(){
     fetch(URL, {cache:'no-store'}).then(function(r){ return r.json(); })
