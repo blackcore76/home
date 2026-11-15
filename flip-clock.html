@@ -16,7 +16,10 @@
 html,body{height:100%;overflow:hidden}
 body{background:#0a0a0a;color:#f0f0f0;
   font-family:'Noto Sans KR',sans-serif;font-weight:600;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;
+  /* 시세 띠 아래 남은 높이를 위·가운데·아래 같은 간격으로 나눈다 */
+  justify-content:space-around;justify-content:space-evenly;
+  padding-top:30px;
   user-select:none;-webkit-user-select:none}
 
 .ticker-wrap{position:fixed;top:0;left:0;right:0;height:30px;z-index:95;
@@ -38,7 +41,7 @@ body{background:#0a0a0a;color:#f0f0f0;
 .tk-chg.c-vdn{color:#ff3b5c}
 .tk-chg.c-nt{color:#4a607a}
 
-.wrap{display:flex;width:100%;max-width:1080px;height:300px;gap:0;padding:0 8px}
+.wrap{display:flex;width:100%;max-width:1080px;gap:0;padding:0 8px}
 
 .clock{flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:center}
@@ -79,6 +82,7 @@ body{background:#0a0a0a;color:#f0f0f0;
 #fsBtn.hide{opacity:0;pointer-events:none}
 
 @media(max-width:760px){
+  body{padding-top:24px}
   .ticker-wrap{height:24px}
   .ticker-item{font-size:11px;padding:0 12px;gap:4px}
   .tk-chg{font-size:9px}
@@ -102,7 +106,7 @@ body{background:#0a0a0a;color:#f0f0f0;
 }
 
 /* ── Claude 사용량 (맥미니 상태줄 → Funnel /claude-usage) ── */
-.usage{display:flex;width:100%;max-width:1080px;margin-top:28px;padding:0 24px}
+.usage{display:flex;width:100%;max-width:1080px;padding:0 24px}
 .u-cell{flex:1;padding:14px 20px;border:1px solid #1a1a1a;border-radius:14px;background:#0f0f0f;margin:0 6px}
 .u-lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:#777;font-weight:500;letter-spacing:.02em}
 .u-lab b{font-weight:500;color:#555;font-size:12px}
@@ -115,12 +119,25 @@ body{background:#0a0a0a;color:#f0f0f0;
 .u-sub{font-size:12px;color:#5a5a5a;margin-top:8px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .usage.stale .u-val{color:#666}
 @media(max-width:760px){
-  .usage{margin-top:16px;padding:0 4px}
+  .usage{padding:0 4px}
   .u-cell{padding:8px 10px;margin:0 3px;border-radius:10px}
   .u-lab{font-size:10px} .u-lab b{font-size:9px}
   .u-val{font-size:18px} .u-val small{font-size:10px;margin-left:3px}
   .u-bar{margin-top:6px;height:3px}
   .u-sub{font-size:9px;margin-top:4px}
+}
+
+/* 창 높이가 낮을 때: 시계·칸을 조금 줄여 위아래 여백을 지킨다 */
+@media(min-width:761px) and (max-height:560px){
+  .header{margin-bottom:6px} .region,.date{font-size:20px}
+  .time{font-size:68px} .time .sec{font-size:30px}
+  .u-cell{padding:10px 16px} .u-val{font-size:24px} .u-bar{margin-top:8px} .u-sub{margin-top:6px}
+}
+@media(min-width:761px) and (max-height:440px){
+  .region,.date{font-size:17px}
+  .time{font-size:56px} .time .sec{font-size:24px}
+  .badge{padding:2px 8px;font-size:10px}
+  .u-cell{padding:8px 14px} .u-lab{font-size:12px} .u-val{font-size:20px} .u-sub{font-size:11px}
 }
 </style>
 </head>
