@@ -232,20 +232,38 @@ var NEWS_CAT = {
   popular:  'ranknews',
 };
 
-function newsApiUrl(tab, count) {
+// 2026-11: 국내 news/list 는 pageSize 최대 20 (21 이상이면 400) → 20개씩 여러 페이지로 나눠 받음
+var NEWS_PAGE_MAX = 20;
+
+function newsApiUrl(tab, count, page) {
+  page = page || 1;
   if (tab === 'focus') {
-    return 'https://stock.naver.com/api/foreign/news/worldNews?page=1&pageSize=' + count;
+    return 'https://stock.naver.com/api/foreign/news/worldNews?page=' + page + '&pageSize=' + count;
   }
   var cat = NEWS_CAT[tab] || 'mainnews';
   return 'https://stock.naver.com/api/domestic/news/list?category=' + cat +
-         '&page=1&pageSize=' + count + '&date=' + kstYmd();
+         '&page=' + page + '&pageSize=' + Math.min(count, NEWS_PAGE_MAX) + '&date=' + kstYmd();
 }
 
 async function naverNews(tab, count) {
   count = count > 0 ? count : 25;
-  var res = await fetch(newsApiUrl(tab, count), { headers: NEWS_HDR });
-  if (!res.ok) throw new Error('news ' + res.status);
-  var data = await res.json();
+  var data;
+  if (tab === 'focus') {
+    var res = await fetch(newsApiUrl(tab, count), { headers: NEWS_HDR });
+    if (!res.ok) throw new Error('news ' + res.status);
+    data = await res.json();
+  } else {
+    var pages = Math.ceil(count / NEWS_PAGE_MAX), reqs = [];
+    for (var pg = 1; pg <= pages; pg++) {
+      reqs.push(fetch(newsApiUrl(tab, NEWS_PAGE_MAX, pg), { headers: NEWS_HDR })
+        .then(function(r) { return r.ok ? r.json() : { status: r.status }; })
+        .catch(function() { return { status: 0 }; }));
+    }
+    var results = await Promise.all(reqs);
+    if (!results[0] || !results[0].articles) throw new Error('news ' + (results[0] && results[0].status));
+    data = { articles: [] };
+    results.forEach(function(r) { if (r && r.articles) data.articles = data.articles.concat(r.articles); });
+  }
   var today = kstYmd();
   var items;
 
